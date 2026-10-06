@@ -139,9 +139,12 @@ export function getAnnualTrends(cityId: string, standard: StandardType = 'CN'): 
     // 美标不健康及严重不健康天数：AQI > 150 (Unhealthy 及以上，对应 PM2.5 > 55.4 ug/m3)
     const heavyPollutionDays = calendar.filter((d) => (standard === 'CN' ? d[1] > 200 : d[1] > 150)).length;
 
-    // 官方公报基线年均 PM2.5 质量浓度（物理指标，不随评价标准改变）
-    const pm25Avg = profile.baseline[idx] ?? 30;
-    const pm10Avg = +(pm25Avg * 1.65).toFixed(1);
+    // 年均 PM2.5 质量浓度：由全年 365 天每日实测与模型值严格算术平均得出！
+    const pm25Avg = +(calendar.reduce((sum, d) => sum + d[3], 0) / totalDays).toFixed(1);
+    const pm10Avg = +(pm25Avg * 1.6).toFixed(1);
+
+    // 年均等效 AQI 指数：由全年 365 天在当前评价标准下的每日 AQI 严格求均值得出！
+    const aqiAvg = Math.round(calendar.reduce((sum, d) => sum + d[1], 0) / totalDays);
 
     return {
       year,
@@ -149,6 +152,7 @@ export function getAnnualTrends(cityId: string, standard: StandardType = 'CN'): 
       pm10Avg,
       goodDaysRatio,
       heavyPollutionDays,
+      aqiAvg,
     };
   });
 }

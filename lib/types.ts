@@ -110,4 +110,5 @@ export interface AnnualTrend {
   pm10Avg: number;
   goodDaysRatio: number; // 优良天数比例 %
   heavyPollutionDays: number; // 重污染天数
+  aqiAvg?: number; // 年均等效 AQI (随标准动态变化)
 }

@@ -28,6 +28,8 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
 
   const ratioLabel = standard === 'CN' ? '国标优良天数比例 (%)' : '美标达标天数比例 (%)';
   const heavyLabel = standard === 'CN' ? '国标重度污染天数 (AQI>200, 天)' : '美标不健康天数 (AQI>150, 天)';
+  const aqiLabel = standard === 'CN' ? '年均国标 AQI' : '年均美标 AQI';
+  const aqiAvgs = data.map((d) => d.aqiAvg ?? Math.round(d.pm25Avg * 1.2));
 
   const option = {
     backgroundColor: 'transparent',
@@ -40,7 +42,7 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
       textStyle: { color: '#0f172a', fontSize: 12 },
     },
     legend: {
-      data: ['年均 PM2.5 (μg/m³)', ratioLabel, heavyLabel],
+      data: ['年均 PM2.5 (μg/m³)', aqiLabel, ratioLabel, heavyLabel],
       top: 0,
       textStyle: { color: '#475569', fontSize: 12 },
     },
@@ -60,7 +62,7 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
     yAxis: [
       {
         type: 'value',
-        name: 'PM2.5 / 污染天',
+        name: 'PM2.5 / AQI / 污染天',
         splitLine: { lineStyle: { color: '#f1f5f9' } },
         axisLabel: { color: '#64748b', fontSize: 10 },
       },
@@ -101,6 +103,14 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
         data: pm25s,
         itemStyle: { color: '#0284c7' },
         lineStyle: { width: 3 },
+      },
+      {
+        name: aqiLabel,
+        type: 'line',
+        smooth: true,
+        data: aqiAvgs,
+        itemStyle: { color: '#f59e0b' },
+        lineStyle: { width: 2.5, type: 'dotted' },
       },
       {
         name: heavyLabel,
