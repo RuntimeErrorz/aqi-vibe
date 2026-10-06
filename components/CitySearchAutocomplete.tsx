@@ -11,6 +11,7 @@ interface CitySearchAutocompleteProps {
   onSelectCity: (city: CityMeta) => void;
   placeholder?: string;
   className?: string;
+  filterCity?: (city: CityMeta) => boolean;
 }
 
 export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
@@ -18,6 +19,7 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
   onSelectCity,
   placeholder = '搜索国家或城市 (如: 美国 / 日本 / 英国 / 成都 / 巴黎 / Tokyo)...',
   className = '',
+  filterCity,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -29,10 +31,10 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
 
   // 随着 query 变化即时检索 (Algolia 风格响应)
   useEffect(() => {
-    const list = searchCities(query, 8);
+    const list = searchCities(query, 8, filterCity);
     setResults(list);
     setActiveIndex(0);
-  }, [query]);
+  }, [query, filterCity]);
 
   // 点击外部自动关闭
   useEffect(() => {

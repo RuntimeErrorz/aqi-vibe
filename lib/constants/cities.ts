@@ -9834,10 +9834,15 @@ const MAJOR_CITIES_ORDER: Record<string, string[]> = {
   RU: ['gl-moscow', 'gl-saint-petersburg'],
 };
 
-export function searchCities(query: string, limit = 8): CityMeta[] {
+export function searchCities(
+  query: string,
+  limit = 8,
+  filterFn?: (c: CityMeta) => boolean
+): CityMeta[] {
+  const pool = filterFn ? CITIES_REGISTRY.filter(filterFn) : CITIES_REGISTRY;
   const q = query.trim().toLowerCase();
   if (!q) {
-    return CITIES_REGISTRY.slice(0, limit);
+    return pool.slice(0, limit);
   }
 
   const targetCountryCode = COUNTRY_SYNONYMS[q] || null;
@@ -9849,7 +9854,7 @@ export function searchCities(query: string, limit = 8): CityMeta[] {
 
   const scored: ScoredCity[] = [];
 
-  for (const c of CITIES_REGISTRY) {
+  for (const c of pool) {
     const nameZh = c.nameZh.toLowerCase();
     const nameEn = c.nameEn.toLowerCase();
     const prov = (c.province || '').toLowerCase();
