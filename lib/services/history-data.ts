@@ -1,5 +1,7 @@
 import { AnnualTrend, DailyStat, StandardType } from '../types';
 import { evaluateAQI } from '../aqi-calculator';
+import { findCity } from '../constants/cities';
+import quotsoftDaily from '@/data/processed/quotsoft_cities_daily.json';
 
 // 城市历史蓝天治理基线 (2014-2025 年均 PM2.5 真实官方年报公报演进数据)
 const HISTORICAL_BASELINES: Record<string, number[]> = {
@@ -70,6 +72,10 @@ export function get365CalendarHeatmap(
   // 成都盆地地形特征：冬季持续数日静稳逆温严重积累；夏季有明显晴热臭氧过程
   const isChengdu = cityId === 'cn-chengdu';
 
+  // 城市元数据（用于匹配 Quotsoft 城市名）
+  const cityMeta = findCity(cityId);
+  const cityName = cityMeta?.nameZh || '';
+
   for (let i = 0; i < totalDays; i++) {
     const d = new Date(startDate);
     d.setDate(d.getDate() + i);
@@ -90,11 +96,19 @@ export function get365CalendarHeatmap(
     const randomJitter = (Math.random() - 0.45) * 0.5;
     
     // 计算实测日均 PM2.5 (冬季成都能达到 80~140 ug/m3，夏季 15~35 ug/m3)
-    const dailyPM25 = Math.max(8, Math.round(basePM25 * (seasonFactor + wave + randomJitter)));
-    const dailyPM10 = Math.round(dailyPM25 * 1.6 + (month >= 3 && month <= 5 ? 30 : 5));
+    let dailyPM25 = Math.max(8, Math.round(basePM25 * (seasonFactor + wave + randomJitter)));
+    let dailyPM10 = Math.round(dailyPM25 * 1.6 + (month >= 3 && month <= 5 ? 30 : 5));
     
     // 夏季 6~8 月午后臭氧高发，折算等效臭氧浓度
-    const dailyO3 = Math.round((month >= 6 && month <= 8 ? 160 : 70) + Math.sin(i / 3) * 45);
+    let dailyO3 = Math.round((month >= 6 && month <= 8 ? 160 : 70) + Math.sin(i / 3) * 45);
+
+    // 优先读取真实 QuotSoft 实测聚合日度记录 (若已拉取落盘)
+    const realRecord = (quotsoftDaily as any)?.[cityName]?.[dateStr];
+    if (realRecord) {
+      if (realRecord.pm25 !== null && realRecord.pm25 !== undefined) dailyPM25 = realRecord.pm25;
+      if (realRecord.pm10 !== null && realRecord.pm10 !== undefined) dailyPM10 = realRecord.pm10;
+      if (realRecord.o3 !== null && realRecord.o3 !== undefined) dailyO3 = realRecord.o3;
+    }
 
     // 严格调用核心双标准换算引擎！
     const evalResult = evaluateAQI({ pm25: dailyPM25, pm10: dailyPM10, o3: dailyO3 }, standard);
