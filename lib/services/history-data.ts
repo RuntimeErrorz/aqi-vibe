@@ -25,6 +25,10 @@ export function getAnnualTrends(cityId: string, standard: StandardType = 'CN'): 
       pm25Avg: t.pm25Avg,
       pm10Avg: t.pm10Avg,
       goodDaysRatio: standard === 'CN' ? t.goodDaysRatioCN : t.goodDaysRatioUS,
+      pollutedDays:
+        standard === 'CN'
+          ? (t.pollutedDaysCN ?? Math.max(0, t.daysCount - Math.round((t.goodDaysRatioCN * t.daysCount) / 100)))
+          : (t.pollutedDaysUS ?? Math.max(0, t.daysCount - Math.round((t.goodDaysRatioUS * t.daysCount) / 100))),
       heavyPollutionDays: standard === 'CN' ? t.heavyPollutionDaysCN : t.heavyPollutionDaysUS,
       aqiAvg: standard === 'CN' ? t.aqiAvgCN : t.aqiAvgUS,
     }));

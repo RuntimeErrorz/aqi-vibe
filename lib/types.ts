@@ -109,6 +109,7 @@ export interface AnnualTrend {
   pm25Avg: number;
   pm10Avg: number;
   goodDaysRatio: number; // 优良天数比例 %
-  heavyPollutionDays: number; // 重污染天数
+  pollutedDays?: number; // 超标 / 不健康天数 (AQI > 100)
+  heavyPollutionDays: number; // 重污染天数 (国标 AQI>200, 美标 AQI>150)
   aqiAvg?: number; // 年均等效 AQI (随标准动态变化)
 }

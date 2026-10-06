@@ -44,12 +44,16 @@ export default function HistoryPage() {
 
   const calendarData = get365CalendarHeatmap(city.id, selectedYear, standard, dailyRecords);
 
-  // 统计不同标准下的天数分布（基于该年份实际有效实测天数）
+  // 统计不同标准下的天数分布与年均 AQI（基于该年份实际有效实测天数）
   const validTotalDays = calendarData.length;
   const goodDaysCount = calendarData.filter((d) => d[1] <= (standard === 'CN' ? 100 : 50)).length;
   const compliantDaysCount = calendarData.filter((d) => d[1] <= 100).length;
   const compliantRatio = validTotalDays > 0 ? Math.round((compliantDaysCount / validTotalDays) * 100) : 0;
   const pollutedDaysCount = calendarData.filter((d) => d[1] > 100).length;
+  const avgAQI =
+    validTotalDays > 0
+      ? Math.round(calendarData.reduce((acc, d) => acc + d[1], 0) / validTotalDays)
+      : (annualTrends.find((t) => t.year === selectedYear)?.aqiAvg ?? 0);
 
   // 动态计算该城市历史第一年到最近一年的真实 PM2.5 削减改善幅度
   const firstYearObj = annualTrends[0];
@@ -141,16 +145,21 @@ export default function HistoryPage() {
       {/* 年度总体成就 Scorecard */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
-          <div>
-            <p className="text-xs text-slate-500">
-              {standard === 'CN' ? '国标优良天数比例 (优+良)' : '美标达标天数比例 (Good+Mod)'}
-            </p>
+          <div className="flex-1 min-w-0 pr-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-slate-500">
+                {standard === 'CN' ? '国标优良天数比例 (优+良)' : '美标达标天数比例 (Good+Mod)'}
+              </p>
+              <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
+                年均 AQI: {avgAQI}
+              </span>
+            </div>
             <div className="flex items-baseline space-x-2 mt-1">
               <span className="text-3xl font-black text-emerald-600">{compliantRatio}%</span>
               <span className="text-xs text-slate-500">共 {compliantDaysCount} 天达标 / 实测 {validTotalDays} 天</span>
             </div>
           </div>
-          <CheckCircle2 className="w-8 h-8 text-emerald-500/20" />
+          <CheckCircle2 className="w-8 h-8 text-emerald-500/20 shrink-0" />
         </div>
 
         <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">

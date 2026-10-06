@@ -24,10 +24,11 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
   const years = data.map((d) => d.year.toString());
   const pm25s = data.map((d) => d.pm25Avg);
   const goodRatios = data.map((d) => d.goodDaysRatio);
+  const pollutedDays = data.map((d) => d.pollutedDays ?? d.heavyPollutionDays);
   const heavyDays = data.map((d) => d.heavyPollutionDays);
 
   const ratioLabel = standard === 'CN' ? '国标优良天数比例 (%)' : '美标达标天数比例 (%)';
-  const heavyLabel = standard === 'CN' ? '国标重度污染天数 (AQI>200, 天)' : '美标不健康天数 (AQI>150, 天)';
+  const pollutedLabel = standard === 'CN' ? '国标超标污染天数 (AQI>100, 天)' : '美标不健康天数 (AQI>100, 天)';
   const aqiLabel = standard === 'CN' ? '年均国标 AQI' : '年均美标 AQI';
   const aqiAvgs = data.map((d) => d.aqiAvg ?? Math.round(d.pm25Avg * 1.2));
 
@@ -40,9 +41,28 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
       shadowBlur: 10,
       shadowColor: 'rgba(0,0,0,0.08)',
       textStyle: { color: '#0f172a', fontSize: 12 },
+      formatter: (params: any) => {
+        if (!Array.isArray(params) || params.length === 0) return '';
+        const dataIndex = params[0].dataIndex;
+        const cur = data[dataIndex];
+        let html = `<div class="font-bold text-slate-900 border-b border-slate-100 pb-1 mb-1.5">${cityName} · ${cur.year} 年度</div>`;
+        params.forEach((p: any) => {
+          html += `<div class="flex items-center justify-between gap-4 py-0.5 text-xs">
+            <span class="flex items-center gap-1.5">${p.marker} <span class="text-slate-600">${p.seriesName}</span></span>
+            <span class="font-bold text-slate-900">${p.value}</span>
+          </div>`;
+        });
+        if (cur.heavyPollutionDays !== undefined) {
+          const subInfo = standard === 'CN'
+            ? `其中重度及以上污染 (AQI>200): ${cur.heavyPollutionDays} 天`
+            : `其中严重不健康 (AQI>150): ${cur.heavyPollutionDays} 天`;
+          html += `<div class="text-[11px] text-slate-500 mt-1.5 pt-1.5 border-t border-slate-100">${subInfo}</div>`;
+        }
+        return html;
+      },
     },
     legend: {
-      data: ['年均 PM2.5 (μg/m³)', aqiLabel, ratioLabel, heavyLabel],
+      data: ['年均 PM2.5 (μg/m³)', aqiLabel, ratioLabel, pollutedLabel],
       top: 0,
       textStyle: { color: '#475569', fontSize: 12 },
     },
@@ -113,10 +133,10 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
         lineStyle: { width: 2.5, type: 'dotted' },
       },
       {
-        name: heavyLabel,
+        name: pollutedLabel,
         type: 'line',
         smooth: true,
-        data: heavyDays,
+        data: pollutedDays,
         itemStyle: { color: '#ef4444' },
         lineStyle: { type: 'dashed', width: 2 },
       },
