@@ -8,8 +8,8 @@ import { fetchWAQICityData, fetchWAQIGeoData } from '@/lib/services/waqi';
 import { get24HourTrend } from '@/lib/services/history-data';
 import { AirQualityRecord, CityMeta, StationMeta } from '@/lib/types';
 import { TrendChart } from '@/components/TrendChart';
+import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
 import {
-  Search,
   MapPin,
   RefreshCw,
   Thermometer,
@@ -27,7 +27,6 @@ import {
 export default function DashboardPage() {
   const { standard } = useStandard();
   const [selectedCity, setSelectedCity] = useState<CityMeta>(CITIES_REGISTRY[0]); // 默认北京
-  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [record, setRecord] = useState<AirQualityRecord | null>(null);
   const [stations, setStations] = useState<StationMeta[]>([]);
@@ -75,30 +74,6 @@ export default function DashboardPage() {
     }
   }, [standard]);
 
-  // 搜索处理
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    const match = findCity(searchQuery);
-    if (match) {
-      setSelectedCity(match);
-      setSearchQuery('');
-    } else {
-      const customCity: CityMeta = {
-        id: searchQuery.trim(),
-        nameZh: searchQuery.trim(),
-        nameEn: searchQuery.trim(),
-        country: 'CN',
-        latitude: 39.9,
-        longitude: 116.4,
-        isDomestic: true,
-        waqiSlug: searchQuery.trim(),
-      };
-      setSelectedCity(customCity);
-      setSearchQuery('');
-    }
-  };
-
   // 定位处理
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
@@ -135,22 +110,12 @@ export default function DashboardPage() {
       {/* 搜索与快速选择栏 */}
       <section className="glass-panel rounded-2xl p-4 sm:p-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <form onSubmit={handleSearch} className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="搜索中国 375+ 城市或全球名城（如：成都 / 北京 / Tokyo / London）..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-24 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:bg-white focus:ring-1 focus:ring-sky-500 transition-all shadow-sm"
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs rounded-lg transition-colors shadow-sm"
-            >
-              检索
-            </button>
-          </form>
+          <CitySearchAutocomplete
+            selectedCity={selectedCity}
+            onSelectCity={setSelectedCity}
+            placeholder="搜索中国 375+ 城市或全球名城（如：成都 / 北京 / Tokyo / London）..."
+            className="flex-1"
+          />
 
           <button
             onClick={handleLocateMe}

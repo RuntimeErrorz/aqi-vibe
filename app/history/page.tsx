@@ -6,6 +6,7 @@ import { CITIES_REGISTRY, findCity } from '@/lib/constants/cities';
 import { getAnnualTrends, get365CalendarHeatmap } from '@/lib/services/history-data';
 import { CalendarHeatmap } from '@/components/CalendarHeatmap';
 import { AnnualTrendChart } from '@/components/AnnualTrendChart';
+import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
 import { History, Download, Calendar, TrendingDown, Sun, Snowflake, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function HistoryPage() {
@@ -62,24 +63,19 @@ export default function HistoryPage() {
           </p>
         </div>
 
-        {/* 城市与年份选择器 */}
-        <div className="flex items-center space-x-2.5 text-xs w-full sm:w-auto">
-          <select
-            value={selectedCityId}
-            onChange={(e) => setSelectedCityId(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-sky-500 shadow-sm"
-          >
-            {CITIES_REGISTRY.slice(0, 20).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nameZh} ({c.nameEn})
-              </option>
-            ))}
-          </select>
+        {/* 城市与年份选择器 (Algolia 风格即时搜索 + 年份选择) */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2.5 text-xs w-full sm:w-auto">
+          <CitySearchAutocomplete
+            selectedCity={city}
+            onSelectCity={(newCity) => setSelectedCityId(newCity.id)}
+            placeholder="搜索全球城市或国内 375+ 城市..."
+            className="w-full sm:w-72"
+          />
 
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-sky-500 shadow-sm"
+            className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-sky-500 shadow-sm shrink-0"
           >
             {[2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014].map((y) => (
               <option key={y} value={y}>
@@ -90,7 +86,7 @@ export default function HistoryPage() {
 
           <button
             onClick={handleExportCSV}
-            className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold transition-colors shrink-0 shadow-sm"
+            className="flex items-center justify-center space-x-1.5 px-3 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold transition-colors shrink-0 shadow-sm"
             title="导出为 CSV 电子表格"
           >
             <Download className="w-3.5 h-3.5" />

@@ -3,6 +3,9 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Layers, MapPin, Info, Globe2 } from 'lucide-react';
+import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
+import { CITIES_REGISTRY } from '@/lib/constants/cities';
+import { CityMeta } from '@/lib/types';
 
 const AirMap = dynamic(() => import('@/components/AirMap'), {
   ssr: false,
@@ -17,11 +20,20 @@ const AirMap = dynamic(() => import('@/components/AirMap'), {
 export default function MapPage() {
   const [showWaqiTiles, setShowWaqiTiles] = useState(true);
   const [showStations, setShowStations] = useState(true);
+  const [focusCity, setFocusCity] = useState<CityMeta>(CITIES_REGISTRY[0]);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([35.0, 105.0]);
+  const [mapZoom, setMapZoom] = useState<number>(4);
+
+  const handleSelectCity = (city: CityMeta) => {
+    setFocusCity(city);
+    setMapCenter([city.latitude, city.longitude]);
+    setMapZoom(10);
+  };
 
   return (
     <div className="space-y-4">
       {/* 顶部控制面板 */}
-      <div className="glass-panel rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="glass-panel rounded-2xl p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
             <Globe2 className="w-5 h-5 text-sky-600" />
@@ -32,37 +44,52 @@ export default function MapPage() {
           </p>
         </div>
 
-        {/* 图层控制按钮 */}
-        <div className="flex items-center space-x-3 text-xs">
-          <button
-            onClick={() => setShowWaqiTiles(!showWaqiTiles)}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border transition-all font-semibold ${
-              showWaqiTiles
-                ? 'bg-sky-50 text-sky-700 border-sky-200 shadow-sm'
-                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>WAQI 热力瓦片层: {showWaqiTiles ? '已开启' : '已关闭'}</span>
-          </button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+          {/* 即时城市检索飞抵 */}
+          <CitySearchAutocomplete
+            selectedCity={focusCity}
+            onSelectCity={handleSelectCity}
+            placeholder="定位全球或国内任意城市并在地图上飞抵..."
+            className="w-full sm:w-72"
+          />
 
-          <button
-            onClick={() => setShowStations(!showStations)}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border transition-all font-semibold ${
-              showStations
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm'
-                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-            }`}
-          >
-            <MapPin className="w-3.5 h-3.5" />
-            <span>国控站点标记: {showStations ? '已开启' : '已关闭'}</span>
-          </button>
+          {/* 图层控制按钮 */}
+          <div className="flex items-center space-x-2 text-xs shrink-0">
+            <button
+              onClick={() => setShowWaqiTiles(!showWaqiTiles)}
+              className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl border transition-all font-semibold ${
+                showWaqiTiles
+                  ? 'bg-sky-50 text-sky-700 border-sky-200 shadow-sm'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>热力瓦片: {showWaqiTiles ? '开启' : '关闭'}</span>
+            </button>
+
+            <button
+              onClick={() => setShowStations(!showStations)}
+              className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl border transition-all font-semibold ${
+                showStations
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm'
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span>国控站点: {showStations ? '开启' : '关闭'}</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* 地图主体容器 */}
       <div className="relative w-full h-[720px] rounded-2xl overflow-hidden border border-slate-200 shadow-md">
-        <AirMap showWaqiTiles={showWaqiTiles} showStations={showStations} />
+        <AirMap
+          center={mapCenter}
+          zoom={mapZoom}
+          showWaqiTiles={showWaqiTiles}
+          showStations={showStations}
+        />
 
         {/* 悬浮 AQI 色标图例 */}
         <div className="absolute bottom-6 right-6 z-[1000] bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl text-xs space-y-1.5 border border-slate-200 pointer-events-auto">

@@ -3,8 +3,10 @@
 import React, { useState } from 'react';
 import { useStandard } from '@/components/StandardContext';
 import { CITIES_REGISTRY, findCity } from '@/lib/constants/cities';
+import { CityMeta } from '@/lib/types';
 import { CompareLineChart } from '@/components/CompareLineChart';
 import { CompareRadarChart } from '@/components/CompareRadarChart';
+import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
 import { BarChart3, Plus, X, Globe, Trophy, ArrowDownRight, Sparkles } from 'lucide-react';
 
 const PALETTE = ['#0284c7', '#059669', '#d97706', '#db2777', '#7c3aed'];
@@ -35,6 +37,15 @@ export default function ComparePage() {
     }
   };
 
+  const handleAddCity = (city: CityMeta) => {
+    if (selectedCityIds.includes(city.id)) return;
+    if (selectedCityIds.length >= 5) {
+      alert('最多支持同时对比 5 个城市，请先点击已选城市移除');
+      return;
+    }
+    setSelectedCityIds([...selectedCityIds, city.id]);
+  };
+
   const activeCities = selectedCityIds.map((id, idx) => {
     const meta = findCity(id) || CITIES_REGISTRY[0];
     return {
@@ -42,12 +53,12 @@ export default function ComparePage() {
       name: meta.nameZh,
       nameEn: meta.nameEn,
       color: PALETTE[idx % PALETTE.length],
-      pm25: id === 'cn-chengdu' ? 36.5 : id === 'cn-beijing' ? 28.2 : id === 'gl-delhi' ? 95 : id === 'gl-london' ? 8.8 : 8.6,
-      pm10: id === 'cn-chengdu' ? 62 : id === 'cn-beijing' ? 52 : id === 'gl-delhi' ? 165 : id === 'gl-london' ? 15 : 14,
-      o3: id === 'cn-chengdu' ? 54 : id === 'cn-beijing' ? 48 : id === 'gl-delhi' ? 52 : id === 'gl-london' ? 38 : 42,
-      no2: id === 'cn-chengdu' ? 28 : id === 'cn-beijing' ? 23 : id === 'gl-delhi' ? 48 : id === 'gl-london' ? 19 : 18,
-      so2: id === 'cn-chengdu' ? 5 : id === 'cn-beijing' ? 3 : id === 'gl-delhi' ? 22 : id === 'gl-london' ? 2 : 2,
-      co: id === 'cn-chengdu' ? 0.8 : id === 'cn-beijing' ? 0.6 : id === 'gl-delhi' ? 1.8 : id === 'gl-london' ? 0.4 : 0.4,
+      pm25: id === 'cn-chengdu' ? 36.5 : id === 'cn-beijing' ? 28.2 : id === 'gl-delhi' ? 95 : id === 'gl-london' ? 8.8 : id === 'gl-tokyo' ? 8.6 : 30.0,
+      pm10: id === 'cn-chengdu' ? 62 : id === 'cn-beijing' ? 52 : id === 'gl-delhi' ? 165 : id === 'gl-london' ? 15 : id === 'gl-tokyo' ? 14 : 52.0,
+      o3: id === 'cn-chengdu' ? 54 : id === 'cn-beijing' ? 48 : id === 'gl-delhi' ? 52 : id === 'gl-london' ? 38 : id === 'gl-tokyo' ? 42 : 46.0,
+      no2: id === 'cn-chengdu' ? 28 : id === 'cn-beijing' ? 23 : id === 'gl-delhi' ? 48 : id === 'gl-london' ? 19 : id === 'gl-tokyo' ? 18 : 24.0,
+      so2: id === 'cn-chengdu' ? 5 : id === 'cn-beijing' ? 3 : id === 'gl-delhi' ? 22 : id === 'gl-london' ? 2 : id === 'gl-tokyo' ? 2 : 4.0,
+      co: id === 'cn-chengdu' ? 0.8 : id === 'cn-beijing' ? 0.6 : id === 'gl-delhi' ? 1.8 : id === 'gl-london' ? 0.4 : id === 'gl-tokyo' ? 0.4 : 0.6,
     };
   });
 
@@ -79,7 +90,18 @@ export default function ComparePage() {
           </div>
         </div>
 
-        {/* 城市选择标签池 */}
+        {/* 动态检索添加任意全球或国内城市 */}
+        <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <CitySearchAutocomplete
+            selectedCity={findCity(selectedCityIds[0]) || CITIES_REGISTRY[0]}
+            onSelectCity={handleAddCity}
+            placeholder="搜索并添加全球或国内任意城市加入对比沙盘 (如: 杭州 / 巴黎 / 纽约)..."
+            className="flex-1 sm:max-w-md"
+          />
+          <span className="text-xs text-slate-400">支持中英文输入，即选即加入多城对比沙盘 (上限 5 城)</span>
+        </div>
+
+        {/* 快捷推荐城市选择标签池 */}
         <div className="mt-4 flex flex-wrap gap-2">
           {CITIES_REGISTRY.slice(0, 18).map((c) => {
             const isSelected = selectedCityIds.includes(c.id);

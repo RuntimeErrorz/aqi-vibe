@@ -68,6 +68,16 @@ export default function AirMap({ showWaqiTiles, showStations, center = [35.0, 10
     };
   }, []);
 
+  // 响应视图中心与缩放变更 (平滑飞行漫游)
+  useEffect(() => {
+    if (mapInstanceRef.current && center) {
+      mapInstanceRef.current.flyTo(center, zoom || 9, {
+        duration: 1.5,
+        easeLinearity: 0.25,
+      });
+    }
+  }, [center, zoom]);
+
   // 响应切换 WAQI 瓦片图层
   useEffect(() => {
     const map = mapInstanceRef.current;
