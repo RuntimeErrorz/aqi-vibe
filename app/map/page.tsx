@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Layers, MapPin, Info, Globe2 } from 'lucide-react';
+import { Layers, Info, Globe2 } from 'lucide-react';
 import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
 import { CITIES_REGISTRY } from '@/lib/constants/cities';
 import { CityMeta } from '@/lib/types';
@@ -12,14 +12,13 @@ const AirMap = dynamic(() => import('@/components/AirMap'), {
   loading: () => (
     <div className="w-full h-[700px] rounded-2xl bg-white border border-slate-200 flex flex-col items-center justify-center text-slate-500 shadow-sm">
       <div className="w-8 h-8 border-2 border-sky-600 border-t-transparent rounded-full animate-spin mb-3"></div>
-      <p className="text-sm font-medium">正在加载全景瓦片底图与监测站点坐标...</p>
+      <p className="text-sm font-medium">正在加载全景瓦片底图与监测坐标...</p>
     </div>
   ),
 });
 
 export default function MapPage() {
   const [showWaqiTiles, setShowWaqiTiles] = useState(true);
-  const [showStations, setShowStations] = useState(true);
   const [focusCity, setFocusCity] = useState<CityMeta>(CITIES_REGISTRY[0]);
   const [mapCenter, setMapCenter] = useState<[number, number]>([35.0, 105.0]);
   const [mapZoom, setMapZoom] = useState<number>(4);
@@ -37,10 +36,10 @@ export default function MapPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
             <Globe2 className="w-5 h-5 text-sky-600" />
-            <span>全球空气质量热力与国控站点全景地图</span>
+            <span>全球空气质量实时热力全景地图</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            加载 WAQI 实时热力瓦片图层 + 中国 2,026 国控微站打点，支持缩放查看微观街区与宏观跨国扩散。
+            加载 WAQI 全球实时空气质量瓦片，支持缩放查看微观街区与宏观跨国扩散。
           </p>
         </div>
 
@@ -57,26 +56,14 @@ export default function MapPage() {
           <div className="flex items-center space-x-2 text-xs shrink-0">
             <button
               onClick={() => setShowWaqiTiles(!showWaqiTiles)}
-              className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl border transition-all font-semibold ${
+              className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border transition-all font-semibold cursor-pointer ${
                 showWaqiTiles
                   ? 'bg-sky-50 text-sky-700 border-sky-200 shadow-sm'
                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>热力瓦片: {showWaqiTiles ? '开启' : '关闭'}</span>
-            </button>
-
-            <button
-              onClick={() => setShowStations(!showStations)}
-              className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl border transition-all font-semibold ${
-                showStations
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm'
-                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              <MapPin className="w-3.5 h-3.5" />
-              <span>国控站点: {showStations ? '开启' : '关闭'}</span>
+              <span>热力图层: {showWaqiTiles ? '开启' : '关闭'}</span>
             </button>
           </div>
         </div>
@@ -88,7 +75,6 @@ export default function MapPage() {
           center={mapCenter}
           zoom={mapZoom}
           showWaqiTiles={showWaqiTiles}
-          showStations={showStations}
         />
 
         {/* 悬浮 AQI 色标图例 */}
