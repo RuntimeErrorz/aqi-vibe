@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useStandard } from './StandardContext';
-import { Wind, Map, History, BarChart3, Globe, Sparkles } from 'lucide-react';
+import { Wind, Map, History, BarChart3, Sparkles } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
@@ -18,27 +18,7 @@ export const Navbar: React.FC = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
-      {/* 顶部微型跑马灯 */}
-      <div className="bg-slate-50 px-4 py-1 text-xs text-slate-500 border-b border-slate-200/70 hidden md:flex items-center justify-between">
-        <div className="flex items-center space-x-4 overflow-hidden">
-          <span className="flex items-center text-emerald-600 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1.5"></span>
-            实时数据网络就绪
-          </span>
-          <span className="text-slate-300">|</span>
-          <span className="truncate">
-            国内 375+ 城市 & 2,026 国控站点全量覆盖 · 历史数据追溯至 2014 年 · 支持 Cloudflare Edge 部署
-          </span>
-        </div>
-        <div className="flex items-center space-x-3 text-slate-500">
-          <span className="flex items-center space-x-1">
-            <Globe className="w-3 h-3 text-sky-500" />
-            <span>WAQI / QuotSoft 镜像双通道</span>
-          </span>
-        </div>
-      </div>
-
+    <header className="sticky top-0 z-[9999] w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
       {/* 主导航条 */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
@@ -85,16 +65,13 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center space-x-3">
           <button
             onClick={toggleStandard}
-            className="flex items-center space-x-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-xs transition-all shadow-sm"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-xs transition-all shadow-sm cursor-pointer"
             title="点击切换 AQI 计算标准 (中国国标 / 美国 EPA)"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span className="text-slate-500">标准:</span>
             <span className="font-bold text-slate-900">
               {standard === 'CN' ? '国标 (HJ 633)' : '美标 (US EPA)'}
-            </span>
-            <span className="text-[10px] text-sky-600 bg-sky-50 border border-sky-100 px-1 py-0.5 rounded">
-              一键切换
             </span>
           </button>
         </div>

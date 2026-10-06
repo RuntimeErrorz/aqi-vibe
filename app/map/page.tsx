@@ -82,8 +82,8 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* 地图主体容器 */}
-      <div className="relative w-full h-[720px] rounded-2xl overflow-hidden border border-slate-200 shadow-md">
+      {/* 地图主体容器 (isolate 隔离内部层级，确保无论内部 z-index 多大都不会遮挡顶部导航条) */}
+      <div className="relative isolate z-10 w-full h-[720px] rounded-2xl overflow-hidden border border-slate-200 shadow-md">
         <AirMap
           center={mapCenter}
           zoom={mapZoom}
@@ -92,7 +92,7 @@ export default function MapPage() {
         />
 
         {/* 悬浮 AQI 色标图例 */}
-        <div className="absolute bottom-6 right-6 z-[1000] bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl text-xs space-y-1.5 border border-slate-200 pointer-events-auto">
+        <div className="absolute bottom-6 right-6 z-30 bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl text-xs space-y-1.5 border border-slate-200 pointer-events-auto">
           <div className="font-bold text-slate-900 mb-1 flex items-center space-x-1">
             <Info className="w-3.5 h-3.5 text-sky-600" />
             <span>AQI 色阶图例</span>

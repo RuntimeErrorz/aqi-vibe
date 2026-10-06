@@ -7,7 +7,6 @@ import { POPULAR_STATIONS } from '@/lib/constants/stations';
 import { CITIES_REGISTRY } from '@/lib/constants/cities';
 
 const WAQI_TOKEN = process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48';
-const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_KEY || 'cb1_4bl6_1_dc1bbfd8426369beb577afe4';
 
 interface AirMapProps {
   showWaqiTiles: boolean;
@@ -33,25 +32,39 @@ export default function AirMap({ showWaqiTiles, showStations, center = [35.0, 10
         zoomControl: true,
       });
 
-      // 底图：CARTO 官方授权清爽底图 (传入 Key 去除水印，支持 4 节点并发加速)
-      L.tileLayer(`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${CARTO_KEY}`, {
-        attribution: '&copy; OpenStreetMap &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      // 1. 底图：CARTO Voyager 高清无字底图 (开启 Retina @2x，超高清高分屏渲染)
+      L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
         subdomains: 'abcd',
-        maxZoom: 19,
+        maxZoom: 20,
+        detectRetina: true,
       }).addTo(map);
 
-      // WAQI 实时热力切片图层
+      // 2. 中层：WAQI 实时热力切片图层 (平滑过渡，不压死底层路网)
       const waqiTile = L.tileLayer(
         `https://tiles.aqicn.org/tiles/usepa-aqi/{z}/{x}/{y}.png?token=${WAQI_TOKEN}`,
         {
           attribution: 'Air Quality Tiles &copy; <a href="https://waqi.info">WAQI</a>',
-          opacity: 0.65,
+          opacity: 0.55,
+          maxZoom: 18,
         }
       );
       if (showWaqiTiles) {
         waqiTile.addTo(map);
       }
       waqiLayerRef.current = waqiTile;
+
+      // 3. 顶层：专属 Pane 将高清地名/城市标签置于热力图之上，杜绝地名文字被热力图模糊遮盖
+      const labelsPane = map.createPane('labelsPane');
+      labelsPane.style.zIndex = '620';
+      labelsPane.style.pointerEvents = 'none';
+
+      L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+        pane: 'labelsPane',
+        subdomains: 'abcd',
+        maxZoom: 20,
+        detectRetina: true,
+      }).addTo(map);
 
       // 站点与城市标记图层组
       const markersGroup = L.layerGroup().addTo(map);
