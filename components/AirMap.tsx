@@ -20,35 +20,35 @@ function getPinStyle(aqiNum: number) {
     return {
       boxClass: 'aqi-pin-good',
       levelText: '优 (Good)',
-      colorHex: '#009966',
+      colorHex: '#25a77b',
     };
   }
   if (aqiNum <= 100) {
     return {
       boxClass: 'aqi-pin-moderate',
       levelText: '良 (Moderate)',
-      colorHex: '#fac800',
+      colorHex: '#fee24f',
     };
   }
   if (aqiNum <= 150) {
     return {
       boxClass: 'aqi-pin-usg',
       levelText: '轻度污染 (USG)',
-      colorHex: '#ff7e00',
+      colorHex: '#fea74f',
     };
   }
   if (aqiNum <= 200) {
     return {
       boxClass: 'aqi-pin-unhealthy',
       levelText: '中度污染 (Unhealthy)',
-      colorHex: '#cc0033',
+      colorHex: '#d3254f',
     };
   }
   if (aqiNum <= 300) {
     return {
       boxClass: 'aqi-pin-very-unhealthy',
       levelText: '重度污染 (Very Unhealthy)',
-      colorHex: '#660099',
+      colorHex: '#8f3f97',
     };
   }
   return {
@@ -182,9 +182,9 @@ export default function AirMap({
                 <div class="aqi-pin-pole"></div>
               </div>
             `,
-            iconSize: [28, 23],
-            iconAnchor: [14, 23],
-            popupAnchor: [0, -24],
+            iconSize: [28, 25],
+            iconAnchor: [14, 25],
+            popupAnchor: [0, -26],
           });
 
           const marker = L.marker([st.lat, st.lon], { icon });
@@ -355,9 +355,9 @@ export default function AirMap({
                 <div class="aqi-pin-pole"></div>
               </div>
             `,
-            iconSize: [28, 23],
-            iconAnchor: [14, 23],
-            popupAnchor: [0, -24],
+            iconSize: [28, 25],
+            iconAnchor: [14, 25],
+            popupAnchor: [0, -26],
           });
           const marker = L.marker([st.lat, st.lon], { icon });
           marker.bindPopup(`

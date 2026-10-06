@@ -42,9 +42,6 @@ export default function MapPage() {
             <Globe2 className="w-5 h-5 text-sky-600" />
             <span>全球空气质量实时全景地图</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            CARTO @2x 视网膜高清底图与 WAQI 实时高精矢量测站，宏观大区与微观街区全程 100% 矢量锐利渲染。
-          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
@@ -105,27 +102,27 @@ export default function MapPage() {
             <span>AQI 色阶图例</span>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: '#25a77b' }}></span>
             <span className="text-slate-700 font-medium">0 - 50 优 (Good)</span>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
+            <span className="w-3 h-3 rounded-full shrink-0 border border-amber-300" style={{ backgroundColor: '#fee24f' }}></span>
             <span className="text-slate-700 font-medium">51 - 100 良 (Moderate)</span>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 rounded-full bg-orange-500"></span>
+            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: '#fea74f' }}></span>
             <span className="text-slate-700 font-medium">101 - 150 轻度 (USG)</span>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 rounded-full bg-red-500"></span>
+            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: '#d3254f' }}></span>
             <span className="text-slate-700 font-medium">151 - 200 中度 (Unhealthy)</span>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 rounded-full bg-purple-500"></span>
+            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: '#8f3f97' }}></span>
             <span className="text-slate-700 font-medium">201 - 300 重度 (Very Unhealthy)</span>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="w-3 h-3 rounded-full bg-rose-950"></span>
+            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: '#7e0023' }}></span>
             <span className="text-slate-700 font-medium">300+ 严重 (Hazardous)</span>
           </div>
         </div>

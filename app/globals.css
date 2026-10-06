@@ -54,7 +54,7 @@ body {
 }
 
 /* ========================================================
-   Leaflet 高清矢量测站徽章 (原版 WAQI 经典标牌拟真风格)
+   Leaflet 高清矢量测站徽章 (原版 WAQI 经典标牌 1:1 像素拟真)
    ======================================================== */
 
 .leaflet-tile {
@@ -75,73 +75,86 @@ body {
   position: relative;
   cursor: pointer;
   user-select: none;
-  filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(1px 1.5px 2px rgba(0, 0, 0, 0.35));
   transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .aqi-vector-pin:hover {
   transform: translateY(-2px) scale(1.18);
   z-index: 9999 !important;
-  filter: drop-shadow(2px 4px 5px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(2px 3px 5px rgba(0, 0, 0, 0.45));
 }
 
-/* 原版标牌矩形面板：紧凑、微圆角、细白边 */
+/* 原版标牌矩形面板：精致微圆角、细白边、高辨识度 */
 .aqi-pin-box {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 15px;
+  min-width: 25px;
+  height: 16px;
   padding: 0 3.5px;
   border-radius: 2px;
   border: 1px solid #ffffff;
   font-family: Arial, "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 10.5px;
-  font-weight: 600; /* 采用纤细适中的字重，彻底告别原先过粗臃肿的 800 字重 */
+  font-size: 11px;
+  font-weight: 600; /* 原版同款纤细居中字重 */
   line-height: 1;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.3px;
   text-align: center;
   box-sizing: border-box;
   white-space: nowrap;
 }
 
-/* 原版标牌针脚/细杆：垂直细白杆，直指真实地理坐标 */
+/* 原版标牌针脚：垂直细白杆与微圆底针 */
 .aqi-pin-pole {
   width: 1.5px;
-  height: 8px;
+  height: 9px;
   background-color: #ffffff;
   margin-top: -0.5px;
-  border-radius: 0 0 0.5px 0.5px;
+  position: relative;
+  box-shadow: 1px 0 1px rgba(0, 0, 0, 0.25);
 }
 
-/* WAQI 官方原版六级标准配色方案 */
+.aqi-pin-pole::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: -0.75px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+/* WAQI 原版官方像素级精准配色 */
 .aqi-pin-good {
-  background-color: #009966;
+  background: linear-gradient(180deg, #32b88b 0%, #25a77b 100%);
   color: #ffffff;
 }
 
 .aqi-pin-moderate {
-  background-color: #fac800;
-  color: #1e293b; /* 浅黄色背景搭配深青灰字体，兼顾原版外观与极高文字辨识度 */
+  background: linear-gradient(180deg, #fff066 0%, #fee24f 100%);
+  color: #1a1a1a; /* 原版同款纯正深黑细体数字，明亮清爽不发暗 */
 }
 
 .aqi-pin-usg {
-  background-color: #ff7e00;
+  background: linear-gradient(180deg, #ffb566 0%, #fea74f 100%);
   color: #ffffff;
 }
 
 .aqi-pin-unhealthy {
-  background-color: #cc0033;
+  background: linear-gradient(180deg, #dc3560 0%, #d3254f 100%);
   color: #ffffff;
 }
 
 .aqi-pin-very-unhealthy {
-  background-color: #660099;
+  background: linear-gradient(180deg, #a04fa9 0%, #8f3f97 100%);
   color: #ffffff;
 }
 
 .aqi-pin-hazardous {
-  background-color: #7e0023;
+  background: linear-gradient(180deg, #941035 0%, #7e0023 100%);
   color: #ffffff;
 }
 
