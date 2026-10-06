@@ -80,35 +80,26 @@ export default function HistoryPage() {
   return (
     <div className="space-y-6">
       {/* 顶部控制栏 */}
-      <div className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
-              <History className="w-5 h-5 text-sky-600" />
-              <span>空气质量历史深度透视与“时间机器”</span>
-            </h1>
-            <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-sky-100 text-sky-700 border border-sky-200">
-              {standard === 'CN' ? '中国国标 HJ 633' : '美标 US EPA'}
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-1">
-            当前计算标准遵循 <span className="font-semibold text-slate-700">{standard === 'CN' ? '中国环境空气质量指数 (HJ 633-2012)' : '美国环保署 NowCast 标准'}</span>，切换导航栏右上角标准时，全量真实历史实测数据将即时重算。
-          </p>
+      <div className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        {/* 左侧简洁标题 */}
+        <div className="flex items-center space-x-2 shrink-0">
+          <History className="w-5 h-5 text-sky-600" />
+          <h1 className="text-lg font-bold text-slate-900 tracking-tight">空气质量历史“时间机器”</h1>
         </div>
 
-        {/* 城市与年份选择器 (Algolia 风格即时搜索 + 真实归档年份选择) */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2.5 text-xs w-full sm:w-auto">
+        {/* 城市与年份选择器 (给足横向宽度与呼吸空间) */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 text-xs flex-1 md:max-w-3xl justify-end">
           <CitySearchAutocomplete
             selectedCity={city}
             onSelectCity={(newCity) => setSelectedCityId(newCity.id)}
-            placeholder="搜索全球城市或国内 375+ 城市..."
-            className="w-full sm:w-72"
+            placeholder="搜索全球 90+ 国家或国内 375+ 城市 (如: 成都 / 纽约 / 巴黎)..."
+            className="w-full sm:flex-1"
           />
 
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-sky-500 shadow-sm shrink-0"
+            className="px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-sky-500 shadow-sm shrink-0 cursor-pointer hover:bg-slate-100 transition-colors"
           >
             {availableYears.map((y) => (
               <option key={y} value={y}>
@@ -120,7 +111,7 @@ export default function HistoryPage() {
           <button
             onClick={handleExportCSV}
             disabled={calendarData.length === 0}
-            className="flex items-center justify-center space-x-1.5 px-3 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white font-semibold transition-colors shrink-0 shadow-sm"
+            className="flex items-center justify-center space-x-1.5 px-3.5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white font-semibold transition-colors shrink-0 shadow-sm cursor-pointer"
             title="导出为 CSV 电子表格"
           >
             <Download className="w-3.5 h-3.5" />
