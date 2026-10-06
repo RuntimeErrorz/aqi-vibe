@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useStandard } from '@/components/StandardContext';
 import { CITIES_REGISTRY, findCity } from '@/lib/constants/cities';
 import { getStationsByCity } from '@/lib/constants/stations';
@@ -357,12 +358,12 @@ export default function DashboardPage() {
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 <span>数据来源: {record.sourceAttribution?.[0]?.name || '官方实时监测网络'}</span>
               </span>
-              <a
-                href="/history"
+              <Link
+                href={`/history?city=${selectedCity.id}`}
                 className="text-sky-600 hover:text-sky-700 hover:underline font-semibold flex items-center space-x-1"
               >
-                <span>查看长周期历史趋势 →</span>
-              </a>
+                <span>查看长周期历史数据 →</span>
+              </Link>
             </div>
           </div>
         </div>

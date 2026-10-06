@@ -28,8 +28,10 @@ import {
   Flame,
   Leaf,
   Calendar,
+  ExternalLink,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface GlobalRankingSandboxProps {
   selectedCityIds: string[];
@@ -50,6 +52,7 @@ export function GlobalRankingSandbox({
   onAddCity,
 }: GlobalRankingSandboxProps) {
   const { standard } = useStandard();
+  const router = useRouter();
 
   // 当前主 Tab: 城市榜单 vs 国家榜单
   const [activeTab, setActiveTab] = useState<TabType>('cities');
@@ -607,9 +610,11 @@ export function GlobalRankingSandbox({
                   return (
                     <tr
                       key={item.id}
-                      className={`hover:bg-sky-50/40 transition-colors ${
-                        isSelectedInSandbox ? 'bg-sky-50/30' : ''
+                      onClick={() => router.push(`/history?city=${item.id}&year=${item.year}`)}
+                      className={`hover:bg-sky-50/60 cursor-pointer transition-colors group ${
+                        isSelectedInSandbox ? 'bg-sky-50/20' : ''
                       }`}
+                      title="点击跳转查看该城市历史数据"
                     >
                       {/* 排名 */}
                       <td className="py-3 px-3 text-center">
@@ -622,12 +627,10 @@ export function GlobalRankingSandbox({
                           <span className="text-base">{item.countryFlag}</span>
                           <div>
                             <div className="flex items-center space-x-1.5">
-                              <Link
-                                href={`/history?city=${item.id}&year=${item.year}`}
-                                className="font-bold text-slate-900 hover:text-sky-600 transition-colors"
-                              >
-                                {item.nameZh}
-                              </Link>
+                              <span className="font-bold text-slate-900 group-hover:text-sky-600 transition-colors inline-flex items-center space-x-1">
+                                <span>{item.nameZh}</span>
+                                <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-sky-600 transition-colors" />
+                              </span>
                               <span className="text-[10px] text-slate-400">({item.nameEn})</span>
                             </div>
                             <div className="text-[10px] text-slate-500">
@@ -702,7 +705,10 @@ export function GlobalRankingSandbox({
                       {/* 加入沙盘按钮 */}
                       <td className="py-3 px-3 text-right">
                         <button
-                          onClick={() => onToggleCity(item.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleCity(item.id);
+                          }}
                           className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
                             isSelectedInSandbox
                               ? 'bg-sky-600 text-white shadow-sm'
@@ -803,32 +809,58 @@ export function GlobalRankingSandbox({
 
                       {/* 最清洁城市 */}
                       <td className="py-3 px-3">
-                        <button
-                          onClick={() => onAddCity(cItem.cleanestCity.id)}
-                          className="flex items-center space-x-1.5 hover:text-sky-600 font-semibold"
-                          title="点击加入对比沙盘"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          <span>{cItem.cleanestCity.nameZh}</span>
-                          <span className="text-[10px] text-slate-400">
-                            (AQI {cItem.cleanestCity.aqiAvg})
-                          </span>
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <Link
+                            href={`/history?city=${cItem.cleanestCity.id}&year=${selectedYear}`}
+                            className="flex items-center space-x-1.5 hover:text-sky-600 font-semibold group/c1 text-slate-800"
+                            title="点击跳转查看该城市历史数据"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                            <span className="group-hover/c1:underline">{cItem.cleanestCity.nameZh}</span>
+                            <span className="text-[10px] text-slate-400">
+                              (AQI {cItem.cleanestCity.aqiAvg})
+                            </span>
+                            <ExternalLink className="w-2.5 h-2.5 text-slate-400 group-hover/c1:text-sky-600" />
+                          </Link>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAddCity(cItem.cleanestCity.id);
+                            }}
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-slate-600 transition-colors shrink-0"
+                            title="加入对比沙盘"
+                          >
+                            +对比
+                          </button>
+                        </div>
                       </td>
 
                       {/* 污染最重城市 */}
                       <td className="py-3 px-3">
-                        <button
-                          onClick={() => onAddCity(cItem.worstCity.id)}
-                          className="flex items-center space-x-1.5 hover:text-rose-600 font-semibold"
-                          title="点击加入对比沙盘"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                          <span>{cItem.worstCity.nameZh}</span>
-                          <span className="text-[10px] text-slate-400">
-                            (AQI {cItem.worstCity.aqiAvg})
-                          </span>
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <Link
+                            href={`/history?city=${cItem.worstCity.id}&year=${selectedYear}`}
+                            className="flex items-center space-x-1.5 hover:text-rose-600 font-semibold group/c2 text-slate-800"
+                            title="点击跳转查看该城市历史数据"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                            <span className="group-hover/c2:underline">{cItem.worstCity.nameZh}</span>
+                            <span className="text-[10px] text-slate-400">
+                              (AQI {cItem.worstCity.aqiAvg})
+                            </span>
+                            <ExternalLink className="w-2.5 h-2.5 text-slate-400 group-hover/c2:text-rose-600" />
+                          </Link>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAddCity(cItem.worstCity.id);
+                            }}
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-slate-600 transition-colors shrink-0"
+                            title="加入对比沙盘"
+                          >
+                            +对比
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

@@ -5,11 +5,11 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { fetchWAQIMapBounds, WaqiBoundStation } from '@/lib/services/waqi';
 
-const WAQI_TOKEN = process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48';
 const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_KEY || 'cb1_4bl6_1_dc1bbfd8426369beb577afe4';
 
 interface AirMapProps {
-  showWaqiTiles: boolean;
+  showStations?: boolean;
+  showWaqiTiles?: boolean;
   center?: [number, number];
   zoom?: number;
   onStationCountChange?: (count: number, loading: boolean) => void;
@@ -65,7 +65,7 @@ function getPinStyle(aqiNum: number) {
 }
 
 function escapeHtml(str: string): string {
-  return str
+  return (str || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -73,28 +73,70 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;');
 }
 
+/**
+ * 屏幕空间网格抽稀：
+ * 在宏观或中观缩放（Zoom 3~7）下，根据屏幕物理像素将密集重叠测站自适应精简，
+ * 优先保留高污染值站点，确保无论宏观还是微观，所有徽章均清晰整洁、间距合理且 100% 矢量锐利。
+ */
+function filterVisibleStationsByGrid(
+  stations: WaqiBoundStation[],
+  map: L.Map,
+  zoom: number
+): WaqiBoundStation[] {
+  if (zoom >= 8) {
+    return stations; // 微观街区/城市级：全量展示，不进行抽稀
+  }
+
+  // 宏观网格单元像素大小 (px)
+  const cellSize = zoom <= 4 ? 44 : zoom <= 6 ? 30 : 20;
+
+  // 降序排序：高污染数值或有异常读数的测站优先被代表性展示
+  const sorted = [...stations].sort((a, b) => {
+    const aVal = parseInt(a.aqi, 10) || 0;
+    const bVal = parseInt(b.aqi, 10) || 0;
+    return bVal - aVal;
+  });
+
+  const grid = new Map<string, boolean>();
+  const filtered: WaqiBoundStation[] = [];
+
+  for (const st of sorted) {
+    const pt = map.latLngToContainerPoint([st.lat, st.lon]);
+    const gx = Math.floor(pt.x / cellSize);
+    const gy = Math.floor(pt.y / cellSize);
+    const key = `${gx},${gy}`;
+
+    if (!grid.has(key)) {
+      grid.set(key, true);
+      filtered.push(st);
+    }
+  }
+
+  return filtered;
+}
+
 export default function AirMap({
-  showWaqiTiles,
+  showStations = true,
   center = [35.0, 105.0],
   zoom = 4,
   onStationCountChange,
 }: AirMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const waqiLayerRef = useRef<L.TileLayer | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const showWaqiTilesRef = useRef(showWaqiTiles);
+  const stationCacheRef = useRef<Map<number, WaqiBoundStation>>(new Map());
+  const showStationsRef = useRef(showStations);
 
   useEffect(() => {
-    showWaqiTilesRef.current = showWaqiTiles;
-  }, [showWaqiTiles]);
+    showStationsRef.current = showStations;
+  }, [showStations]);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
     if (!mapInstanceRef.current) {
-      // 初始化 Leaflet 地图 (启用整数缩放，防止栅格切片发生次像素双线性插值模糊)
+      // 1. 初始化 Leaflet 地图 (开启整数缩放锁定，杜绝次像素双线性插值模糊)
       const map = L.map(mapContainerRef.current, {
         center,
         zoom,
@@ -103,8 +145,7 @@ export default function AirMap({
         zoomDelta: 1,
       });
 
-      // 1. 底图：CARTO Voyager @2x 官方高清视网膜底图
-      // 使用 512px 瓦片尺寸与 -1 缩放偏移，既保持文字标注清晰大字体，又获得原生 2 倍超高像素锐利度
+      // 2. 底图：CARTO Voyager @2x 官方高清视网膜底图 (512px 视网膜切片 + zoomOffset: -1)
       L.tileLayer(
         `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png?key=${CARTO_KEY}`,
         {
@@ -115,108 +156,128 @@ export default function AirMap({
         }
       ).addTo(map);
 
-      // 2. WAQI 宏观切片图层 (用于低缩放级别查看全球宏观分布)
-      const waqiTile = L.tileLayer(
-        `https://tiles.aqicn.org/tiles/usepa-aqi/{z}/{x}/{y}.png?token=${WAQI_TOKEN}`,
-        {
-          attribution: 'Air Quality Tiles &copy; <a href="https://waqi.info">WAQI</a>',
-          opacity: 0.85,
-          maxNativeZoom: 10,
-          maxZoom: 18,
-        }
-      );
-      waqiLayerRef.current = waqiTile;
-
-      // 3. 矢量高精测站微标图层
+      // 3. 全局纯 CSS 矢量测站微标图层 (完全取代模糊的 WAQI 栅格瓦片，宏观与微观全周期锐利)
       const markersLayer = L.layerGroup().addTo(map);
       markersLayerRef.current = markersLayer;
 
-      // 动态更新可见区域测站
-      const syncVisibleStations = async () => {
-        const curZoom = map.getZoom();
-
-        // 当处于中高缩放级 (>= 7 区域与城市街区级) 时，启用高精矢量测站，并隐藏易产生拉伸模糊的宏观位图瓦片
-        if (curZoom >= 7) {
-          if (map.hasLayer(waqiTile)) {
-            map.removeLayer(waqiTile);
-          }
-
-          onStationCountChange?.(0, true);
-
-          const bounds = map.getBounds();
-          const minLat = bounds.getSouth();
-          const minLng = bounds.getWest();
-          const maxLat = bounds.getNorth();
-          const maxLng = bounds.getEast();
-
-          try {
-            const stations = await fetchWAQIMapBounds(minLat, minLng, maxLat, maxLng);
-            
-            // 清理旧标记并重建矢量 HTML 微标 (纯 CSS 矢量绘制，任何屏幕任何缩放永不模糊)
-            markersLayer.clearLayers();
-
-            stations.forEach((st: WaqiBoundStation) => {
-              const aqiVal = parseInt(st.aqi, 10);
-              const style = getPinStyle(aqiVal);
-
-              const icon = L.divIcon({
-                className: 'aqi-pin-container',
-                html: `
-                  <div class="aqi-vector-pin">
-                    <div class="aqi-pin-box ${style.boxClass}">
-                      ${st.aqi || '-'}
-                    </div>
-                    <div class="aqi-pin-arrow ${style.arrowClass}"></div>
-                  </div>
-                `,
-                iconSize: [36, 27],
-                iconAnchor: [18, 27],
-                popupAnchor: [0, -28],
-              });
-
-              const marker = L.marker([st.lat, st.lon], { icon });
-
-              const formattedTime = st.station.time
-                ? new Date(st.station.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : '实时';
-
-              marker.bindPopup(`
-                <div class="p-3.5 min-w-[240px] max-w-[280px]">
-                  <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <span class="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">官方实测站点</span>
-                    <span class="text-[10px] px-2 py-0.5 rounded-full font-bold" style="background-color: ${style.colorHex}20; color: ${style.colorHex};">
-                      ${style.levelText}
-                    </span>
-                  </div>
-                  <div class="mt-2.5">
-                    <h4 class="text-sm font-bold text-slate-900 leading-snug">${escapeHtml(st.station.name)}</h4>
-                    <div class="mt-2 flex items-baseline space-x-2">
-                      <span class="text-2xl font-black text-slate-900">${st.aqi}</span>
-                      <span class="text-xs font-semibold text-slate-500">AQI 实时指数</span>
-                    </div>
-                  </div>
-                  <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                    <span>更新时间: ${formattedTime}</span>
-                    <span class="font-medium text-sky-600">WAQI 官方数据</span>
-                  </div>
-                </div>
-              `, { maxWidth: 300, closeButton: false });
-
-              markersLayer.addLayer(marker);
-            });
-
-            onStationCountChange?.(stations.length, false);
-          } catch (e) {
-            console.warn('[AirMap] Failed to sync stations in bounds:', e);
-            onStationCountChange?.(0, false);
-          }
-        } else {
-          // 宏观缩放级 (< 7 全球/国家级)：清空密集矢量标注，根据开关恢复宏观瓦片
+      // 渲染测站标记到地图
+      const renderStations = (stationsToRender: WaqiBoundStation[]) => {
+        if (!showStationsRef.current) {
           markersLayer.clearLayers();
           onStationCountChange?.(0, false);
+          return;
+        }
 
-          if (showWaqiTilesRef.current && !map.hasLayer(waqiTile)) {
-            waqiTile.addTo(map);
+        const curZoom = map.getZoom();
+        const displayStations = filterVisibleStationsByGrid(stationsToRender, map, curZoom);
+
+        markersLayer.clearLayers();
+
+        displayStations.forEach((st: WaqiBoundStation) => {
+          const aqiVal = parseInt(st.aqi, 10);
+          const style = getPinStyle(aqiVal);
+
+          // 纯 CSS 矢量徽章 (DOM 矢量元素渲染，在任何高分屏、高缩放比下绝无位图模糊)
+          const icon = L.divIcon({
+            className: 'aqi-pin-container',
+            html: `
+              <div class="aqi-vector-pin">
+                <div class="aqi-pin-box ${style.boxClass}">
+                  ${st.aqi || '-'}
+                </div>
+                <div class="aqi-pin-arrow ${style.arrowClass}"></div>
+              </div>
+            `,
+            iconSize: [34, 25],
+            iconAnchor: [17, 25],
+            popupAnchor: [0, -26],
+          });
+
+          const marker = L.marker([st.lat, st.lon], { icon });
+
+          const formattedTime = st.station?.time
+            ? new Date(st.station.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : '实时';
+
+          marker.bindPopup(`
+            <div class="p-3.5 min-w-[240px] max-w-[280px]">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <span class="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">官方实测站点</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold" style="background-color: ${style.colorHex}20; color: ${style.colorHex};">
+                  ${style.levelText}
+                </span>
+              </div>
+              <div class="mt-2.5">
+                <h4 class="text-sm font-bold text-slate-900 leading-snug">${escapeHtml(st.station?.name || '实时空气质量站点')}</h4>
+                <div class="mt-2 flex items-baseline space-x-2">
+                  <span class="text-2xl font-black text-slate-900">${st.aqi}</span>
+                  <span class="text-xs font-semibold text-slate-500">AQI 实时指数</span>
+                </div>
+              </div>
+              <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                <span>更新时间: ${formattedTime}</span>
+                <span class="font-medium text-sky-600">WAQI 官方数据</span>
+              </div>
+            </div>
+          `, { maxWidth: 300, closeButton: false });
+
+          markersLayer.addLayer(marker);
+        });
+
+        onStationCountChange?.(displayStations.length, false);
+      };
+
+      // 同步当前视口内的测站
+      const syncStationsInViewport = async () => {
+        if (!showStationsRef.current) {
+          markersLayer.clearLayers();
+          onStationCountChange?.(0, false);
+          return;
+        }
+
+        const bounds = map.getBounds();
+        const minLat = bounds.getSouth();
+        const minLng = bounds.getWest();
+        const maxLat = bounds.getNorth();
+        const maxLng = bounds.getEast();
+
+        // 优先使用内存缓存中的已有站点立即渲染（0 毫秒即时响应，平移无缝）
+        const cachedStationsInView: WaqiBoundStation[] = [];
+        stationCacheRef.current.forEach((st) => {
+          if (st.lat >= minLat && st.lat <= maxLat && st.lon >= minLng && st.lon <= maxLng) {
+            cachedStationsInView.push(st);
+          }
+        });
+
+        if (cachedStationsInView.length > 0) {
+          renderStations(cachedStationsInView);
+        } else {
+          onStationCountChange?.(0, true);
+        }
+
+        // 异步向官方接口请求最新高精站点
+        try {
+          const freshStations = await fetchWAQIMapBounds(minLat, minLng, maxLat, maxLng);
+          
+          freshStations.forEach((st: WaqiBoundStation) => {
+            stationCacheRef.current.set(st.uid, st);
+          });
+
+          // 取当前视口内的最新站点全集重新渲染
+          const allInView: WaqiBoundStation[] = [];
+          stationCacheRef.current.forEach((st) => {
+            if (st.lat >= minLat && st.lat <= maxLat && st.lon >= minLng && st.lon <= maxLng) {
+              allInView.push(st);
+            }
+          });
+
+          renderStations(allInView);
+        } catch (e) {
+          console.warn('[AirMap] Failed to sync bounds stations:', e);
+          if (cachedStationsInView.length > 0) {
+            renderStations(cachedStationsInView);
+          } else {
+            onStationCountChange?.(0, false);
           }
         }
       };
@@ -226,14 +287,14 @@ export default function AirMap({
           clearTimeout(fetchTimeoutRef.current);
         }
         fetchTimeoutRef.current = setTimeout(() => {
-          syncVisibleStations();
-        }, 250);
+          syncStationsInViewport();
+        }, 200);
       };
 
       map.on('moveend', handleMoveEnd);
 
-      // 初次加载触发一次
-      syncVisibleStations();
+      // 初次挂载加载可视区域站点
+      syncStationsInViewport();
 
       mapInstanceRef.current = map;
     }
@@ -259,24 +320,75 @@ export default function AirMap({
     }
   }, [center, zoom]);
 
-  // 响应切换 WAQI 瓦片图层 (在宏观缩放下生效)
+  // 响应开关切换
   useEffect(() => {
     const map = mapInstanceRef.current;
-    const waqiTile = waqiLayerRef.current;
-    if (!map || !waqiTile) return;
+    const markersLayer = markersLayerRef.current;
+    if (!map || !markersLayer) return;
 
-    if (map.getZoom() < 7) {
-      if (showWaqiTiles) {
-        if (!map.hasLayer(waqiTile)) {
-          waqiTile.addTo(map);
+    if (!showStations) {
+      markersLayer.clearLayers();
+      onStationCountChange?.(0, false);
+    } else {
+      // 重新触发一次渲染
+      const bounds = map.getBounds();
+      const minLat = bounds.getSouth();
+      const minLng = bounds.getWest();
+      const maxLat = bounds.getNorth();
+      const maxLng = bounds.getEast();
+
+      const inView: WaqiBoundStation[] = [];
+      stationCacheRef.current.forEach((st) => {
+        if (st.lat >= minLat && st.lat <= maxLat && st.lon >= minLng && st.lon <= maxLng) {
+          inView.push(st);
         }
-      } else {
-        if (map.hasLayer(waqiTile)) {
-          map.removeLayer(waqiTile);
-        }
+      });
+
+      if (inView.length > 0) {
+        const curZoom = map.getZoom();
+        const displayStations = filterVisibleStationsByGrid(inView, map, curZoom);
+        markersLayer.clearLayers();
+        displayStations.forEach((st) => {
+          const aqiVal = parseInt(st.aqi, 10);
+          const style = getPinStyle(aqiVal);
+          const icon = L.divIcon({
+            className: 'aqi-pin-container',
+            html: `
+              <div class="aqi-vector-pin">
+                <div class="aqi-pin-box ${style.boxClass}">
+                  ${st.aqi || '-'}
+                </div>
+                <div class="aqi-pin-arrow ${style.arrowClass}"></div>
+              </div>
+            `,
+            iconSize: [34, 25],
+            iconAnchor: [17, 25],
+            popupAnchor: [0, -26],
+          });
+          const marker = L.marker([st.lat, st.lon], { icon });
+          marker.bindPopup(`
+            <div class="p-3.5 min-w-[240px] max-w-[280px]">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <span class="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">官方实测站点</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold" style="background-color: ${style.colorHex}20; color: ${style.colorHex};">
+                  ${style.levelText}
+                </span>
+              </div>
+              <div class="mt-2.5">
+                <h4 class="text-sm font-bold text-slate-900 leading-snug">${escapeHtml(st.station?.name || '实时空气质量站点')}</h4>
+                <div class="mt-2 flex items-baseline space-x-2">
+                  <span class="text-2xl font-black text-slate-900">${st.aqi}</span>
+                  <span class="text-xs font-semibold text-slate-500">AQI 实时指数</span>
+                </div>
+              </div>
+            </div>
+          `, { maxWidth: 300, closeButton: false });
+          markersLayer.addLayer(marker);
+        });
+        onStationCountChange?.(displayStations.length, false);
       }
     }
-  }, [showWaqiTiles]);
+  }, [showStations]);
 
   return <div ref={mapContainerRef} className="w-full h-full rounded-2xl overflow-hidden" />;
 }

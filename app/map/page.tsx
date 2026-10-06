@@ -18,7 +18,7 @@ const AirMap = dynamic(() => import('@/components/AirMap'), {
 });
 
 export default function MapPage() {
-  const [showWaqiTiles, setShowWaqiTiles] = useState(true);
+  const [showStations, setShowStations] = useState(true);
   const [focusCity, setFocusCity] = useState<CityMeta>(CITIES_REGISTRY[0]);
   const [mapCenter, setMapCenter] = useState<[number, number]>([35.0, 105.0]);
   const [mapZoom, setMapZoom] = useState<number>(4);
@@ -40,10 +40,10 @@ export default function MapPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
             <Globe2 className="w-5 h-5 text-sky-600" />
-            <span>全球空气质量实时热力全景地图</span>
+            <span>全球空气质量实时全景地图</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            CARTO @2x 视网膜高清底图与 WAQI 实时高精矢量测站，任何缩放下字体与徽章均锐利无损。
+            CARTO @2x 视网膜高清底图与 WAQI 实时高精矢量测站，宏观大区与微观街区全程 100% 矢量锐利渲染。
           </p>
         </div>
 
@@ -70,20 +70,20 @@ export default function MapPage() {
               </div>
             ) : (
               <div className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-500">
-                <span>宏观视野 (放大查看微观测站)</span>
+                <span>测站已隐藏</span>
               </div>
             )}
 
             <button
-              onClick={() => setShowWaqiTiles(!showWaqiTiles)}
+              onClick={() => setShowStations(!showStations)}
               className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border transition-all font-semibold cursor-pointer ${
-                showWaqiTiles
+                showStations
                   ? 'bg-sky-50 text-sky-700 border-sky-200 shadow-sm'
                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>热力图层: {showWaqiTiles ? '开启' : '关闭'}</span>
+              <span>测站图层: {showStations ? '开启' : '关闭'}</span>
             </button>
           </div>
         </div>
@@ -94,7 +94,7 @@ export default function MapPage() {
         <AirMap
           center={mapCenter}
           zoom={mapZoom}
-          showWaqiTiles={showWaqiTiles}
+          showStations={showStations}
           onStationCountChange={(count, loading) => setStationStatus({ count, loading })}
         />
 
