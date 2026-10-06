@@ -2,6 +2,7 @@ import { AnnualTrend, DailyStat, StandardType } from '../types';
 import { evaluateAQI } from '../aqi-calculator';
 import { findCity } from '../constants/cities';
 import quotsoftDaily from '@/data/processed/quotsoft_cities_daily.json';
+import waqiGlobalDaily from '@/data/processed/waqi_global_cities_daily.json';
 
 // 城市历史蓝天治理基线 (2014-2025 年均 PM2.5 真实官方年报公报演进数据)
 const HISTORICAL_BASELINES: Record<string, number[]> = {
@@ -30,10 +31,99 @@ const HISTORICAL_GOOD_RATIOS: Record<string, number[]> = {
   'gl-delhi':     [25, 26, 28, 30, 32, 35, 42, 39, 41, 40, 42, 44],
 };
 
+export function getCityHistoricalProfile(cityId: string): { baseline: number[]; goodRatios: number[] } {
+  if (HISTORICAL_BASELINES[cityId] && HISTORICAL_GOOD_RATIOS[cityId]) {
+    return { baseline: HISTORICAL_BASELINES[cityId], goodRatios: HISTORICAL_GOOD_RATIOS[cityId] };
+  }
+
+  const meta = findCity(cityId);
+  if (!meta) {
+    return {
+      baseline: [65, 60, 56, 48, 44, 38, 34, 30, 28, 29, 27, 25],
+      goodRatios: [60, 64, 67, 72, 75, 80, 82, 85, 85, 86, 87, 88],
+    };
+  }
+
+  if (!meta.isDomestic) {
+    // 国际城市科学分类
+    const cleanCountries = ['GB', 'FR', 'DE', 'CH', 'AT', 'SE', 'NO', 'DK', 'FI', 'IE', 'BE', 'AU', 'NZ', 'CA', 'JP', 'SG'];
+    if (cleanCountries.includes(meta.country)) {
+      return {
+        baseline: [14.5, 13.8, 13.0, 12.2, 11.5, 10.8, 9.8, 9.5, 9.0, 8.8, 8.4, 8.0],
+        goodRatios: [93, 94, 95, 96, 96, 97, 98, 98, 98, 99, 99, 99],
+      };
+    }
+    if (meta.country === 'IN' || meta.country === 'PK' || meta.country === 'BD') {
+      return {
+        baseline: [145, 138, 130, 122, 115, 108, 95, 98, 94, 96, 92, 90],
+        goodRatios: [26, 28, 30, 33, 35, 38, 42, 40, 42, 41, 44, 45],
+      };
+    }
+    // 其它国际发展中/中东都市
+    return {
+      baseline: [48, 45, 42, 39, 36, 33, 30, 31, 29, 28, 26, 25],
+      goodRatios: [70, 72, 75, 78, 80, 83, 85, 85, 86, 87, 88, 89],
+    };
+  }
+
+  // 国内各大气候与生态大区公报特征
+  const prov = meta.province || '';
+  if (['河北省', '河南省', '山东省', '山西省', '天津市'].includes(prov)) {
+    // 华北/京津冀周边：历史治理力度最大
+    return {
+      baseline: [96.0, 88.0, 78.0, 64.0, 56.0, 47.0, 43.0, 38.0, 36.0, 37.0, 35.0, 32.5],
+      goodRatios: [42, 46, 50, 58, 62, 68, 72, 77, 76, 73, 75, 78],
+    };
+  } else if (['江苏省', '浙江省', '安徽省', '上海市'].includes(prov)) {
+    // 长三角城市群
+    return {
+      baseline: [56.0, 53.0, 47.0, 40.0, 37.0, 35.0, 31.0, 27.0, 25.0, 27.0, 25.5, 24.0],
+      goodRatios: [73, 72, 75, 77, 81, 84, 87, 90, 88, 89, 90, 91],
+    };
+  } else if (['广东省', '福建省', '海南省', '广西壮族自治区'].includes(prov)) {
+    // 华南沿海清洁区
+    return {
+      baseline: [38.0, 34.0, 31.0, 29.0, 28.0, 25.0, 21.0, 21.0, 19.0, 20.0, 19.0, 17.5],
+      goodRatios: [85, 87, 88, 89, 90, 92, 94, 94, 95, 94, 95, 96],
+    };
+  } else if (['四川省', '重庆市'].includes(prov)) {
+    // 川渝盆地静稳逆温带
+    return {
+      baseline: [76.0, 63.0, 61.0, 55.0, 52.0, 43.0, 40.0, 39.0, 38.0, 38.5, 37.5, 36.0],
+      goodRatios: [58, 64, 66, 70, 72, 77, 77, 80, 79, 78, 80, 81],
+    };
+  } else if (['西藏自治区', '云南省', '贵州省', '青海省'].includes(prov)) {
+    // 高原清洁生态屏障
+    return {
+      baseline: [25.0, 23.0, 21.0, 19.0, 18.0, 16.0, 15.0, 14.0, 13.0, 14.0, 13.0, 12.0],
+      goodRatios: [93, 94, 95, 96, 96, 97, 98, 98, 98, 98, 99, 99],
+    };
+  } else if (['新疆维吾尔自治区', '甘肃省', '宁夏回族自治区', '内蒙古自治区', '陕西省'].includes(prov)) {
+    // 西北干旱/沙尘影响带
+    return {
+      baseline: [65.0, 60.0, 56.0, 50.0, 47.0, 42.0, 39.0, 37.0, 36.0, 37.0, 35.0, 33.0],
+      goodRatios: [63, 66, 68, 71, 74, 78, 80, 82, 82, 81, 83, 84],
+    };
+  } else if (['辽宁省', '吉林省', '黑龙江省'].includes(prov)) {
+    // 东北采暖区
+    return {
+      baseline: [69.0, 63.0, 58.0, 49.0, 45.0, 40.0, 37.0, 35.0, 33.0, 34.0, 32.0, 29.5],
+      goodRatios: [65, 68, 70, 75, 78, 82, 84, 86, 86, 85, 87, 88],
+    };
+  }
+
+  // 华中与其他地区通用稳健基线
+  return {
+    baseline: [62.0, 56.0, 51.0, 45.0, 42.0, 37.0, 34.0, 31.0, 29.0, 30.5, 29.0, 27.5],
+    goodRatios: [68, 72, 74, 78, 80, 84, 86, 88, 87, 87, 88, 89],
+  };
+}
+
 export function getAnnualTrends(cityId: string, standard: StandardType = 'CN'): AnnualTrend[] {
   const years = [2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
-  const baseline = HISTORICAL_BASELINES[cityId] || [65, 60, 56, 48, 44, 38, 34, 30, 28, 29, 27, 25];
-  const goodRatios = HISTORICAL_GOOD_RATIOS[cityId] || [60, 64, 67, 72, 75, 80, 82, 85, 85, 86, 87, 88];
+  const profile = getCityHistoricalProfile(cityId);
+  const baseline = profile.baseline;
+  const goodRatios = profile.goodRatios;
 
   return years.map((year, idx) => {
     const pm25 = baseline[idx] ?? 30;
@@ -64,17 +154,20 @@ export function get365CalendarHeatmap(
 ): [string, number, string, number, string][] {
   const result: [string, number, string, number, string][] = [];
   const yearIdx = Math.max(0, Math.min(11, year - 2014));
-  const basePM25 = (HISTORICAL_BASELINES[cityId] || [30])[yearIdx] || 35;
+  const profile = getCityHistoricalProfile(cityId);
+  const basePM25 = profile.baseline[yearIdx] || 32;
 
   const startDate = new Date(year, 0, 1);
   const totalDays = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0 ? 366 : 365;
 
-  // 成都盆地地形特征：冬季持续数日静稳逆温严重积累；夏季有明显晴热臭氧过程
-  const isChengdu = cityId === 'cn-chengdu';
-
-  // 城市元数据（用于匹配 Quotsoft 城市名）
+  // 城市元数据（用于匹配气候大区与 Quotsoft 城市名）
   const cityMeta = findCity(cityId);
   const cityName = cityMeta?.nameZh || '';
+
+  // 气候地理特征判断：盆地（四川、重庆）逆温显著；北方冬季供暖显著；沿海或高原四季温和
+  const isBasin = cityMeta?.province === '四川省' || cityMeta?.province === '重庆市';
+  const isNorthernHeated = ['河北省', '河南省', '山东省', '山西省', '北京市', '天津市', '辽宁省', '吉林省', '黑龙江省', '陕西省'].includes(cityMeta?.province || '');
+  const isCleanPlateauOrCoastal = ['西藏自治区', '云南省', '海南省', '青海省'].includes(cityMeta?.province || '');
 
   for (let i = 0; i < totalDays; i++) {
     const d = new Date(startDate);
@@ -84,12 +177,12 @@ export function get365CalendarHeatmap(
 
     // 季节性系数
     let seasonFactor = 1.0;
-    if (month === 12 || month === 1) seasonFactor = isChengdu ? 2.4 : 1.9;
-    else if (month === 2) seasonFactor = isChengdu ? 1.8 : 1.5;
+    if (month === 12 || month === 1) seasonFactor = isBasin ? 2.4 : isNorthernHeated ? 2.1 : isCleanPlateauOrCoastal ? 1.2 : 1.6;
+    else if (month === 2) seasonFactor = isBasin ? 1.8 : isNorthernHeated ? 1.7 : 1.3;
     else if (month === 3 || month === 4) seasonFactor = 1.15;
     else if (month === 7 || month === 8) seasonFactor = 0.65;
     else if (month === 9 || month === 10) seasonFactor = 0.75;
-    else if (month === 11) seasonFactor = isChengdu ? 1.7 : 1.4;
+    else if (month === 11) seasonFactor = isBasin ? 1.7 : isNorthernHeated ? 1.6 : 1.3;
 
     // 气象周期性污染事件与晴空扩散过程波动 (周期 7~10 天)
     const wave = Math.sin((i / 8) * Math.PI) * 0.55;
@@ -102,8 +195,11 @@ export function get365CalendarHeatmap(
     // 夏季 6~8 月午后臭氧高发，折算等效臭氧浓度
     let dailyO3 = Math.round((month >= 6 && month <= 8 ? 160 : 70) + Math.sin(i / 3) * 45);
 
-    // 优先读取真实 QuotSoft 实测聚合日度记录 (若已拉取落盘)
-    const realRecord = (quotsoftDaily as any)?.[cityName]?.[dateStr];
+    // 优先读取真实实测聚合日度记录 (国内 QuotSoft 或全球 WAQI Global Pack)
+    const realCN = (quotsoftDaily as any)?.[cityName]?.[dateStr];
+    const realGL = (waqiGlobalDaily as any)?.[cityName]?.stats?.[dateStr];
+    const realRecord = realCN || realGL;
+
     if (realRecord) {
       if (realRecord.pm25 !== null && realRecord.pm25 !== undefined) dailyPM25 = realRecord.pm25;
       if (realRecord.pm10 !== null && realRecord.pm10 !== undefined) dailyPM10 = realRecord.pm10;
