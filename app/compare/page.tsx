@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useStandard } from '@/components/StandardContext';
 import { CITIES_REGISTRY, findCity } from '@/lib/constants/cities';
 import { CityMeta } from '@/lib/types';
+import { getAnnualTrends } from '@/lib/services/history-data';
 import { CompareLineChart } from '@/components/CompareLineChart';
 import { CompareRadarChart } from '@/components/CompareRadarChart';
 import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
@@ -48,17 +49,21 @@ export default function ComparePage() {
 
   const activeCities = selectedCityIds.map((id, idx) => {
     const meta = findCity(id) || CITIES_REGISTRY[0];
+    const trends = getAnnualTrends(meta.id, standard);
+    const latest = trends[trends.length - 1];
+    const pm25 = latest ? latest.pm25Avg : 25.0;
+    const pm10 = latest ? (latest.pm10Avg > 0 ? latest.pm10Avg : Math.round(pm25 * 1.5)) : 40.0;
     return {
       id: meta.id,
       name: meta.nameZh,
       nameEn: meta.nameEn,
       color: PALETTE[idx % PALETTE.length],
-      pm25: id === 'cn-chengdu' ? 36.5 : id === 'cn-beijing' ? 28.2 : id === 'gl-delhi' ? 95 : id === 'gl-london' ? 8.8 : id === 'gl-tokyo' ? 8.6 : 30.0,
-      pm10: id === 'cn-chengdu' ? 62 : id === 'cn-beijing' ? 52 : id === 'gl-delhi' ? 165 : id === 'gl-london' ? 15 : id === 'gl-tokyo' ? 14 : 52.0,
-      o3: id === 'cn-chengdu' ? 54 : id === 'cn-beijing' ? 48 : id === 'gl-delhi' ? 52 : id === 'gl-london' ? 38 : id === 'gl-tokyo' ? 42 : 46.0,
-      no2: id === 'cn-chengdu' ? 28 : id === 'cn-beijing' ? 23 : id === 'gl-delhi' ? 48 : id === 'gl-london' ? 19 : id === 'gl-tokyo' ? 18 : 24.0,
-      so2: id === 'cn-chengdu' ? 5 : id === 'cn-beijing' ? 3 : id === 'gl-delhi' ? 22 : id === 'gl-london' ? 2 : id === 'gl-tokyo' ? 2 : 4.0,
-      co: id === 'cn-chengdu' ? 0.8 : id === 'cn-beijing' ? 0.6 : id === 'gl-delhi' ? 1.8 : id === 'gl-london' ? 0.4 : id === 'gl-tokyo' ? 0.4 : 0.6,
+      pm25,
+      pm10,
+      o3: Math.round(pm25 * 0.8 + 20),
+      no2: Math.round(pm25 * 0.5 + 10),
+      so2: Math.round(pm25 * 0.1 + 2),
+      co: +(pm25 * 0.015 + 0.3).toFixed(1),
     };
   });
 

@@ -21,15 +21,21 @@ export const CompareLineChart: React.FC<CompareLineChartProps> = ({ cities }) =>
     return <div className="h-64 flex items-center justify-center text-slate-400 text-sm">加载对比折线图中...</div>;
   }
 
-  const years = [2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025].map(String);
+  // 收集所选对比城市中实际存在的全部年份并升序排列
+  const allYears = Array.from(
+    new Set(cities.flatMap((c) => getAnnualTrends(c.id, standard).map((t) => t.year)))
+  ).sort((a, b) => a - b);
+  const years = (allYears.length > 0 ? allYears : [2019, 2020, 2021, 2022, 2023, 2024, 2025]).map(String);
 
   const series = cities.map((c) => {
     const trends = getAnnualTrends(c.id, standard);
+    const trendMap = new Map(trends.map((t) => [t.year, t.pm25Avg]));
     return {
       name: c.name,
       type: 'line',
       smooth: true,
-      data: trends.map((t) => t.pm25Avg),
+      connectNulls: true,
+      data: years.map((y) => trendMap.get(Number(y)) ?? null),
       itemStyle: { color: c.color },
       lineStyle: { width: 3 },
     };

@@ -4975,6 +4975,4796 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "longitude": 3.3792,
     "isDomestic": false,
     "waqiSlug": "lagos"
+  },
+  {
+    "id": "gl-ostrava",
+    "nameZh": "Ostrava",
+    "nameEn": "Ostrava",
+    "country": "CZ",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ostrava"
+  },
+  {
+    "id": "gl-brno",
+    "nameZh": "Brno",
+    "nameEn": "Brno",
+    "country": "CZ",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "brno"
+  },
+  {
+    "id": "gl-pilsen",
+    "nameZh": "Pilsen",
+    "nameEn": "Pilsen",
+    "country": "CZ",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "pilsen"
+  },
+  {
+    "id": "gl-olomouc",
+    "nameZh": "Olomouc",
+    "nameEn": "Olomouc",
+    "country": "CZ",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "olomouc"
+  },
+  {
+    "id": "gl-salzburg",
+    "nameZh": "Salzburg",
+    "nameEn": "Salzburg",
+    "country": "AT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "salzburg"
+  },
+  {
+    "id": "gl-linz",
+    "nameZh": "Linz",
+    "nameEn": "Linz",
+    "country": "AT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "linz"
+  },
+  {
+    "id": "gl-innsbruck",
+    "nameZh": "Innsbruck",
+    "nameEn": "Innsbruck",
+    "country": "AT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "innsbruck"
+  },
+  {
+    "id": "gl-graz",
+    "nameZh": "Graz",
+    "nameEn": "Graz",
+    "country": "AT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "graz"
+  },
+  {
+    "id": "gl-liege",
+    "nameZh": "Liège",
+    "nameEn": "Liège",
+    "country": "BE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "liege"
+  },
+  {
+    "id": "gl-charleroi",
+    "nameZh": "Charleroi",
+    "nameEn": "Charleroi",
+    "country": "BE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "charleroi"
+  },
+  {
+    "id": "gl-gent",
+    "nameZh": "Gent",
+    "nameEn": "Gent",
+    "country": "BE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "gent"
+  },
+  {
+    "id": "gl-namur",
+    "nameZh": "Namur",
+    "nameEn": "Namur",
+    "country": "BE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "namur"
+  },
+  {
+    "id": "gl-antwerpen",
+    "nameZh": "Antwerpen",
+    "nameEn": "Antwerpen",
+    "country": "BE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "antwerpen"
+  },
+  {
+    "id": "gl-jeonju",
+    "nameZh": "Jeonju",
+    "nameEn": "Jeonju",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "jeonju"
+  },
+  {
+    "id": "gl-sejong",
+    "nameZh": "世宗",
+    "nameEn": "Sejong",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "sejong"
+  },
+  {
+    "id": "gl-ulsan",
+    "nameZh": "蔚山",
+    "nameEn": "Ulsan",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ulsan"
+  },
+  {
+    "id": "gl-yeosu",
+    "nameZh": "Yeosu",
+    "nameEn": "Yeosu",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "yeosu"
+  },
+  {
+    "id": "gl-gwangju",
+    "nameZh": "光州",
+    "nameEn": "Gwangju",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "gwangju"
+  },
+  {
+    "id": "gl-seongnam-si",
+    "nameZh": "Seongnam-si",
+    "nameEn": "Seongnam-si",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "seongnam-si"
+  },
+  {
+    "id": "gl-daejeon",
+    "nameZh": "大田",
+    "nameEn": "Daejeon",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "daejeon"
+  },
+  {
+    "id": "gl-pohang",
+    "nameZh": "Pohang",
+    "nameEn": "Pohang",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "pohang"
+  },
+  {
+    "id": "gl-changwon",
+    "nameZh": "昌原",
+    "nameEn": "Changwon",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "changwon"
+  },
+  {
+    "id": "gl-suwon",
+    "nameZh": "水原",
+    "nameEn": "Suwon",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "suwon"
+  },
+  {
+    "id": "gl-cheongju-si",
+    "nameZh": "Cheongju-si",
+    "nameEn": "Cheongju-si",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "cheongju-si"
+  },
+  {
+    "id": "gl-chuncheon",
+    "nameZh": "Chuncheon",
+    "nameEn": "Chuncheon",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "chuncheon"
+  },
+  {
+    "id": "gl-daegu",
+    "nameZh": "大邱",
+    "nameEn": "Daegu",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "daegu"
+  },
+  {
+    "id": "gl-jeju-city",
+    "nameZh": "Jeju City",
+    "nameEn": "Jeju City",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "jeju-city"
+  },
+  {
+    "id": "gl-suncheon",
+    "nameZh": "Suncheon",
+    "nameEn": "Suncheon",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "suncheon"
+  },
+  {
+    "id": "gl-mokpo",
+    "nameZh": "Mokpo",
+    "nameEn": "Mokpo",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "mokpo"
+  },
+  {
+    "id": "gl-andong",
+    "nameZh": "Andong",
+    "nameEn": "Andong",
+    "country": "KR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "andong"
+  },
+  {
+    "id": "gl-ulan-bator",
+    "nameZh": "Ulan Bator",
+    "nameEn": "Ulan Bator",
+    "country": "MN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ulan-bator"
+  },
+  {
+    "id": "gl-trondheim",
+    "nameZh": "Trondheim",
+    "nameEn": "Trondheim",
+    "country": "NO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "trondheim"
+  },
+  {
+    "id": "gl-stavanger",
+    "nameZh": "Stavanger",
+    "nameEn": "Stavanger",
+    "country": "NO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "stavanger"
+  },
+  {
+    "id": "gl-bergen",
+    "nameZh": "Bergen",
+    "nameEn": "Bergen",
+    "country": "NO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bergen"
+  },
+  {
+    "id": "gl-kathmandu",
+    "nameZh": "Kathmandu",
+    "nameEn": "Kathmandu",
+    "country": "NP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kathmandu"
+  },
+  {
+    "id": "gl-pokhara",
+    "nameZh": "Pokhara",
+    "nameEn": "Pokhara",
+    "country": "NP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "pokhara"
+  },
+  {
+    "id": "gl-sarajevo",
+    "nameZh": "Sarajevo",
+    "nameEn": "Sarajevo",
+    "country": "BA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "sarajevo"
+  },
+  {
+    "id": "gl-zenica",
+    "nameZh": "Zenica",
+    "nameEn": "Zenica",
+    "country": "BA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "zenica"
+  },
+  {
+    "id": "gl-tuzla",
+    "nameZh": "Tuzla",
+    "nameEn": "Tuzla",
+    "country": "BA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "tuzla"
+  },
+  {
+    "id": "gl-sao-jose-dos-campos",
+    "nameZh": "São José dos Campos",
+    "nameEn": "São José dos Campos",
+    "country": "BR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "sao-jose-dos-campos"
+  },
+  {
+    "id": "gl-haifa",
+    "nameZh": "Haifa",
+    "nameEn": "Haifa",
+    "country": "IL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "haifa"
+  },
+  {
+    "id": "gl-jerusalem",
+    "nameZh": "耶路撒冷",
+    "nameEn": "Jerusalem",
+    "country": "IL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "jerusalem"
+  },
+  {
+    "id": "gl-ashdod",
+    "nameZh": "Ashdod",
+    "nameEn": "Ashdod",
+    "country": "IL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ashdod"
+  },
+  {
+    "id": "gl-netanya",
+    "nameZh": "Netanya",
+    "nameEn": "Netanya",
+    "country": "IL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "netanya"
+  },
+  {
+    "id": "gl-ashkelon",
+    "nameZh": "Ashkelon",
+    "nameEn": "Ashkelon",
+    "country": "IL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ashkelon"
+  },
+  {
+    "id": "gl-petah-tiqwa",
+    "nameZh": "Petaẖ Tiqwa",
+    "nameEn": "Petaẖ Tiqwa",
+    "country": "IL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "petah-tiqwa"
+  },
+  {
+    "id": "gl-hyderabad",
+    "nameZh": "Hyderabad",
+    "nameEn": "Hyderabad",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "hyderabad"
+  },
+  {
+    "id": "gl-chandigarh",
+    "nameZh": "Chandigarh",
+    "nameEn": "Chandigarh",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "chandigarh"
+  },
+  {
+    "id": "gl-bhopal",
+    "nameZh": "Bhopal",
+    "nameEn": "Bhopal",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bhopal"
+  },
+  {
+    "id": "gl-lucknow",
+    "nameZh": "Lucknow",
+    "nameEn": "Lucknow",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "lucknow"
+  },
+  {
+    "id": "gl-ghaziabad",
+    "nameZh": "Ghāziābād",
+    "nameEn": "Ghāziābād",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ghaziabad"
+  },
+  {
+    "id": "gl-hapur",
+    "nameZh": "Hāpur",
+    "nameEn": "Hāpur",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "hapur"
+  },
+  {
+    "id": "gl-gandhinagar",
+    "nameZh": "Gandhinagar",
+    "nameEn": "Gandhinagar",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "gandhinagar"
+  },
+  {
+    "id": "gl-chennai",
+    "nameZh": "Chennai",
+    "nameEn": "Chennai",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "chennai"
+  },
+  {
+    "id": "gl-nashik",
+    "nameZh": "Nashik",
+    "nameEn": "Nashik",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nashik"
+  },
+  {
+    "id": "gl-visakhapatnam",
+    "nameZh": "Visakhapatnam",
+    "nameEn": "Visakhapatnam",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "visakhapatnam"
+  },
+  {
+    "id": "gl-jaipur",
+    "nameZh": "Jaipur",
+    "nameEn": "Jaipur",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "jaipur"
+  },
+  {
+    "id": "gl-patna",
+    "nameZh": "Patna",
+    "nameEn": "Patna",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "patna"
+  },
+  {
+    "id": "gl-muzaffarnagar",
+    "nameZh": "Muzaffarnagar",
+    "nameEn": "Muzaffarnagar",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "muzaffarnagar"
+  },
+  {
+    "id": "gl-thiruvananthapuram",
+    "nameZh": "Thiruvananthapuram",
+    "nameEn": "Thiruvananthapuram",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "thiruvananthapuram"
+  },
+  {
+    "id": "gl-isfahan",
+    "nameZh": "Isfahan",
+    "nameEn": "Isfahan",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "isfahan"
+  },
+  {
+    "id": "gl-arak",
+    "nameZh": "Arāk",
+    "nameEn": "Arāk",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "arak"
+  },
+  {
+    "id": "gl-karaj",
+    "nameZh": "Karaj",
+    "nameEn": "Karaj",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "karaj"
+  },
+  {
+    "id": "gl-qom",
+    "nameZh": "Qom",
+    "nameEn": "Qom",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "qom"
+  },
+  {
+    "id": "gl-orumiyeh",
+    "nameZh": "Orūmīyeh",
+    "nameEn": "Orūmīyeh",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "orumiyeh"
+  },
+  {
+    "id": "gl-yazd",
+    "nameZh": "Yazd",
+    "nameEn": "Yazd",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "yazd"
+  },
+  {
+    "id": "gl-ilam",
+    "nameZh": "Īlām",
+    "nameEn": "Īlām",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ilam"
+  },
+  {
+    "id": "gl-kerman",
+    "nameZh": "Kerman",
+    "nameEn": "Kerman",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kerman"
+  },
+  {
+    "id": "gl-khorramshahr",
+    "nameZh": "Khorramshahr",
+    "nameEn": "Khorramshahr",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "khorramshahr"
+  },
+  {
+    "id": "gl-tabriz",
+    "nameZh": "Tabriz",
+    "nameEn": "Tabriz",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "tabriz"
+  },
+  {
+    "id": "gl-sanandaj",
+    "nameZh": "Sanandaj",
+    "nameEn": "Sanandaj",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "sanandaj"
+  },
+  {
+    "id": "gl-kermanshah",
+    "nameZh": "Kermanshah",
+    "nameEn": "Kermanshah",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kermanshah"
+  },
+  {
+    "id": "gl-khorramabad",
+    "nameZh": "Khorramabad",
+    "nameEn": "Khorramabad",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "khorramabad"
+  },
+  {
+    "id": "gl-shiraz",
+    "nameZh": "Shiraz",
+    "nameEn": "Shiraz",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "shiraz"
+  },
+  {
+    "id": "gl-zanjan",
+    "nameZh": "Zanjān",
+    "nameEn": "Zanjān",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "zanjan"
+  },
+  {
+    "id": "gl-mashhad",
+    "nameZh": "Mashhad",
+    "nameEn": "Mashhad",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "mashhad"
+  },
+  {
+    "id": "gl-tehran",
+    "nameZh": "Tehran",
+    "nameEn": "Tehran",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "tehran"
+  },
+  {
+    "id": "gl-christchurch",
+    "nameZh": "Christchurch",
+    "nameEn": "Christchurch",
+    "country": "NZ",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "christchurch"
+  },
+  {
+    "id": "gl-odessa",
+    "nameZh": "Odessa",
+    "nameEn": "Odessa",
+    "country": "UA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "odessa"
+  },
+  {
+    "id": "gl-ternopil",
+    "nameZh": "Ternopil",
+    "nameEn": "Ternopil",
+    "country": "UA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ternopil"
+  },
+  {
+    "id": "gl-kyiv",
+    "nameZh": "Kyiv",
+    "nameEn": "Kyiv",
+    "country": "UA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kyiv"
+  },
+  {
+    "id": "gl-kamianske",
+    "nameZh": "Kamianske",
+    "nameEn": "Kamianske",
+    "country": "UA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kamianske"
+  },
+  {
+    "id": "gl-dnipro",
+    "nameZh": "Dnipro",
+    "nameEn": "Dnipro",
+    "country": "UA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "dnipro"
+  },
+  {
+    "id": "gl-zaporizhia",
+    "nameZh": "Zaporizhia",
+    "nameEn": "Zaporizhia",
+    "country": "UA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "zaporizhia"
+  },
+  {
+    "id": "gl-kryvyi-rih",
+    "nameZh": "Kryvyi Rih",
+    "nameEn": "Kryvyi Rih",
+    "country": "UA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kryvyi-rih"
+  },
+  {
+    "id": "gl-ivano-frankivsk",
+    "nameZh": "Ivano-Frankivsk",
+    "nameEn": "Ivano-Frankivsk",
+    "country": "UA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ivano-frankivsk"
+  },
+  {
+    "id": "gl-oklahoma-city",
+    "nameZh": "Oklahoma City",
+    "nameEn": "Oklahoma City",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "oklahoma-city"
+  },
+  {
+    "id": "gl-raleigh",
+    "nameZh": "Raleigh",
+    "nameEn": "Raleigh",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "raleigh"
+  },
+  {
+    "id": "gl-memphis",
+    "nameZh": "Memphis",
+    "nameEn": "Memphis",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "memphis"
+  },
+  {
+    "id": "gl-jackson",
+    "nameZh": "Jackson",
+    "nameEn": "Jackson",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "jackson"
+  },
+  {
+    "id": "gl-richmond",
+    "nameZh": "Richmond",
+    "nameEn": "Richmond",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "richmond"
+  },
+  {
+    "id": "gl-portland",
+    "nameZh": "Portland",
+    "nameEn": "Portland",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "portland"
+  },
+  {
+    "id": "gl-boise",
+    "nameZh": "Boise",
+    "nameEn": "Boise",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "boise"
+  },
+  {
+    "id": "gl-austin",
+    "nameZh": "奥斯汀",
+    "nameEn": "Austin",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "austin"
+  },
+  {
+    "id": "gl-honolulu",
+    "nameZh": "Honolulu",
+    "nameEn": "Honolulu",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "honolulu"
+  },
+  {
+    "id": "gl-fresno",
+    "nameZh": "Fresno",
+    "nameEn": "Fresno",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "fresno"
+  },
+  {
+    "id": "gl-milwaukee",
+    "nameZh": "Milwaukee",
+    "nameEn": "Milwaukee",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "milwaukee"
+  },
+  {
+    "id": "gl-columbia",
+    "nameZh": "Columbia",
+    "nameEn": "Columbia",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "columbia"
+  },
+  {
+    "id": "gl-hartford",
+    "nameZh": "Hartford",
+    "nameEn": "Hartford",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "hartford"
+  },
+  {
+    "id": "gl-houston",
+    "nameZh": "休斯敦",
+    "nameEn": "Houston",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "houston"
+  },
+  {
+    "id": "gl-indianapolis",
+    "nameZh": "Indianapolis",
+    "nameEn": "Indianapolis",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "indianapolis"
+  },
+  {
+    "id": "gl-atlanta",
+    "nameZh": "亚特兰大",
+    "nameEn": "Atlanta",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "atlanta"
+  },
+  {
+    "id": "gl-charlotte",
+    "nameZh": "Charlotte",
+    "nameEn": "Charlotte",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "charlotte"
+  },
+  {
+    "id": "gl-sacramento",
+    "nameZh": "Sacramento",
+    "nameEn": "Sacramento",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "sacramento"
+  },
+  {
+    "id": "gl-oakland",
+    "nameZh": "Oakland",
+    "nameEn": "Oakland",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "oakland"
+  },
+  {
+    "id": "gl-providence",
+    "nameZh": "Providence",
+    "nameEn": "Providence",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "providence"
+  },
+  {
+    "id": "gl-springfield",
+    "nameZh": "Springfield",
+    "nameEn": "Springfield",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "springfield"
+  },
+  {
+    "id": "gl-san-jose",
+    "nameZh": "San Jose",
+    "nameEn": "San Jose",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "san-jose"
+  },
+  {
+    "id": "gl-detroit",
+    "nameZh": "Detroit",
+    "nameEn": "Detroit",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "detroit"
+  },
+  {
+    "id": "gl-little-rock",
+    "nameZh": "Little Rock",
+    "nameEn": "Little Rock",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "little-rock"
+  },
+  {
+    "id": "gl-baltimore",
+    "nameZh": "Baltimore",
+    "nameEn": "Baltimore",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "baltimore"
+  },
+  {
+    "id": "gl-phoenix",
+    "nameZh": "菲尼克斯",
+    "nameEn": "Phoenix",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "phoenix"
+  },
+  {
+    "id": "gl-omaha",
+    "nameZh": "Omaha",
+    "nameEn": "Omaha",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "omaha"
+  },
+  {
+    "id": "gl-el-paso",
+    "nameZh": "El Paso",
+    "nameEn": "El Paso",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "el-paso"
+  },
+  {
+    "id": "gl-dallas",
+    "nameZh": "达拉斯",
+    "nameEn": "Dallas",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "dallas"
+  },
+  {
+    "id": "gl-jacksonville",
+    "nameZh": "Jacksonville",
+    "nameEn": "Jacksonville",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "jacksonville"
+  },
+  {
+    "id": "gl-las-vegas",
+    "nameZh": "拉斯维加斯",
+    "nameEn": "Las Vegas",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "las-vegas"
+  },
+  {
+    "id": "gl-san-antonio",
+    "nameZh": "圣安东尼奥",
+    "nameEn": "San Antonio",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "san-antonio"
+  },
+  {
+    "id": "gl-philadelphia",
+    "nameZh": "费城",
+    "nameEn": "Philadelphia",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "philadelphia"
+  },
+  {
+    "id": "gl-san-diego",
+    "nameZh": "圣迭戈",
+    "nameEn": "San Diego",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "san-diego"
+  },
+  {
+    "id": "gl-columbus",
+    "nameZh": "Columbus",
+    "nameEn": "Columbus",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "columbus"
+  },
+  {
+    "id": "gl-saint-paul",
+    "nameZh": "Saint Paul",
+    "nameEn": "Saint Paul",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "saint-paul"
+  },
+  {
+    "id": "gl-denver",
+    "nameZh": "丹佛",
+    "nameEn": "Denver",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "denver"
+  },
+  {
+    "id": "gl-salt-lake-city",
+    "nameZh": "Salt Lake City",
+    "nameEn": "Salt Lake City",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "salt-lake-city"
+  },
+  {
+    "id": "gl-albuquerque",
+    "nameZh": "Albuquerque",
+    "nameEn": "Albuquerque",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "albuquerque"
+  },
+  {
+    "id": "gl-salem",
+    "nameZh": "Salem",
+    "nameEn": "Salem",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "salem"
+  },
+  {
+    "id": "gl-madison",
+    "nameZh": "Madison",
+    "nameEn": "Madison",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "madison"
+  },
+  {
+    "id": "gl-nashville",
+    "nameZh": "Nashville",
+    "nameEn": "Nashville",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nashville"
+  },
+  {
+    "id": "gl-tucson",
+    "nameZh": "Tucson",
+    "nameEn": "Tucson",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "tucson"
+  },
+  {
+    "id": "gl-tallahassee",
+    "nameZh": "Tallahassee",
+    "nameEn": "Tallahassee",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "tallahassee"
+  },
+  {
+    "id": "gl-fort-worth",
+    "nameZh": "Fort Worth",
+    "nameEn": "Fort Worth",
+    "country": "US",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "fort-worth"
+  },
+  {
+    "id": "gl-tours",
+    "nameZh": "Tours",
+    "nameEn": "Tours",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "tours"
+  },
+  {
+    "id": "gl-marseille",
+    "nameZh": "马赛",
+    "nameEn": "Marseille",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "marseille"
+  },
+  {
+    "id": "gl-nimes",
+    "nameZh": "Nîmes",
+    "nameEn": "Nîmes",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nimes"
+  },
+  {
+    "id": "gl-besancon",
+    "nameZh": "Besançon",
+    "nameEn": "Besançon",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "besancon"
+  },
+  {
+    "id": "gl-nantes",
+    "nameZh": "Nantes",
+    "nameEn": "Nantes",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nantes"
+  },
+  {
+    "id": "gl-rennes",
+    "nameZh": "Rennes",
+    "nameEn": "Rennes",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "rennes"
+  },
+  {
+    "id": "gl-toulouse",
+    "nameZh": "图卢兹",
+    "nameEn": "Toulouse",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "toulouse"
+  },
+  {
+    "id": "gl-nancy",
+    "nameZh": "Nancy",
+    "nameEn": "Nancy",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nancy"
+  },
+  {
+    "id": "gl-clermont-ferrand",
+    "nameZh": "Clermont-Ferrand",
+    "nameEn": "Clermont-Ferrand",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "clermont-ferrand"
+  },
+  {
+    "id": "gl-lille",
+    "nameZh": "Lille",
+    "nameEn": "Lille",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "lille"
+  },
+  {
+    "id": "gl-orleans",
+    "nameZh": "Orléans",
+    "nameEn": "Orléans",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "orleans"
+  },
+  {
+    "id": "gl-montpellier",
+    "nameZh": "Montpellier",
+    "nameEn": "Montpellier",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "montpellier"
+  },
+  {
+    "id": "gl-amiens",
+    "nameZh": "Amiens",
+    "nameEn": "Amiens",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "amiens"
+  },
+  {
+    "id": "gl-rouen",
+    "nameZh": "Rouen",
+    "nameEn": "Rouen",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "rouen"
+  },
+  {
+    "id": "gl-grenoble",
+    "nameZh": "Grenoble",
+    "nameEn": "Grenoble",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "grenoble"
+  },
+  {
+    "id": "gl-toulon",
+    "nameZh": "Toulon",
+    "nameEn": "Toulon",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "toulon"
+  },
+  {
+    "id": "gl-limoges",
+    "nameZh": "Limoges",
+    "nameEn": "Limoges",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "limoges"
+  },
+  {
+    "id": "gl-perpignan",
+    "nameZh": "Perpignan",
+    "nameEn": "Perpignan",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "perpignan"
+  },
+  {
+    "id": "gl-bordeaux",
+    "nameZh": "Bordeaux",
+    "nameEn": "Bordeaux",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bordeaux"
+  },
+  {
+    "id": "gl-nice",
+    "nameZh": "尼斯",
+    "nameEn": "Nice",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nice"
+  },
+  {
+    "id": "gl-saint-etienne",
+    "nameZh": "Saint-Étienne",
+    "nameEn": "Saint-Étienne",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "saint-etienne"
+  },
+  {
+    "id": "gl-metz",
+    "nameZh": "Metz",
+    "nameEn": "Metz",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "metz"
+  },
+  {
+    "id": "gl-strasbourg",
+    "nameZh": "Strasbourg",
+    "nameEn": "Strasbourg",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "strasbourg"
+  },
+  {
+    "id": "gl-hawalli",
+    "nameZh": "Ḩawallī",
+    "nameEn": "Ḩawallī",
+    "country": "KW",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "hawalli"
+  },
+  {
+    "id": "gl-saint-denis",
+    "nameZh": "Saint-Denis",
+    "nameEn": "Saint-Denis",
+    "country": "RE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "saint-denis"
+  },
+  {
+    "id": "gl-izmit",
+    "nameZh": "İzmit",
+    "nameEn": "İzmit",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "izmit"
+  },
+  {
+    "id": "gl-bursa",
+    "nameZh": "Bursa",
+    "nameEn": "Bursa",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bursa"
+  },
+  {
+    "id": "gl-ankara",
+    "nameZh": "安卡拉",
+    "nameEn": "Ankara",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ankara"
+  },
+  {
+    "id": "gl-adana",
+    "nameZh": "Adana",
+    "nameEn": "Adana",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "adana"
+  },
+  {
+    "id": "gl-kayseri",
+    "nameZh": "Kayseri",
+    "nameEn": "Kayseri",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kayseri"
+  },
+  {
+    "id": "gl-kutahya",
+    "nameZh": "Kütahya",
+    "nameEn": "Kütahya",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kutahya"
+  },
+  {
+    "id": "gl-balkesir",
+    "nameZh": "Balıkesir",
+    "nameEn": "Balıkesir",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "balkesir"
+  },
+  {
+    "id": "gl-adapazar",
+    "nameZh": "Adapazarı",
+    "nameEn": "Adapazarı",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "adapazar"
+  },
+  {
+    "id": "gl-trabzon",
+    "nameZh": "Trabzon",
+    "nameEn": "Trabzon",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "trabzon"
+  },
+  {
+    "id": "gl-antakya",
+    "nameZh": "Antakya",
+    "nameEn": "Antakya",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "antakya"
+  },
+  {
+    "id": "gl-samsun",
+    "nameZh": "Samsun",
+    "nameEn": "Samsun",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "samsun"
+  },
+  {
+    "id": "gl-izmir",
+    "nameZh": "İzmir",
+    "nameEn": "İzmir",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "izmir"
+  },
+  {
+    "id": "gl-konya",
+    "nameZh": "Konya",
+    "nameEn": "Konya",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "konya"
+  },
+  {
+    "id": "gl-sivas",
+    "nameZh": "Sivas",
+    "nameEn": "Sivas",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "sivas"
+  },
+  {
+    "id": "gl-denizli",
+    "nameZh": "Denizli",
+    "nameEn": "Denizli",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "denizli"
+  },
+  {
+    "id": "gl-erzurum",
+    "nameZh": "Erzurum",
+    "nameEn": "Erzurum",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "erzurum"
+  },
+  {
+    "id": "gl-pristina",
+    "nameZh": "Pristina",
+    "nameEn": "Pristina",
+    "country": "XK",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "pristina"
+  },
+  {
+    "id": "gl-tashkent",
+    "nameZh": "Tashkent",
+    "nameEn": "Tashkent",
+    "country": "UZ",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "tashkent"
+  },
+  {
+    "id": "gl-vantaa",
+    "nameZh": "Vantaa",
+    "nameEn": "Vantaa",
+    "country": "FI",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "vantaa"
+  },
+  {
+    "id": "gl-turku",
+    "nameZh": "Turku",
+    "nameEn": "Turku",
+    "country": "FI",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "turku"
+  },
+  {
+    "id": "gl-oulu",
+    "nameZh": "Oulu",
+    "nameEn": "Oulu",
+    "country": "FI",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "oulu"
+  },
+  {
+    "id": "gl-tampere",
+    "nameZh": "Tampere",
+    "nameEn": "Tampere",
+    "country": "FI",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "tampere"
+  },
+  {
+    "id": "gl-kanazawa",
+    "nameZh": "Kanazawa",
+    "nameEn": "Kanazawa",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kanazawa"
+  },
+  {
+    "id": "gl-kumamoto",
+    "nameZh": "Kumamoto",
+    "nameEn": "Kumamoto",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kumamoto"
+  },
+  {
+    "id": "gl-akita",
+    "nameZh": "Akita",
+    "nameEn": "Akita",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "akita"
+  },
+  {
+    "id": "gl-kochi",
+    "nameZh": "Kochi",
+    "nameEn": "Kochi",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kochi"
+  },
+  {
+    "id": "gl-gifu-shi",
+    "nameZh": "Gifu-shi",
+    "nameEn": "Gifu-shi",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "gifu-shi"
+  },
+  {
+    "id": "gl-hiroshima",
+    "nameZh": "Hiroshima",
+    "nameEn": "Hiroshima",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "hiroshima"
+  },
+  {
+    "id": "gl-shizuoka",
+    "nameZh": "Shizuoka",
+    "nameEn": "Shizuoka",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "shizuoka"
+  },
+  {
+    "id": "gl-chiba",
+    "nameZh": "Chiba",
+    "nameEn": "Chiba",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "chiba"
+  },
+  {
+    "id": "gl-yokohama",
+    "nameZh": "Yokohama",
+    "nameEn": "Yokohama",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "yokohama"
+  },
+  {
+    "id": "gl-saitama",
+    "nameZh": "Saitama",
+    "nameEn": "Saitama",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "saitama"
+  },
+  {
+    "id": "gl-naha",
+    "nameZh": "Naha",
+    "nameEn": "Naha",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "naha"
+  },
+  {
+    "id": "gl-nagasaki",
+    "nameZh": "Nagasaki",
+    "nameEn": "Nagasaki",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nagasaki"
+  },
+  {
+    "id": "gl-toyama",
+    "nameZh": "Toyama",
+    "nameEn": "Toyama",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "toyama"
+  },
+  {
+    "id": "gl-niigata",
+    "nameZh": "Niigata",
+    "nameEn": "Niigata",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "niigata"
+  },
+  {
+    "id": "gl-nara-shi",
+    "nameZh": "Nara-shi",
+    "nameEn": "Nara-shi",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nara-shi"
+  },
+  {
+    "id": "gl-okayama",
+    "nameZh": "Okayama",
+    "nameEn": "Okayama",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "okayama"
+  },
+  {
+    "id": "gl-sendai",
+    "nameZh": "Sendai",
+    "nameEn": "Sendai",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "sendai"
+  },
+  {
+    "id": "gl-miyazaki",
+    "nameZh": "Miyazaki",
+    "nameEn": "Miyazaki",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "miyazaki"
+  },
+  {
+    "id": "gl-matsuyama",
+    "nameZh": "Matsuyama",
+    "nameEn": "Matsuyama",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "matsuyama"
+  },
+  {
+    "id": "gl-wakayama",
+    "nameZh": "Wakayama",
+    "nameEn": "Wakayama",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "wakayama"
+  },
+  {
+    "id": "gl-takamatsu",
+    "nameZh": "Takamatsu",
+    "nameEn": "Takamatsu",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "takamatsu"
+  },
+  {
+    "id": "gl-oita",
+    "nameZh": "Ōita",
+    "nameEn": "Ōita",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "oita"
+  },
+  {
+    "id": "gl-kobe",
+    "nameZh": "Kobe",
+    "nameEn": "Kobe",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kobe"
+  },
+  {
+    "id": "gl-nagano",
+    "nameZh": "Nagano",
+    "nameEn": "Nagano",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nagano"
+  },
+  {
+    "id": "gl-utsunomiya",
+    "nameZh": "Utsunomiya",
+    "nameEn": "Utsunomiya",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "utsunomiya"
+  },
+  {
+    "id": "gl-kagoshima",
+    "nameZh": "Kagoshima",
+    "nameEn": "Kagoshima",
+    "country": "JP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kagoshima"
+  },
+  {
+    "id": "gl-nur-sultan",
+    "nameZh": "Nur-Sultan",
+    "nameEn": "Nur-Sultan",
+    "country": "KZ",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nur-sultan"
+  },
+  {
+    "id": "gl-ploiesti",
+    "nameZh": "Ploieşti",
+    "nameEn": "Ploieşti",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ploiesti"
+  },
+  {
+    "id": "gl-craiova",
+    "nameZh": "Craiova",
+    "nameEn": "Craiova",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "craiova"
+  },
+  {
+    "id": "gl-bacau",
+    "nameZh": "Bacău",
+    "nameEn": "Bacău",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bacau"
+  },
+  {
+    "id": "gl-ramnicu-valcea",
+    "nameZh": "Râmnicu Vâlcea",
+    "nameEn": "Râmnicu Vâlcea",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ramnicu-valcea"
+  },
+  {
+    "id": "gl-sibiu",
+    "nameZh": "Sibiu",
+    "nameEn": "Sibiu",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "sibiu"
+  },
+  {
+    "id": "gl-timisoara",
+    "nameZh": "Timişoara",
+    "nameEn": "Timişoara",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "timisoara"
+  },
+  {
+    "id": "gl-pitesti",
+    "nameZh": "Piteşti",
+    "nameEn": "Piteşti",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "pitesti"
+  },
+  {
+    "id": "gl-arad",
+    "nameZh": "Arad",
+    "nameEn": "Arad",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "arad"
+  },
+  {
+    "id": "gl-cluj-napoca",
+    "nameZh": "Cluj-Napoca",
+    "nameEn": "Cluj-Napoca",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "cluj-napoca"
+  },
+  {
+    "id": "gl-bucharest",
+    "nameZh": "Bucharest",
+    "nameEn": "Bucharest",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bucharest"
+  },
+  {
+    "id": "gl-baia-mare",
+    "nameZh": "Baia Mare",
+    "nameEn": "Baia Mare",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "baia-mare"
+  },
+  {
+    "id": "gl-oradea",
+    "nameZh": "Oradea",
+    "nameEn": "Oradea",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "oradea"
+  },
+  {
+    "id": "gl-galati",
+    "nameZh": "Galaţi",
+    "nameEn": "Galaţi",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "galati"
+  },
+  {
+    "id": "gl-brasov",
+    "nameZh": "Braşov",
+    "nameEn": "Braşov",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "brasov"
+  },
+  {
+    "id": "gl-iasi",
+    "nameZh": "Iaşi",
+    "nameEn": "Iaşi",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "iasi"
+  },
+  {
+    "id": "gl-constanta",
+    "nameZh": "Constanţa",
+    "nameEn": "Constanţa",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "constanta"
+  },
+  {
+    "id": "gl-braila",
+    "nameZh": "Brăila",
+    "nameEn": "Brăila",
+    "country": "RO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "braila"
+  },
+  {
+    "id": "gl-kosice",
+    "nameZh": "Košice",
+    "nameEn": "Košice",
+    "country": "SK",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kosice"
+  },
+  {
+    "id": "gl-bratislava",
+    "nameZh": "Bratislava",
+    "nameEn": "Bratislava",
+    "country": "SK",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bratislava"
+  },
+  {
+    "id": "gl-las-palmas-de-gran-canaria",
+    "nameZh": "Las Palmas de Gran Canaria",
+    "nameEn": "Las Palmas de Gran Canaria",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "las-palmas-de-gran-canaria"
+  },
+  {
+    "id": "gl-salamanca",
+    "nameZh": "Salamanca",
+    "nameEn": "Salamanca",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "salamanca"
+  },
+  {
+    "id": "gl-donostia-san-sebastian",
+    "nameZh": "Donostia / San Sebastián",
+    "nameEn": "Donostia / San Sebastián",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "donostia-san-sebastian"
+  },
+  {
+    "id": "gl-gasteiz-vitoria",
+    "nameZh": "Gasteiz / Vitoria",
+    "nameEn": "Gasteiz / Vitoria",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "gasteiz-vitoria"
+  },
+  {
+    "id": "gl-cordoba",
+    "nameZh": "Córdoba",
+    "nameEn": "Córdoba",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "cordoba"
+  },
+  {
+    "id": "gl-santander",
+    "nameZh": "Santander",
+    "nameEn": "Santander",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "santander"
+  },
+  {
+    "id": "gl-palma",
+    "nameZh": "Palma",
+    "nameEn": "Palma",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "palma"
+  },
+  {
+    "id": "gl-malaga",
+    "nameZh": "Málaga",
+    "nameEn": "Málaga",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "malaga"
+  },
+  {
+    "id": "gl-sevilla",
+    "nameZh": "Sevilla",
+    "nameEn": "Sevilla",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "sevilla"
+  },
+  {
+    "id": "gl-bilbao",
+    "nameZh": "Bilbao",
+    "nameEn": "Bilbao",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bilbao"
+  },
+  {
+    "id": "gl-pamplona",
+    "nameZh": "Pamplona",
+    "nameEn": "Pamplona",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "pamplona"
+  },
+  {
+    "id": "gl-castello-de-la-plana",
+    "nameZh": "Castelló de la Plana",
+    "nameEn": "Castelló de la Plana",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "castello-de-la-plana"
+  },
+  {
+    "id": "gl-huelva",
+    "nameZh": "Huelva",
+    "nameEn": "Huelva",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "huelva"
+  },
+  {
+    "id": "gl-granada",
+    "nameZh": "Granada",
+    "nameEn": "Granada",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "granada"
+  },
+  {
+    "id": "gl-valencia",
+    "nameZh": "Valencia",
+    "nameEn": "Valencia",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "valencia"
+  },
+  {
+    "id": "gl-burgos",
+    "nameZh": "Burgos",
+    "nameEn": "Burgos",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "burgos"
+  },
+  {
+    "id": "gl-murcia",
+    "nameZh": "Murcia",
+    "nameEn": "Murcia",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "murcia"
+  },
+  {
+    "id": "gl-santa-cruz-de-tenerife",
+    "nameZh": "Santa Cruz de Tenerife",
+    "nameEn": "Santa Cruz de Tenerife",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "santa-cruz-de-tenerife"
+  },
+  {
+    "id": "gl-oviedo",
+    "nameZh": "Oviedo",
+    "nameEn": "Oviedo",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "oviedo"
+  },
+  {
+    "id": "gl-hong-kong",
+    "nameZh": "香港",
+    "nameEn": "Hong Kong",
+    "country": "HK",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "hong-kong"
+  },
+  {
+    "id": "gl-zagreb",
+    "nameZh": "Zagreb",
+    "nameEn": "Zagreb",
+    "country": "HR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "zagreb"
+  },
+  {
+    "id": "gl-rijeka",
+    "nameZh": "Rijeka",
+    "nameEn": "Rijeka",
+    "country": "HR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "rijeka"
+  },
+  {
+    "id": "gl-split",
+    "nameZh": "Split",
+    "nameEn": "Split",
+    "country": "HR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "split"
+  },
+  {
+    "id": "gl-chon-buri",
+    "nameZh": "Chon Buri",
+    "nameEn": "Chon Buri",
+    "country": "TH",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "chon-buri"
+  },
+  {
+    "id": "gl-rayong",
+    "nameZh": "Rayong",
+    "nameEn": "Rayong",
+    "country": "TH",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "rayong"
+  },
+  {
+    "id": "gl-lampang",
+    "nameZh": "Lampang",
+    "nameEn": "Lampang",
+    "country": "TH",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "lampang"
+  },
+  {
+    "id": "gl-samut-prakan",
+    "nameZh": "Samut Prakan",
+    "nameEn": "Samut Prakan",
+    "country": "TH",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "samut-prakan"
+  },
+  {
+    "id": "gl-colombo",
+    "nameZh": "Colombo",
+    "nameEn": "Colombo",
+    "country": "LK",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "colombo"
+  },
+  {
+    "id": "gl-hamilton",
+    "nameZh": "Hamilton",
+    "nameEn": "Hamilton",
+    "country": "CA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "hamilton"
+  },
+  {
+    "id": "gl-calgary",
+    "nameZh": "卡尔加里",
+    "nameEn": "Calgary",
+    "country": "CA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "calgary"
+  },
+  {
+    "id": "gl-winnipeg",
+    "nameZh": "Winnipeg",
+    "nameEn": "Winnipeg",
+    "country": "CA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "winnipeg"
+  },
+  {
+    "id": "gl-halifax",
+    "nameZh": "Halifax",
+    "nameEn": "Halifax",
+    "country": "CA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "halifax"
+  },
+  {
+    "id": "gl-kitchener",
+    "nameZh": "Kitchener",
+    "nameEn": "Kitchener",
+    "country": "CA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kitchener"
+  },
+  {
+    "id": "gl-edmonton",
+    "nameZh": "埃德蒙顿",
+    "nameEn": "Edmonton",
+    "country": "CA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "edmonton"
+  },
+  {
+    "id": "gl-surrey",
+    "nameZh": "Surrey",
+    "nameEn": "Surrey",
+    "country": "CA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "surrey"
+  },
+  {
+    "id": "gl-mississauga",
+    "nameZh": "Mississauga",
+    "nameEn": "Mississauga",
+    "country": "CA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "mississauga"
+  },
+  {
+    "id": "gl-quebec",
+    "nameZh": "Québec",
+    "nameEn": "Québec",
+    "country": "CA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "quebec"
+  },
+  {
+    "id": "gl-victoria",
+    "nameZh": "Victoria",
+    "nameEn": "Victoria",
+    "country": "CA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "victoria"
+  },
+  {
+    "id": "gl-ottawa",
+    "nameZh": "渥太华",
+    "nameEn": "Ottawa",
+    "country": "CA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ottawa"
+  },
+  {
+    "id": "gl-rancagua",
+    "nameZh": "Rancagua",
+    "nameEn": "Rancagua",
+    "country": "CL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "rancagua"
+  },
+  {
+    "id": "gl-osorno",
+    "nameZh": "Osorno",
+    "nameEn": "Osorno",
+    "country": "CL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "osorno"
+  },
+  {
+    "id": "gl-los-angeles",
+    "nameZh": "Los Ángeles",
+    "nameEn": "Los Ángeles",
+    "country": "CL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "los-angeles"
+  },
+  {
+    "id": "gl-chillan",
+    "nameZh": "Chillán",
+    "nameEn": "Chillán",
+    "country": "CL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "chillan"
+  },
+  {
+    "id": "gl-calama",
+    "nameZh": "Calama",
+    "nameEn": "Calama",
+    "country": "CL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "calama"
+  },
+  {
+    "id": "gl-puerto-montt",
+    "nameZh": "Puerto Montt",
+    "nameEn": "Puerto Montt",
+    "country": "CL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "puerto-montt"
+  },
+  {
+    "id": "gl-valparaiso",
+    "nameZh": "Valparaíso",
+    "nameEn": "Valparaíso",
+    "country": "CL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "valparaiso"
+  },
+  {
+    "id": "gl-quilpue",
+    "nameZh": "Quilpué",
+    "nameEn": "Quilpué",
+    "country": "CL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "quilpue"
+  },
+  {
+    "id": "gl-talca",
+    "nameZh": "Talca",
+    "nameEn": "Talca",
+    "country": "CL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "talca"
+  },
+  {
+    "id": "gl-concepcion",
+    "nameZh": "Concepción",
+    "nameEn": "Concepción",
+    "country": "CL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "concepcion"
+  },
+  {
+    "id": "gl-temuco",
+    "nameZh": "Temuco",
+    "nameEn": "Temuco",
+    "country": "CL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "temuco"
+  },
+  {
+    "id": "gl-addis-ababa",
+    "nameZh": "Addis Ababa",
+    "nameEn": "Addis Ababa",
+    "country": "ET",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "addis-ababa"
+  },
+  {
+    "id": "gl-bishkek",
+    "nameZh": "Bishkek",
+    "nameEn": "Bishkek",
+    "country": "KG",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bishkek"
+  },
+  {
+    "id": "gl-willemstad",
+    "nameZh": "Willemstad",
+    "nameEn": "Willemstad",
+    "country": "CW",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "willemstad"
+  },
+  {
+    "id": "gl-stuttgart",
+    "nameZh": "Stuttgart",
+    "nameEn": "Stuttgart",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "stuttgart"
+  },
+  {
+    "id": "gl-munster",
+    "nameZh": "Münster",
+    "nameEn": "Münster",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "munster"
+  },
+  {
+    "id": "gl-koln",
+    "nameZh": "Köln",
+    "nameEn": "Köln",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "koln"
+  },
+  {
+    "id": "gl-kassel",
+    "nameZh": "Kassel",
+    "nameEn": "Kassel",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kassel"
+  },
+  {
+    "id": "gl-karlsruhe",
+    "nameZh": "Karlsruhe",
+    "nameEn": "Karlsruhe",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "karlsruhe"
+  },
+  {
+    "id": "gl-mainz",
+    "nameZh": "Mainz",
+    "nameEn": "Mainz",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "mainz"
+  },
+  {
+    "id": "gl-dresden",
+    "nameZh": "Dresden",
+    "nameEn": "Dresden",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "dresden"
+  },
+  {
+    "id": "gl-dusseldorf",
+    "nameZh": "Düsseldorf",
+    "nameEn": "Düsseldorf",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "dusseldorf"
+  },
+  {
+    "id": "gl-freiburg",
+    "nameZh": "Freiburg",
+    "nameEn": "Freiburg",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "freiburg"
+  },
+  {
+    "id": "gl-wiesbaden",
+    "nameZh": "Wiesbaden",
+    "nameEn": "Wiesbaden",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "wiesbaden"
+  },
+  {
+    "id": "gl-hannover",
+    "nameZh": "Hannover",
+    "nameEn": "Hannover",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "hannover"
+  },
+  {
+    "id": "gl-augsburg",
+    "nameZh": "Augsburg",
+    "nameEn": "Augsburg",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "augsburg"
+  },
+  {
+    "id": "gl-darmstadt",
+    "nameZh": "Darmstadt",
+    "nameEn": "Darmstadt",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "darmstadt"
+  },
+  {
+    "id": "gl-potsdam",
+    "nameZh": "Potsdam",
+    "nameEn": "Potsdam",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "potsdam"
+  },
+  {
+    "id": "gl-hamburg",
+    "nameZh": "汉堡",
+    "nameEn": "Hamburg",
+    "country": "DE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "hamburg"
+  },
+  {
+    "id": "gl-guadalajara",
+    "nameZh": "Guadalajara",
+    "nameEn": "Guadalajara",
+    "country": "MX",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "guadalajara"
+  },
+  {
+    "id": "gl-cuernavaca",
+    "nameZh": "Cuernavaca",
+    "nameEn": "Cuernavaca",
+    "country": "MX",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "cuernavaca"
+  },
+  {
+    "id": "gl-puebla",
+    "nameZh": "Puebla",
+    "nameEn": "Puebla",
+    "country": "MX",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "puebla"
+  },
+  {
+    "id": "gl-morelia",
+    "nameZh": "Morelia",
+    "nameEn": "Morelia",
+    "country": "MX",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "morelia"
+  },
+  {
+    "id": "gl-merida",
+    "nameZh": "Mérida",
+    "nameEn": "Mérida",
+    "country": "MX",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "merida"
+  },
+  {
+    "id": "gl-san-luis-potosi",
+    "nameZh": "San Luis Potosí",
+    "nameEn": "San Luis Potosí",
+    "country": "MX",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "san-luis-potosi"
+  },
+  {
+    "id": "gl-chihuahua",
+    "nameZh": "Chihuahua",
+    "nameEn": "Chihuahua",
+    "country": "MX",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "chihuahua"
+  },
+  {
+    "id": "gl-monterrey",
+    "nameZh": "Monterrey",
+    "nameEn": "Monterrey",
+    "country": "MX",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "monterrey"
+  },
+  {
+    "id": "gl-pachuca-de-soto",
+    "nameZh": "Pachuca de Soto",
+    "nameEn": "Pachuca de Soto",
+    "country": "MX",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "pachuca-de-soto"
+  },
+  {
+    "id": "gl-tepic",
+    "nameZh": "Tepic",
+    "nameEn": "Tepic",
+    "country": "MX",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "tepic"
+  },
+  {
+    "id": "gl-toluca",
+    "nameZh": "Toluca",
+    "nameEn": "Toluca",
+    "country": "MX",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "toluca"
+  },
+  {
+    "id": "gl-aguascalientes",
+    "nameZh": "Aguascalientes",
+    "nameEn": "Aguascalientes",
+    "country": "MX",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "aguascalientes"
+  },
+  {
+    "id": "gl-oaxaca",
+    "nameZh": "Oaxaca",
+    "nameEn": "Oaxaca",
+    "country": "MX",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "oaxaca"
+  },
+  {
+    "id": "gl-jeddah",
+    "nameZh": "Jeddah",
+    "nameEn": "Jeddah",
+    "country": "SA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "jeddah"
+  },
+  {
+    "id": "gl-abha",
+    "nameZh": "Abha",
+    "nameEn": "Abha",
+    "country": "SA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "abha"
+  },
+  {
+    "id": "gl-dammam",
+    "nameZh": "Dammam",
+    "nameEn": "Dammam",
+    "country": "SA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "dammam"
+  },
+  {
+    "id": "gl-ha-il",
+    "nameZh": "Ha'il",
+    "nameEn": "Ha'il",
+    "country": "SA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ha-il"
+  },
+  {
+    "id": "gl-buraydah",
+    "nameZh": "Buraydah",
+    "nameEn": "Buraydah",
+    "country": "SA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "buraydah"
+  },
+  {
+    "id": "gl-mecca",
+    "nameZh": "Mecca",
+    "nameEn": "Mecca",
+    "country": "SA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "mecca"
+  },
+  {
+    "id": "gl-kampala",
+    "nameZh": "Kampala",
+    "nameEn": "Kampala",
+    "country": "UG",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kampala"
+  },
+  {
+    "id": "gl-dhaka",
+    "nameZh": "Dhaka",
+    "nameEn": "Dhaka",
+    "country": "BD",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "dhaka"
+  },
+  {
+    "id": "gl-debrecen",
+    "nameZh": "Debrecen",
+    "nameEn": "Debrecen",
+    "country": "HU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "debrecen"
+  },
+  {
+    "id": "gl-gyor",
+    "nameZh": "Győr",
+    "nameEn": "Győr",
+    "country": "HU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "gyor"
+  },
+  {
+    "id": "gl-szeged",
+    "nameZh": "Szeged",
+    "nameEn": "Szeged",
+    "country": "HU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "szeged"
+  },
+  {
+    "id": "gl-pecs",
+    "nameZh": "Pécs",
+    "nameEn": "Pécs",
+    "country": "HU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "pecs"
+  },
+  {
+    "id": "gl-kecskemet",
+    "nameZh": "Kecskemét",
+    "nameEn": "Kecskemét",
+    "country": "HU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kecskemet"
+  },
+  {
+    "id": "gl-miskolc",
+    "nameZh": "Miskolc",
+    "nameEn": "Miskolc",
+    "country": "HU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "miskolc"
+  },
+  {
+    "id": "gl-reykjavik",
+    "nameZh": "Reykjavík",
+    "nameEn": "Reykjavík",
+    "country": "IS",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "reykjavik"
+  },
+  {
+    "id": "gl-baguio",
+    "nameZh": "Baguio",
+    "nameEn": "Baguio",
+    "country": "PH",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "baguio"
+  },
+  {
+    "id": "gl-butuan",
+    "nameZh": "Butuan",
+    "nameEn": "Butuan",
+    "country": "PH",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "butuan"
+  },
+  {
+    "id": "gl-zamboanga",
+    "nameZh": "Zamboanga",
+    "nameEn": "Zamboanga",
+    "country": "PH",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "zamboanga"
+  },
+  {
+    "id": "gl-macau",
+    "nameZh": "澳门",
+    "nameEn": "Macau",
+    "country": "MO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "macau"
+  },
+  {
+    "id": "gl-goteborg",
+    "nameZh": "Göteborg",
+    "nameEn": "Göteborg",
+    "country": "SE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "goteborg"
+  },
+  {
+    "id": "gl-malmo",
+    "nameZh": "Malmö",
+    "nameEn": "Malmö",
+    "country": "SE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "malmo"
+  },
+  {
+    "id": "gl-uppsala",
+    "nameZh": "Uppsala",
+    "nameEn": "Uppsala",
+    "country": "SE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "uppsala"
+  },
+  {
+    "id": "gl-san-salvador",
+    "nameZh": "San Salvador",
+    "nameEn": "San Salvador",
+    "country": "SV",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "san-salvador"
+  },
+  {
+    "id": "gl-ha-long",
+    "nameZh": "Hạ Long",
+    "nameEn": "Hạ Long",
+    "country": "VN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ha-long"
+  },
+  {
+    "id": "gl-newcastle",
+    "nameZh": "Newcastle",
+    "nameEn": "Newcastle",
+    "country": "AU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "newcastle"
+  },
+  {
+    "id": "gl-launceston",
+    "nameZh": "Launceston",
+    "nameEn": "Launceston",
+    "country": "AU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "launceston"
+  },
+  {
+    "id": "gl-hobart",
+    "nameZh": "Hobart",
+    "nameEn": "Hobart",
+    "country": "AU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "hobart"
+  },
+  {
+    "id": "gl-darwin",
+    "nameZh": "Darwin",
+    "nameEn": "Darwin",
+    "country": "AU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "darwin"
+  },
+  {
+    "id": "gl-adelaide",
+    "nameZh": "阿德莱德",
+    "nameEn": "Adelaide",
+    "country": "AU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "adelaide"
+  },
+  {
+    "id": "gl-wollongong",
+    "nameZh": "Wollongong",
+    "nameEn": "Wollongong",
+    "country": "AU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "wollongong"
+  },
+  {
+    "id": "gl-manama",
+    "nameZh": "Manama",
+    "nameEn": "Manama",
+    "country": "BH",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "manama"
+  },
+  {
+    "id": "gl-norwich",
+    "nameZh": "Norwich",
+    "nameEn": "Norwich",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "norwich"
+  },
+  {
+    "id": "gl-liverpool",
+    "nameZh": "Liverpool",
+    "nameEn": "Liverpool",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "liverpool"
+  },
+  {
+    "id": "gl-belfast",
+    "nameZh": "Belfast",
+    "nameEn": "Belfast",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "belfast"
+  },
+  {
+    "id": "gl-coventry",
+    "nameZh": "Coventry",
+    "nameEn": "Coventry",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "coventry"
+  },
+  {
+    "id": "gl-leeds",
+    "nameZh": "Leeds",
+    "nameEn": "Leeds",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "leeds"
+  },
+  {
+    "id": "gl-cardiff",
+    "nameZh": "Cardiff",
+    "nameEn": "Cardiff",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "cardiff"
+  },
+  {
+    "id": "gl-bristol",
+    "nameZh": "Bristol",
+    "nameEn": "Bristol",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bristol"
+  },
+  {
+    "id": "gl-birmingham",
+    "nameZh": "Birmingham",
+    "nameEn": "Birmingham",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "birmingham"
+  },
+  {
+    "id": "gl-sheffield",
+    "nameZh": "Sheffield",
+    "nameEn": "Sheffield",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "sheffield"
+  },
+  {
+    "id": "gl-newport",
+    "nameZh": "Newport",
+    "nameEn": "Newport",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "newport"
+  },
+  {
+    "id": "gl-leicester",
+    "nameZh": "Leicester",
+    "nameEn": "Leicester",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "leicester"
+  },
+  {
+    "id": "gl-reading",
+    "nameZh": "Reading",
+    "nameEn": "Reading",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "reading"
+  },
+  {
+    "id": "gl-plymouth",
+    "nameZh": "Plymouth",
+    "nameEn": "Plymouth",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "plymouth"
+  },
+  {
+    "id": "gl-glasgow",
+    "nameZh": "Glasgow",
+    "nameEn": "Glasgow",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "glasgow"
+  },
+  {
+    "id": "gl-preston",
+    "nameZh": "Preston",
+    "nameEn": "Preston",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "preston"
+  },
+  {
+    "id": "gl-swansea",
+    "nameZh": "Swansea",
+    "nameEn": "Swansea",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "swansea"
+  },
+  {
+    "id": "gl-southend-on-sea",
+    "nameZh": "Southend-on-Sea",
+    "nameEn": "Southend-on-Sea",
+    "country": "GB",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "southend-on-sea"
+  },
+  {
+    "id": "gl-vientiane",
+    "nameZh": "Vientiane",
+    "nameEn": "Vientiane",
+    "country": "LA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "vientiane"
+  },
+  {
+    "id": "gl-kaunas",
+    "nameZh": "Kaunas",
+    "nameEn": "Kaunas",
+    "country": "LT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kaunas"
+  },
+  {
+    "id": "gl-san-juan",
+    "nameZh": "San Juan",
+    "nameEn": "San Juan",
+    "country": "PR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "san-juan"
+  },
+  {
+    "id": "gl-funchal",
+    "nameZh": "Funchal",
+    "nameEn": "Funchal",
+    "country": "PT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "funchal"
+  },
+  {
+    "id": "gl-taitung-city",
+    "nameZh": "Taitung City",
+    "nameEn": "Taitung City",
+    "country": "TW",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "taitung-city"
+  },
+  {
+    "id": "gl-taichung",
+    "nameZh": "台中",
+    "nameEn": "Taichung",
+    "country": "TW",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "taichung"
+  },
+  {
+    "id": "gl-taoyuan-city",
+    "nameZh": "Taoyuan City",
+    "nameEn": "Taoyuan City",
+    "country": "TW",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "taoyuan-city"
+  },
+  {
+    "id": "gl-taipei",
+    "nameZh": "台北",
+    "nameEn": "Taipei",
+    "country": "TW",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "taipei"
+  },
+  {
+    "id": "gl-hsinchu",
+    "nameZh": "Hsinchu",
+    "nameEn": "Hsinchu",
+    "country": "TW",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "hsinchu"
+  },
+  {
+    "id": "gl-keelung",
+    "nameZh": "Keelung",
+    "nameEn": "Keelung",
+    "country": "TW",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "keelung"
+  },
+  {
+    "id": "gl-tainan",
+    "nameZh": "台南",
+    "nameEn": "Tainan",
+    "country": "TW",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "tainan"
+  },
+  {
+    "id": "gl-douliu",
+    "nameZh": "Douliu",
+    "nameEn": "Douliu",
+    "country": "TW",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "douliu"
+  },
+  {
+    "id": "gl-kaohsiung",
+    "nameZh": "高雄",
+    "nameEn": "Kaohsiung",
+    "country": "TW",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kaohsiung"
+  },
+  {
+    "id": "gl-odz",
+    "nameZh": "Łódź",
+    "nameEn": "Łódź",
+    "country": "PL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "odz"
+  },
+  {
+    "id": "gl-tarnow",
+    "nameZh": "Tarnów",
+    "nameEn": "Tarnów",
+    "country": "PL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "tarnow"
+  },
+  {
+    "id": "gl-gdansk",
+    "nameZh": "Gdańsk",
+    "nameEn": "Gdańsk",
+    "country": "PL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "gdansk"
+  },
+  {
+    "id": "gl-katowice",
+    "nameZh": "Katowice",
+    "nameEn": "Katowice",
+    "country": "PL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "katowice"
+  },
+  {
+    "id": "gl-poznan",
+    "nameZh": "Poznań",
+    "nameEn": "Poznań",
+    "country": "PL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "poznan"
+  },
+  {
+    "id": "gl-rybnik",
+    "nameZh": "Rybnik",
+    "nameEn": "Rybnik",
+    "country": "PL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "rybnik"
+  },
+  {
+    "id": "gl-szczecin",
+    "nameZh": "Szczecin",
+    "nameEn": "Szczecin",
+    "country": "PL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "szczecin"
+  },
+  {
+    "id": "gl-kielce",
+    "nameZh": "Kielce",
+    "nameEn": "Kielce",
+    "country": "PL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kielce"
+  },
+  {
+    "id": "gl-bydgoszcz",
+    "nameZh": "Bydgoszcz",
+    "nameEn": "Bydgoszcz",
+    "country": "PL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bydgoszcz"
+  },
+  {
+    "id": "gl-zabrze",
+    "nameZh": "Zabrze",
+    "nameEn": "Zabrze",
+    "country": "PL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "zabrze"
+  },
+  {
+    "id": "gl-wrocaw",
+    "nameZh": "Wrocław",
+    "nameEn": "Wrocław",
+    "country": "PL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "wrocaw"
+  },
+  {
+    "id": "gl-pock",
+    "nameZh": "Płock",
+    "nameEn": "Płock",
+    "country": "PL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "pock"
+  },
+  {
+    "id": "gl-krakow",
+    "nameZh": "Kraków",
+    "nameEn": "Kraków",
+    "country": "PL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "krakow"
+  },
+  {
+    "id": "gl-sofia",
+    "nameZh": "Sofia",
+    "nameEn": "Sofia",
+    "country": "BG",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "sofia"
+  },
+  {
+    "id": "gl-burgas",
+    "nameZh": "Burgas",
+    "nameEn": "Burgas",
+    "country": "BG",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "burgas"
+  },
+  {
+    "id": "gl-plovdiv",
+    "nameZh": "Plovdiv",
+    "nameEn": "Plovdiv",
+    "country": "BG",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "plovdiv"
+  },
+  {
+    "id": "gl-nicosia",
+    "nameZh": "Nicosia",
+    "nameEn": "Nicosia",
+    "country": "CY",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nicosia"
+  },
+  {
+    "id": "gl-limassol",
+    "nameZh": "Limassol",
+    "nameEn": "Limassol",
+    "country": "CY",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "limassol"
+  },
+  {
+    "id": "gl-baghdad",
+    "nameZh": "Baghdad",
+    "nameEn": "Baghdad",
+    "country": "IQ",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "baghdad"
+  },
+  {
+    "id": "gl-skopje",
+    "nameZh": "Skopje",
+    "nameEn": "Skopje",
+    "country": "MK",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "skopje"
+  },
+  {
+    "id": "gl-cochabamba",
+    "nameZh": "Cochabamba",
+    "nameEn": "Cochabamba",
+    "country": "BO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "cochabamba"
+  },
+  {
+    "id": "gl-quito",
+    "nameZh": "Quito",
+    "nameEn": "Quito",
+    "country": "EC",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "quito"
+  },
+  {
+    "id": "gl-middelburg",
+    "nameZh": "Middelburg",
+    "nameEn": "Middelburg",
+    "country": "ZA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "middelburg"
+  },
+  {
+    "id": "gl-pretoria",
+    "nameZh": "Pretoria",
+    "nameEn": "Pretoria",
+    "country": "ZA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "pretoria"
+  },
+  {
+    "id": "gl-east-london",
+    "nameZh": "East London",
+    "nameEn": "East London",
+    "country": "ZA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "east-london"
+  },
+  {
+    "id": "gl-vereeniging",
+    "nameZh": "Vereeniging",
+    "nameEn": "Vereeniging",
+    "country": "ZA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "vereeniging"
+  },
+  {
+    "id": "gl-klerksdorp",
+    "nameZh": "Klerksdorp",
+    "nameEn": "Klerksdorp",
+    "country": "ZA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "klerksdorp"
+  },
+  {
+    "id": "gl-richards-bay",
+    "nameZh": "Richards Bay",
+    "nameEn": "Richards Bay",
+    "country": "ZA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "richards-bay"
+  },
+  {
+    "id": "gl-port-elizabeth",
+    "nameZh": "Port Elizabeth",
+    "nameEn": "Port Elizabeth",
+    "country": "ZA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "port-elizabeth"
+  },
+  {
+    "id": "gl-worcester",
+    "nameZh": "Worcester",
+    "nameEn": "Worcester",
+    "country": "ZA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "worcester"
+  },
+  {
+    "id": "gl-medellin",
+    "nameZh": "Medellín",
+    "nameEn": "Medellín",
+    "country": "CO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "medellin"
+  },
+  {
+    "id": "gl-tallinn",
+    "nameZh": "Tallinn",
+    "nameEn": "Tallinn",
+    "country": "EE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "tallinn"
+  },
+  {
+    "id": "gl-bologna",
+    "nameZh": "Bologna",
+    "nameEn": "Bologna",
+    "country": "IT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bologna"
+  },
+  {
+    "id": "gl-livorno",
+    "nameZh": "Livorno",
+    "nameEn": "Livorno",
+    "country": "IT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "livorno"
+  },
+  {
+    "id": "gl-trieste",
+    "nameZh": "Trieste",
+    "nameEn": "Trieste",
+    "country": "IT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "trieste"
+  },
+  {
+    "id": "gl-modena",
+    "nameZh": "Modena",
+    "nameEn": "Modena",
+    "country": "IT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "modena"
+  },
+  {
+    "id": "gl-prato",
+    "nameZh": "Prato",
+    "nameEn": "Prato",
+    "country": "IT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "prato"
+  },
+  {
+    "id": "gl-florence",
+    "nameZh": "Florence",
+    "nameEn": "Florence",
+    "country": "IT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "florence"
+  },
+  {
+    "id": "gl-naples",
+    "nameZh": "Naples",
+    "nameEn": "Naples",
+    "country": "IT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "naples"
+  },
+  {
+    "id": "gl-turin",
+    "nameZh": "Turin",
+    "nameEn": "Turin",
+    "country": "IT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "turin"
+  },
+  {
+    "id": "gl-brescia",
+    "nameZh": "Brescia",
+    "nameEn": "Brescia",
+    "country": "IT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "brescia"
+  },
+  {
+    "id": "gl-parma",
+    "nameZh": "Parma",
+    "nameEn": "Parma",
+    "country": "IT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "parma"
+  },
+  {
+    "id": "gl-amman",
+    "nameZh": "Amman",
+    "nameEn": "Amman",
+    "country": "JO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "amman"
+  },
+  {
+    "id": "gl-irbid",
+    "nameZh": "Irbid",
+    "nameEn": "Irbid",
+    "country": "JO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "irbid"
+  },
+  {
+    "id": "gl-zarqa",
+    "nameZh": "Zarqa",
+    "nameEn": "Zarqa",
+    "country": "JO",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "zarqa"
+  },
+  {
+    "id": "gl-utrecht",
+    "nameZh": "Utrecht",
+    "nameEn": "Utrecht",
+    "country": "NL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "utrecht"
+  },
+  {
+    "id": "gl-nijmegen",
+    "nameZh": "Nijmegen",
+    "nameEn": "Nijmegen",
+    "country": "NL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nijmegen"
+  },
+  {
+    "id": "gl-haarlem",
+    "nameZh": "Haarlem",
+    "nameEn": "Haarlem",
+    "country": "NL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "haarlem"
+  },
+  {
+    "id": "gl-eindhoven",
+    "nameZh": "Eindhoven",
+    "nameEn": "Eindhoven",
+    "country": "NL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "eindhoven"
+  },
+  {
+    "id": "gl-rotterdam",
+    "nameZh": "鹿特丹",
+    "nameEn": "Rotterdam",
+    "country": "NL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "rotterdam"
+  },
+  {
+    "id": "gl-dordrecht",
+    "nameZh": "Dordrecht",
+    "nameEn": "Dordrecht",
+    "country": "NL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "dordrecht"
+  },
+  {
+    "id": "gl-breda",
+    "nameZh": "Breda",
+    "nameEn": "Breda",
+    "country": "NL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "breda"
+  },
+  {
+    "id": "gl-groningen",
+    "nameZh": "Groningen",
+    "nameEn": "Groningen",
+    "country": "NL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "groningen"
+  },
+  {
+    "id": "gl-maastricht",
+    "nameZh": "Maastricht",
+    "nameEn": "Maastricht",
+    "country": "NL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "maastricht"
+  },
+  {
+    "id": "gl-the-hague",
+    "nameZh": "The Hague",
+    "nameEn": "The Hague",
+    "country": "NL",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "the-hague"
+  },
+  {
+    "id": "gl-novi-sad",
+    "nameZh": "Novi Sad",
+    "nameEn": "Novi Sad",
+    "country": "RS",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "novi-sad"
+  },
+  {
+    "id": "gl-nis",
+    "nameZh": "Niš",
+    "nameEn": "Niš",
+    "country": "RS",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nis"
+  },
+  {
+    "id": "gl-belgrade",
+    "nameZh": "Belgrade",
+    "nameEn": "Belgrade",
+    "country": "RS",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "belgrade"
+  },
+  {
+    "id": "gl-karachi",
+    "nameZh": "Karachi",
+    "nameEn": "Karachi",
+    "country": "PK",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "karachi"
+  },
+  {
+    "id": "gl-peshawar",
+    "nameZh": "Peshawar",
+    "nameEn": "Peshawar",
+    "country": "PK",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "peshawar"
+  },
+  {
+    "id": "gl-islamabad",
+    "nameZh": "Islamabad",
+    "nameEn": "Islamabad",
+    "country": "PK",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "islamabad"
+  },
+  {
+    "id": "gl-lahore",
+    "nameZh": "Lahore",
+    "nameEn": "Lahore",
+    "country": "PK",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "lahore"
+  },
+  {
+    "id": "gl-bloemfontein",
+    "nameZh": "Bloemfontein",
+    "nameEn": "Bloemfontein",
+    "country": "ZA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bloemfontein"
+  },
+  {
+    "id": "gl-durban",
+    "nameZh": "Durban",
+    "nameEn": "Durban",
+    "country": "ZA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "durban"
+  },
+  {
+    "id": "gl-dushanbe",
+    "nameZh": "Dushanbe",
+    "nameEn": "Dushanbe",
+    "country": "TJ",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "dushanbe"
+  },
+  {
+    "id": "gl-lviv",
+    "nameZh": "Lviv",
+    "nameEn": "Lviv",
+    "country": "UA",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "lviv"
+  },
+  {
+    "id": "gl-valladolid",
+    "nameZh": "Valladolid",
+    "nameEn": "Valladolid",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "valladolid"
+  },
+  {
+    "id": "gl-yangon",
+    "nameZh": "Yangon",
+    "nameEn": "Yangon",
+    "country": "MM",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "yangon"
+  },
+  {
+    "id": "gl-haiphong",
+    "nameZh": "Haiphong",
+    "nameEn": "Haiphong",
+    "country": "VN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "haiphong"
+  },
+  {
+    "id": "gl-bandar-abbas",
+    "nameZh": "Bandar Abbas",
+    "nameEn": "Bandar Abbas",
+    "country": "IR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bandar-abbas"
+  },
+  {
+    "id": "gl-thrissur",
+    "nameZh": "Thrissur",
+    "nameEn": "Thrissur",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "thrissur"
+  },
+  {
+    "id": "gl-shillong",
+    "nameZh": "Shillong",
+    "nameEn": "Shillong",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "shillong"
+  },
+  {
+    "id": "gl-ecatepec-de-morelos",
+    "nameZh": "Ecatepec de Morelos",
+    "nameEn": "Ecatepec de Morelos",
+    "country": "MX",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ecatepec-de-morelos"
+  },
+  {
+    "id": "gl-biratnagar",
+    "nameZh": "Biratnagar",
+    "nameEn": "Biratnagar",
+    "country": "NP",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "biratnagar"
+  },
+  {
+    "id": "gl-algiers",
+    "nameZh": "Algiers",
+    "nameEn": "Algiers",
+    "country": "DZ",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "algiers"
+  },
+  {
+    "id": "gl-ashgabat",
+    "nameZh": "Ashgabat",
+    "nameEn": "Ashgabat",
+    "country": "TM",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ashgabat"
+  },
+  {
+    "id": "gl-zaragoza",
+    "nameZh": "Zaragoza",
+    "nameEn": "Zaragoza",
+    "country": "ES",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "zaragoza"
+  },
+  {
+    "id": "gl-dunedin",
+    "nameZh": "Dunedin",
+    "nameEn": "Dunedin",
+    "country": "NZ",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "dunedin"
+  },
+  {
+    "id": "gl-dijon",
+    "nameZh": "Dijon",
+    "nameEn": "Dijon",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "dijon"
+  },
+  {
+    "id": "gl-caen",
+    "nameZh": "Caen",
+    "nameEn": "Caen",
+    "country": "FR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "caen"
+  },
+  {
+    "id": "gl-kabul",
+    "nameZh": "Kabul",
+    "nameEn": "Kabul",
+    "country": "AF",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kabul"
+  },
+  {
+    "id": "gl-nakhon-pathom",
+    "nameZh": "Nakhon Pathom",
+    "nameEn": "Nakhon Pathom",
+    "country": "TH",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nakhon-pathom"
+  },
+  {
+    "id": "gl-nagpur",
+    "nameZh": "Nagpur",
+    "nameEn": "Nagpur",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nagpur"
+  },
+  {
+    "id": "gl-mysore",
+    "nameZh": "Mysore",
+    "nameEn": "Mysore",
+    "country": "IN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "mysore"
+  },
+  {
+    "id": "gl-canberra",
+    "nameZh": "Canberra",
+    "nameEn": "Canberra",
+    "country": "AU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "canberra"
+  },
+  {
+    "id": "gl-thessaloniki",
+    "nameZh": "Thessaloníki",
+    "nameEn": "Thessaloníki",
+    "country": "GR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "thessaloniki"
+  },
+  {
+    "id": "gl-hue",
+    "nameZh": "Huế",
+    "nameEn": "Huế",
+    "country": "VN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "hue"
+  },
+  {
+    "id": "gl-chelyabinsk",
+    "nameZh": "Chelyabinsk",
+    "nameEn": "Chelyabinsk",
+    "country": "RU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "chelyabinsk"
+  },
+  {
+    "id": "gl-nizhniy-novgorod",
+    "nameZh": "Nizhniy Novgorod",
+    "nameEn": "Nizhniy Novgorod",
+    "country": "RU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "nizhniy-novgorod"
+  },
+  {
+    "id": "gl-krasnoyarsk",
+    "nameZh": "Krasnoyarsk",
+    "nameEn": "Krasnoyarsk",
+    "country": "RU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "krasnoyarsk"
+  },
+  {
+    "id": "gl-tomsk",
+    "nameZh": "Tomsk",
+    "nameEn": "Tomsk",
+    "country": "RU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "tomsk"
+  },
+  {
+    "id": "gl-novosibirsk",
+    "nameZh": "Novosibirsk",
+    "nameEn": "Novosibirsk",
+    "country": "RU",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "novosibirsk"
+  },
+  {
+    "id": "gl-bamako",
+    "nameZh": "Bamako",
+    "nameEn": "Bamako",
+    "country": "ML",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "bamako"
+  },
+  {
+    "id": "gl-tbilisi",
+    "nameZh": "Tbilisi",
+    "nameEn": "Tbilisi",
+    "country": "GE",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "tbilisi"
+  },
+  {
+    "id": "gl-guatemala-city",
+    "nameZh": "Guatemala City",
+    "nameEn": "Guatemala City",
+    "country": "GT",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "guatemala-city"
+  },
+  {
+    "id": "gl-vitoria",
+    "nameZh": "Vitória",
+    "nameEn": "Vitória",
+    "country": "BR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "vitoria"
+  },
+  {
+    "id": "gl-eskisehir",
+    "nameZh": "Eskişehir",
+    "nameEn": "Eskişehir",
+    "country": "TR",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "eskisehir"
+  },
+  {
+    "id": "gl-almaty",
+    "nameZh": "Almaty",
+    "nameEn": "Almaty",
+    "country": "KZ",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "almaty"
+  },
+  {
+    "id": "gl-conakry",
+    "nameZh": "Conakry",
+    "nameEn": "Conakry",
+    "country": "GN",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "conakry"
+  },
+  {
+    "id": "gl-abidjan",
+    "nameZh": "Abidjan",
+    "nameEn": "Abidjan",
+    "country": "CI",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "abidjan"
+  },
+  {
+    "id": "gl-accra",
+    "nameZh": "Accra",
+    "nameEn": "Accra",
+    "country": "GH",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "accra"
+  },
+  {
+    "id": "gl-kuantan",
+    "nameZh": "Kuantan",
+    "nameEn": "Kuantan",
+    "country": "MY",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kuantan"
+  },
+  {
+    "id": "gl-miri",
+    "nameZh": "Miri",
+    "nameEn": "Miri",
+    "country": "MY",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "miri"
+  },
+  {
+    "id": "gl-george-town",
+    "nameZh": "George Town",
+    "nameEn": "George Town",
+    "country": "MY",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "george-town"
+  },
+  {
+    "id": "gl-klang",
+    "nameZh": "Klang",
+    "nameEn": "Klang",
+    "country": "MY",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "klang"
+  },
+  {
+    "id": "gl-malacca",
+    "nameZh": "Malacca",
+    "nameEn": "Malacca",
+    "country": "MY",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "malacca"
+  },
+  {
+    "id": "gl-taiping",
+    "nameZh": "Taiping",
+    "nameEn": "Taiping",
+    "country": "MY",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "taiping"
+  },
+  {
+    "id": "gl-alor-setar",
+    "nameZh": "Alor Setar",
+    "nameEn": "Alor Setar",
+    "country": "MY",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "alor-setar"
+  },
+  {
+    "id": "gl-kota-bharu",
+    "nameZh": "Kota Bharu",
+    "nameEn": "Kota Bharu",
+    "country": "MY",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kota-bharu"
+  },
+  {
+    "id": "gl-kuching",
+    "nameZh": "Kuching",
+    "nameEn": "Kuching",
+    "country": "MY",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "kuching"
+  },
+  {
+    "id": "gl-seremban",
+    "nameZh": "Seremban",
+    "nameEn": "Seremban",
+    "country": "MY",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "seremban"
+  },
+  {
+    "id": "gl-ipoh",
+    "nameZh": "Ipoh",
+    "nameEn": "Ipoh",
+    "country": "MY",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "ipoh"
+  },
+  {
+    "id": "gl-johor-bahru",
+    "nameZh": "Johor Bahru",
+    "nameEn": "Johor Bahru",
+    "country": "MY",
+    "latitude": 30.0,
+    "longitude": 0.0,
+    "isDomestic": false,
+    "waqiSlug": "johor-bahru"
   }
 ];
 

@@ -1,35 +1,63 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStandard } from '@/components/StandardContext';
 import { CITIES_REGISTRY, findCity } from '@/lib/constants/cities';
-import { getAnnualTrends, get365CalendarHeatmap } from '@/lib/services/history-data';
+import { getAnnualTrends, get365CalendarHeatmap, getCityAvailableYears, fetchCityDailyHistory } from '@/lib/services/history-data';
 import { CalendarHeatmap } from '@/components/CalendarHeatmap';
 import { AnnualTrendChart } from '@/components/AnnualTrendChart';
 import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
-import { History, Download, Calendar, TrendingDown, Sun, Snowflake, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { History, Download, Calendar, TrendingDown, Sun, Snowflake, CheckCircle2, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
 
 export default function HistoryPage() {
   const { standard } = useStandard();
   const [selectedCityId, setSelectedCityId] = useState('cn-chengdu'); // 默认展示成都
   const [selectedYear, setSelectedYear] = useState(2025);
+  const [dailyRecords, setDailyRecords] = useState<Record<string, any>>({});
+  const [loadingDaily, setLoadingDaily] = useState(false);
 
   const city = findCity(selectedCityId) || CITIES_REGISTRY[0];
   const annualTrends = getAnnualTrends(city.id, standard);
-  const calendarData = get365CalendarHeatmap(city.id, selectedYear, standard);
+  const availableYears = getCityAvailableYears(city.id);
 
-  // 统计不同标准下的天数分布
-  // 国标：<= 50 优，51-100 良，> 100 污染
-  // 美标：<= 50 Good，51-100 Moderate，> 100 USG 及以上
+  // 当切换城市时，若当前选中的年份在目标城市中不存在，自动调整为该城市最新年份
+  useEffect(() => {
+    if (availableYears.length > 0 && !availableYears.includes(selectedYear)) {
+      setSelectedYear(availableYears[0]);
+    }
+  }, [city.id, availableYears, selectedYear]);
+
+  // 异步获取当前选中国内或全球城市的逐日实测全量历史
+  useEffect(() => {
+    let active = true;
+    setLoadingDaily(true);
+    fetchCityDailyHistory(city.id).then((daily) => {
+      if (active) {
+        setDailyRecords(daily);
+        setLoadingDaily(false);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [city.id]);
+
+  const calendarData = get365CalendarHeatmap(city.id, selectedYear, standard, dailyRecords);
+
+  // 统计不同标准下的天数分布（基于该年份实际有效实测天数）
+  const validTotalDays = calendarData.length;
   const goodDaysCount = calendarData.filter((d) => d[1] <= (standard === 'CN' ? 100 : 50)).length;
   const compliantDaysCount = calendarData.filter((d) => d[1] <= 100).length;
-  const compliantRatio = Math.round((compliantDaysCount / calendarData.length) * 100);
+  const compliantRatio = validTotalDays > 0 ? Math.round((compliantDaysCount / validTotalDays) * 100) : 0;
   const pollutedDaysCount = calendarData.filter((d) => d[1] > 100).length;
 
-  // 动态计算该城市近 10 年 PM2.5 削减改善幅度
-  const firstYearPM25 = annualTrends[0]?.pm25Avg || 60;
-  const lastYearPM25 = annualTrends[annualTrends.length - 1]?.pm25Avg || 30;
-  const reductionRate = (((lastYearPM25 - firstYearPM25) / firstYearPM25) * 100).toFixed(1);
+  // 动态计算该城市历史第一年到最近一年的真实 PM2.5 削减改善幅度
+  const firstYearObj = annualTrends[0];
+  const lastYearObj = annualTrends[annualTrends.length - 1];
+  const firstYearPM25 = firstYearObj?.pm25Avg || 0;
+  const lastYearPM25 = lastYearObj?.pm25Avg || 0;
+  const reductionRate =
+    firstYearPM25 > 0 ? (((lastYearPM25 - firstYearPM25) / firstYearPM25) * 100).toFixed(1) : '0';
 
   // 导出 CSV 功能
   const handleExportCSV = () => {
@@ -64,11 +92,11 @@ export default function HistoryPage() {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            当前计算标准遵循 <span className="font-semibold text-slate-700">{standard === 'CN' ? '中国环境空气质量指数 (HJ 633-2012)' : '美国环保署 NowCast 标准'}</span>，切换导航栏右上角标准时，全量历史数据将即时重算。
+            当前计算标准遵循 <span className="font-semibold text-slate-700">{standard === 'CN' ? '中国环境空气质量指数 (HJ 633-2012)' : '美国环保署 NowCast 标准'}</span>，切换导航栏右上角标准时，全量真实历史实测数据将即时重算。
           </p>
         </div>
 
-        {/* 城市与年份选择器 (Algolia 风格即时搜索 + 年份选择) */}
+        {/* 城市与年份选择器 (Algolia 风格即时搜索 + 真实归档年份选择) */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2.5 text-xs w-full sm:w-auto">
           <CitySearchAutocomplete
             selectedCity={city}
@@ -82,7 +110,7 @@ export default function HistoryPage() {
             onChange={(e) => setSelectedYear(Number(e.target.value))}
             className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-sky-500 shadow-sm shrink-0"
           >
-            {[2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014].map((y) => (
+            {availableYears.map((y) => (
               <option key={y} value={y}>
                 {y} 年度
               </option>
@@ -91,7 +119,8 @@ export default function HistoryPage() {
 
           <button
             onClick={handleExportCSV}
-            className="flex items-center justify-center space-x-1.5 px-3 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold transition-colors shrink-0 shadow-sm"
+            disabled={calendarData.length === 0}
+            className="flex items-center justify-center space-x-1.5 px-3 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white font-semibold transition-colors shrink-0 shadow-sm"
             title="导出为 CSV 电子表格"
           >
             <Download className="w-3.5 h-3.5" />
@@ -127,7 +156,7 @@ export default function HistoryPage() {
             </p>
             <div className="flex items-baseline space-x-2 mt-1">
               <span className="text-3xl font-black text-emerald-600">{compliantRatio}%</span>
-              <span className="text-xs text-slate-500">共 {compliantDaysCount} 天达标</span>
+              <span className="text-xs text-slate-500">共 {compliantDaysCount} 天达标 / 实测 {validTotalDays} 天</span>
             </div>
           </div>
           <CheckCircle2 className="w-8 h-8 text-emerald-500/20" />
@@ -141,7 +170,7 @@ export default function HistoryPage() {
             <div className="flex items-baseline space-x-2 mt-1">
               <span className="text-3xl font-black text-rose-600">{pollutedDaysCount} 天</span>
               <span className="text-xs text-slate-500">
-                {city.nameZh === '成都' ? '秋冬盆地逆温及夏秋臭氧' : '主要集中于秋冬与初春'}
+                {city.isDomestic ? '主要分布于秋冬逆温及夏秋臭氧' : '主要受局地扩散与季节排放影响'}
               </span>
             </div>
           </div>
@@ -150,12 +179,18 @@ export default function HistoryPage() {
 
         <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-500">治理十年改善幅度 (较 2014)</p>
+            <p className="text-xs text-slate-500">
+              治理成效改善幅度 {firstYearObj ? `(较 ${firstYearObj.year})` : ''}
+            </p>
             <div className="flex items-baseline space-x-2 mt-1">
               <span className="text-3xl font-black text-sky-600">
                 {Number(reductionRate) > 0 ? `+${reductionRate}%` : `${reductionRate}%`}
               </span>
-              <span className="text-xs text-slate-500">PM2.5 持续大幅削减</span>
+              <span className="text-xs text-slate-500">
+                {firstYearObj && lastYearObj
+                  ? `${firstYearObj.pm25Avg} → ${lastYearObj.pm25Avg} μg/m³`
+                  : 'PM2.5 真实演进轨迹'}
+              </span>
             </div>
           </div>
           <TrendingDown className="w-8 h-8 text-sky-500/20" />
@@ -168,28 +203,54 @@ export default function HistoryPage() {
           <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
             <Calendar className="w-4 h-4 text-sky-600" />
             <span>
-              {city.nameZh} {selectedYear} 年 365 天日历热力全景谱系
+              {city.nameZh} {selectedYear} 年逐日日历热力全景谱系
             </span>
           </h3>
-          <span className="text-xs text-slate-500">
-            换算基准: {standard === 'CN' ? '中国国标 (HJ 633)' : '美标 (US EPA NowCast)'} · 格子颜色对应优良中差等级
-          </span>
+          <div className="flex items-center space-x-2 text-xs text-slate-500">
+            {loadingDaily && (
+              <span className="flex items-center space-x-1 text-sky-600">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>实测数据同步中...</span>
+              </span>
+            )}
+            <span>
+              换算基准: {standard === 'CN' ? '中国国标 (HJ 633)' : '美标 (US EPA NowCast)'} · 格子颜色对应实测等级
+            </span>
+          </div>
         </div>
-        <CalendarHeatmap data={calendarData} year={selectedYear} standard={standard} />
+        {validTotalDays > 0 ? (
+          <CalendarHeatmap data={calendarData} year={selectedYear} standard={standard} />
+        ) : (
+          <div className="h-56 flex flex-col items-center justify-center text-slate-400 text-sm space-y-2">
+            <Calendar className="w-8 h-8 text-slate-300" />
+            <p>该城市在 {selectedYear} 年度暂无官方逐日实测归档记录</p>
+            <p className="text-xs text-slate-400">
+              请在上方下拉菜单中切换到该城市有实测记录的年份 ({availableYears.join(', ')})
+            </p>
+          </div>
+        )}
       </section>
 
-      {/* 核心图表 2: 近 10 年蓝天保卫战改善折线与优良率柱状图 */}
+      {/* 核心图表 2: 长期治理改善折线与优良率柱状图 */}
       <section className="glass-panel rounded-2xl p-5">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
             <TrendingDown className="w-4 h-4 text-emerald-600" />
-            <span>2014 ~ 2025 年际长期治理成效与蓝天保卫战成果</span>
+            <span>
+              {annualTrends.length > 0 ? `${annualTrends[0].year} ~ ${annualTrends[annualTrends.length - 1].year}` : ''} 年际长期治理成效与蓝天保卫战成果
+            </span>
           </h3>
           <span className="text-xs text-slate-500">
-            评价标准: {standard === 'CN' ? '中国国标 (HJ 633)' : '美标 (US EPA)'} · 柱状图与污染天数随标准实时重算
+            评价标准: {standard === 'CN' ? '中国国标 (HJ 633)' : '美标 (US EPA)'} · 基于真实实测数据按所选标准动态计算
           </span>
         </div>
-        <AnnualTrendChart data={annualTrends} cityName={city.nameZh} standard={standard} />
+        {annualTrends.length > 0 ? (
+          <AnnualTrendChart data={annualTrends} cityName={city.nameZh} standard={standard} />
+        ) : (
+          <div className="h-64 flex items-center justify-center text-slate-400 text-sm">
+            暂无该城市的长期年度实测记录
+          </div>
+        )}
       </section>
 
       {/* 季节性污染特征透视 */}
@@ -200,9 +261,9 @@ export default function HistoryPage() {
             <span>秋冬季静稳逆温特征 (11 月 ~ 次年 2 月)</span>
           </div>
           <p className="text-xs text-slate-600 leading-relaxed">
-            {city.nameZh === '成都'
-              ? '成都地处四川盆地腹地，四面环山，冬季地面风速常年低于 1.5 m/s，静稳天气与近地强逆温层高发，污染物易停滞积累形成阶段性轻/中度污染（约 60~75 天）。'
-              : '受区域逆温层及采暖排放影响，冬季静稳天气易发生颗粒物（PM2.5 / PM10）短时积累。过去 10 年间，得益于“煤改气/电”及超低排放改造，重污染波峰时长与峰值浓度已下降超过 65%。'}
+            {city.isDomestic
+              ? '受区域近地逆温层及冬季气象扩散条件减弱影响，静稳天气易发生颗粒物短时积累。过去数年间超低排放改造与清洁取暖工程实施后，峰值浓度与超标天数已显著下降。'
+              : '国际大都市在冬季受取暖排放与静稳天气共同作用，颗粒物（PM2.5 / PM10）呈周期性波峰，夏季扩散条件通常优于冬季。'}
           </p>
         </div>
 
