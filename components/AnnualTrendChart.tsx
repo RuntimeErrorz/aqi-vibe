@@ -27,6 +27,7 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
   const heavyDays = data.map((d) => d.heavyPollutionDays);
 
   const ratioLabel = standard === 'CN' ? '国标优良天数比例 (%)' : '美标达标天数比例 (%)';
+  const heavyLabel = standard === 'CN' ? '国标重度污染天数 (AQI>200, 天)' : '美标不健康天数 (AQI>150, 天)';
 
   const option = {
     backgroundColor: 'transparent',
@@ -39,7 +40,7 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
       textStyle: { color: '#0f172a', fontSize: 12 },
     },
     legend: {
-      data: ['年均 PM2.5 (μg/m³)', ratioLabel, '重度污染天数 (天)'],
+      data: ['年均 PM2.5 (μg/m³)', ratioLabel, heavyLabel],
       top: 0,
       textStyle: { color: '#475569', fontSize: 12 },
     },
@@ -59,7 +60,7 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
     yAxis: [
       {
         type: 'value',
-        name: 'PM2.5 / 重污染天',
+        name: 'PM2.5 / 污染天',
         splitLine: { lineStyle: { color: '#f1f5f9' } },
         axisLabel: { color: '#64748b', fontSize: 10 },
       },
@@ -86,8 +87,8 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(16, 185, 129, 0.85)' },
-              { offset: 1, color: 'rgba(16, 185, 129, 0.25)' },
+              { offset: 0, color: standard === 'CN' ? 'rgba(16, 185, 129, 0.85)' : 'rgba(2, 132, 199, 0.85)' },
+              { offset: 1, color: standard === 'CN' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(2, 132, 199, 0.25)' },
             ],
           },
           borderRadius: [4, 4, 0, 0],
@@ -102,7 +103,7 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
         lineStyle: { width: 3 },
       },
       {
-        name: '重度污染天数 (天)',
+        name: heavyLabel,
         type: 'line',
         smooth: true,
         data: heavyDays,

@@ -122,27 +122,33 @@ export function getCityHistoricalProfile(cityId: string): { baseline: number[]; 
 export function getAnnualTrends(cityId: string, standard: StandardType = 'CN'): AnnualTrend[] {
   const years = [2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
   const profile = getCityHistoricalProfile(cityId);
-  const baseline = profile.baseline;
-  const goodRatios = profile.goodRatios;
 
   return years.map((year, idx) => {
-    const pm25 = baseline[idx] ?? 30;
-    const pm10 = +(pm25 * 1.65).toFixed(1);
+    // 严格调用当年 365 天日历模型与实测数据集，在用户当前所选标准下实时重算！
+    const calendar = get365CalendarHeatmap(cityId, year, standard);
+    const totalDays = calendar.length || 365;
 
-    // 国标 vs 美标的优良率差异：美标由于 PM2.5 限值严格（年均限值 12 ug/m3，良的上限仅 35.4），优良率会显著更低
-    let goodRatio = goodRatios[idx];
-    if (standard === 'US') {
-      goodRatio = Math.max(15, Math.round(goodRatio * 0.72));
-    }
+    // 达标天数统计：
+    // 国标：优 + 良（AQI <= 100）
+    // 美标：Good + Moderate（AQI <= 100）
+    const compliantDays = calendar.filter((d) => d[1] <= 100).length;
+    const goodDaysRatio = Math.round((compliantDays / totalDays) * 100);
 
-    const heavyDays = Math.max(0, Math.round((pm25 / 85) * (year <= 2016 ? 42 : (2025 - year) * 2.8)));
+    // 重度污染 / 不健康天数统计：
+    // 国标重污染五级及严重污染六级：AQI > 200 (对应 PM2.5 > 150 ug/m3)
+    // 美标不健康及严重不健康天数：AQI > 150 (Unhealthy 及以上，对应 PM2.5 > 55.4 ug/m3)
+    const heavyPollutionDays = calendar.filter((d) => (standard === 'CN' ? d[1] > 200 : d[1] > 150)).length;
+
+    // 官方公报基线年均 PM2.5 质量浓度（物理指标，不随评价标准改变）
+    const pm25Avg = profile.baseline[idx] ?? 30;
+    const pm10Avg = +(pm25Avg * 1.65).toFixed(1);
 
     return {
       year,
-      pm25Avg: pm25,
-      pm10Avg: pm10,
-      goodDaysRatio: goodRatio,
-      heavyPollutionDays: heavyDays,
+      pm25Avg,
+      pm10Avg,
+      goodDaysRatio,
+      heavyPollutionDays,
     };
   });
 }

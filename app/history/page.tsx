@@ -26,6 +26,11 @@ export default function HistoryPage() {
   const compliantRatio = Math.round((compliantDaysCount / calendarData.length) * 100);
   const pollutedDaysCount = calendarData.filter((d) => d[1] > 100).length;
 
+  // 动态计算该城市近 10 年 PM2.5 削减改善幅度
+  const firstYearPM25 = annualTrends[0]?.pm25Avg || 60;
+  const lastYearPM25 = annualTrends[annualTrends.length - 1]?.pm25Avg || 30;
+  const reductionRate = (((lastYearPM25 - firstYearPM25) / firstYearPM25) * 100).toFixed(1);
+
   // 导出 CSV 功能
   const handleExportCSV = () => {
     let csvContent = 'data:text/csv;charset=utf-8,\uFEFF';
@@ -148,7 +153,7 @@ export default function HistoryPage() {
             <p className="text-xs text-slate-500">治理十年改善幅度 (较 2014)</p>
             <div className="flex items-baseline space-x-2 mt-1">
               <span className="text-3xl font-black text-sky-600">
-                {city.id === 'cn-chengdu' ? '-53.2%' : city.id === 'cn-beijing' ? '-67.1%' : '-48.5%'}
+                {Number(reductionRate) > 0 ? `+${reductionRate}%` : `${reductionRate}%`}
               </span>
               <span className="text-xs text-slate-500">PM2.5 持续大幅削减</span>
             </div>
@@ -167,7 +172,7 @@ export default function HistoryPage() {
             </span>
           </h3>
           <span className="text-xs text-slate-500">
-            换算基准: {standard === 'CN' ? '国标 (HJ 633)' : '美标 (US EPA)'} · 格子颜色对应优良中差等级
+            换算基准: {standard === 'CN' ? '中国国标 (HJ 633)' : '美标 (US EPA NowCast)'} · 格子颜色对应优良中差等级
           </span>
         </div>
         <CalendarHeatmap data={calendarData} year={selectedYear} standard={standard} />
@@ -180,7 +185,9 @@ export default function HistoryPage() {
             <TrendingDown className="w-4 h-4 text-emerald-600" />
             <span>2014 ~ 2025 年际长期治理成效与蓝天保卫战成果</span>
           </h3>
-          <span className="text-xs text-slate-500">数据源: QuotSoft / 中国环境监测总站官方公报</span>
+          <span className="text-xs text-slate-500">
+            评价标准: {standard === 'CN' ? '中国国标 (HJ 633)' : '美标 (US EPA)'} · 柱状图与污染天数随标准实时重算
+          </span>
         </div>
         <AnnualTrendChart data={annualTrends} cityName={city.nameZh} standard={standard} />
       </section>
