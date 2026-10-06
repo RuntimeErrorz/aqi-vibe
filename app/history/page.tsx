@@ -96,7 +96,7 @@ export default function HistoryPage() {
           <CitySearchAutocomplete
             selectedCity={city}
             onSelectCity={(newCity) => setSelectedCityId(newCity.id)}
-            placeholder="搜索全球 90+ 国家或国内 375+ 城市 (如: 成都 / 纽约 / 巴黎)..."
+            placeholder="搜索全球 90+ 国家或城市 (如: 美国 / 日本 / 英国 / 成都 / 巴黎)..."
             className="w-full sm:flex-1"
           />
 

@@ -1,4 +1,5 @@
 import { CityMeta } from '../types';
+import { COUNTRIES_META } from './countries';
 
 export const CITIES_REGISTRY: CityMeta[] = [
   {
@@ -9792,25 +9793,114 @@ export function findCity(query: string): CityMeta | undefined {
   return undefined;
 }
 
+// 常见国家别名/缩写映射
+const COUNTRY_SYNONYMS: Record<string, string> = {
+  '国内': 'CN',
+  '全国': 'CN',
+  '华夏': 'CN',
+  'usa': 'US',
+  'america': 'US',
+  '美利坚': 'US',
+  'uk': 'GB',
+  'great britain': 'GB',
+  'britain': 'GB',
+  'england': 'GB',
+  '英格兰': 'GB',
+  '大不列颠': 'GB',
+  'uae': 'AE',
+  '阿联酋': 'AE',
+  'korea': 'KR',
+  'south korea': 'KR',
+  '南韩': 'KR',
+  '澳洲': 'AU',
+  '俄罗斯联邦': 'RU',
+};
+
+// 按国家检索时优先呈现的核心/代表城市
+const MAJOR_CITIES_ORDER: Record<string, string[]> = {
+  CN: ['cn-beijing', 'cn-shanghai', 'cn-guangzhou', 'cn-shenzhen', 'cn-chengdu', 'cn-hangzhou', 'cn-wuhan', 'cn-chongqing', 'cn-tianjin', 'cn-nanjing'],
+  US: ['us-new-york', 'us-los-angeles', 'us-chicago', 'us-san-francisco', 'us-seattle', 'us-houston', 'us-boston', 'us-washington'],
+  GB: ['gl-london', 'gl-manchester', 'gl-birmingham', 'gl-edinburgh', 'gl-glasgow'],
+  JP: ['gl-tokyo', 'gl-osaka', 'gl-kyoto', 'gl-yokohama', 'gl-nagoya', 'gl-sapporo', 'gl-fukuoka'],
+  FR: ['gl-paris', 'gl-marseille', 'gl-lyon', 'gl-toulouse', 'gl-nice'],
+  DE: ['gl-berlin', 'gl-munich', 'gl-frankfurt', 'gl-hamburg', 'gl-cologne'],
+  IN: ['gl-delhi', 'gl-mumbai', 'gl-bengaluru', 'gl-kolkata', 'gl-chennai'],
+  KR: ['gl-seoul', 'gl-busan', 'gl-incheon', 'gl-daegu'],
+  IT: ['gl-rome', 'gl-milan', 'gl-naples', 'gl-florence'],
+  ES: ['gl-madrid', 'gl-barcelona', 'gl-valencia', 'gl-seville'],
+  AU: ['gl-sydney', 'gl-melbourne', 'gl-brisbane', 'gl-perth'],
+  CA: ['gl-toronto', 'gl-vancouver', 'gl-montreal', 'gl-ottawa'],
+  BR: ['gl-sao-paulo', 'gl-rio-de-janeiro'],
+  RU: ['gl-moscow', 'gl-saint-petersburg'],
+};
+
 export function searchCities(query: string, limit = 8): CityMeta[] {
   const q = query.trim().toLowerCase();
   if (!q) {
     return CITIES_REGISTRY.slice(0, limit);
   }
 
-  const results: CityMeta[] = [];
+  const targetCountryCode = COUNTRY_SYNONYMS[q] || null;
+
+  interface ScoredCity {
+    score: number;
+    city: CityMeta;
+  }
+
+  const scored: ScoredCity[] = [];
+
   for (const c of CITIES_REGISTRY) {
-    if (
-      c.nameZh.toLowerCase().includes(q) ||
-      c.nameEn.toLowerCase().includes(q) ||
-      c.id.toLowerCase().includes(q) ||
-      c.province?.toLowerCase().includes(q) ||
-      c.country.toLowerCase().includes(q)
+    const nameZh = c.nameZh.toLowerCase();
+    const nameEn = c.nameEn.toLowerCase();
+    const prov = (c.province || '').toLowerCase();
+    const cCode = c.country.toUpperCase();
+    const cMeta = COUNTRIES_META[cCode];
+    const countryZh = cMeta?.nameZh.toLowerCase() || '';
+    const countryEn = cMeta?.nameEn.toLowerCase() || '';
+
+    let score = 0;
+
+    // 1. 城市中文名或英文名完全精确命中
+    if (nameZh === q || nameEn === q) {
+      score = 1000;
+    }
+    // 2. 城市前缀匹配
+    else if (nameZh.startsWith(q) || nameEn.startsWith(q)) {
+      score = 800;
+    }
+    // 3. 城市名称子串包含
+    else if (nameZh.includes(q) || nameEn.includes(q) || c.id.toLowerCase().includes(q)) {
+      score = 600;
+    }
+    // 4. 省份/地区命中
+    else if (prov && prov.includes(q)) {
+      score = 400;
+    }
+    // 5. 国家名称匹配 (支持中文国名如'美国'/'日本'/'英国'，英文国名如'japan'/'united states'，及两字代码'us'/'jp')
+    else if (
+      targetCountryCode === cCode ||
+      c.country.toLowerCase() === q ||
+      (countryZh && countryZh.includes(q)) ||
+      (countryEn && countryEn.includes(q))
     ) {
-      results.push(c);
-      if (results.length >= limit) break;
+      score = 200;
+      // 为该国核心/省会重点城市提供加权排序
+      const majorList = MAJOR_CITIES_ORDER[cCode];
+      if (majorList) {
+        const idx = majorList.indexOf(c.id);
+        if (idx !== -1) {
+          score += 100 - idx * 5;
+        }
+      }
+    }
+
+    if (score > 0) {
+      scored.push({ score, city: c });
     }
   }
 
-  return results;
+  // 严格按匹配得分降序
+  scored.sort((a, b) => b.score - a.score);
+
+  return scored.slice(0, limit).map((s) => s.city);
 }

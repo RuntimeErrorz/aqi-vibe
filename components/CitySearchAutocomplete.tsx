@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CityMeta } from '@/lib/types';
 import { searchCities } from '@/lib/constants/cities';
+import { getCountryInfo } from '@/lib/constants/countries';
 import { Search, MapPin, Globe, X, ChevronRight } from 'lucide-react';
 
 interface CitySearchAutocompleteProps {
@@ -15,7 +16,7 @@ interface CitySearchAutocompleteProps {
 export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
   selectedCity,
   onSelectCity,
-  placeholder = '搜索中国城市或全球名城 (如: 成都 / 巴黎 / Tokyo / New York)...',
+  placeholder = '搜索国家或城市 (如: 美国 / 日本 / 英国 / 成都 / 巴黎 / Tokyo)...',
   className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -116,7 +117,7 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
       {isOpen && (
         <div className="absolute left-0 right-0 top-full mt-2 z-[100] bg-white rounded-2xl border border-slate-200/90 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="p-2 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-400 px-3">
-            <span>收录 939 个官方监测站城市 · 即选即生效</span>
+            <span>支持直接输入国家、省份或城市 (如: 美国 / 日本 / 英国 / 成都)</span>
             <span>按 ↑↓ 选择，Enter 确认</span>
           </div>
 
@@ -124,6 +125,7 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
             {results.length > 0 ? (
               results.map((c, idx) => {
                 const isSelected = activeIndex === idx;
+                const countryInfo = getCountryInfo(c.country);
 
                 return (
                   <div
@@ -154,8 +156,10 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
                           <span className="font-bold text-sm text-slate-900">{c.nameZh}</span>
                           <span className="text-xs text-slate-500 font-mono">{c.nameEn}</span>
                         </div>
-                        <p className="text-[11px] text-slate-400">
-                          {c.province ? `${c.province} · ` : ''}国家/地区: {c.country}
+                        <p className="text-[11px] text-slate-500 flex items-center space-x-1 mt-0.5">
+                          <span>{countryInfo.flag}</span>
+                          <span className="font-medium text-slate-600">{countryInfo.nameZh}</span>
+                          {c.province && <span>· {c.province}</span>}
                         </p>
                       </div>
                     </div>
