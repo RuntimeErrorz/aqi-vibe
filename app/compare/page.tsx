@@ -8,6 +8,7 @@ import { getAnnualTrends } from '@/lib/services/history-data';
 import { CompareLineChart } from '@/components/CompareLineChart';
 import { CompareRadarChart } from '@/components/CompareRadarChart';
 import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
+import { GlobalRankingSandbox } from '@/components/GlobalRankingSandbox';
 import { BarChart3, Plus, X, Globe, Trophy, ArrowDownRight, Sparkles } from 'lucide-react';
 
 const PALETTE = ['#0284c7', '#059669', '#d97706', '#db2777', '#7c3aed'];
@@ -45,6 +46,16 @@ export default function ComparePage() {
       return;
     }
     setSelectedCityIds([...selectedCityIds, city.id]);
+  };
+
+  const handleQuickAddCity = (cityId: string) => {
+    if (selectedCityIds.includes(cityId)) return;
+    if (selectedCityIds.length < 5) {
+      setSelectedCityIds([...selectedCityIds, cityId]);
+    } else {
+      // 达到上限时，替换最后一个城市保持 5 个城市对比
+      setSelectedCityIds([...selectedCityIds.slice(0, 4), cityId]);
+    }
   };
 
   const activeCities = selectedCityIds.map((id, idx) => {
@@ -189,6 +200,15 @@ export default function ComparePage() {
           <span className="text-xs text-slate-500 font-medium">颗粒物与气态污染物综合特征透视</span>
         </div>
         <CompareRadarChart cities={activeCities} />
+      </section>
+
+      {/* 核心榜单模块: 全球与多国空气质量多维全景排行榜 */}
+      <section>
+        <GlobalRankingSandbox
+          selectedCityIds={selectedCityIds}
+          onToggleCity={toggleCity}
+          onAddCity={handleQuickAddCity}
+        />
       </section>
     </div>
   );
