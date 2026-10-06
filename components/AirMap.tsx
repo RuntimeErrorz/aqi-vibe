@@ -182,9 +182,9 @@ export default function AirMap({
                 <div class="aqi-pin-pole"></div>
               </div>
             `,
-            iconSize: [28, 25],
-            iconAnchor: [14, 25],
-            popupAnchor: [0, -26],
+            iconSize: [26, 24],
+            iconAnchor: [13, 24],
+            popupAnchor: [0, -25],
           });
 
           const marker = L.marker([st.lat, st.lon], { icon });
@@ -355,9 +355,9 @@ export default function AirMap({
                 <div class="aqi-pin-pole"></div>
               </div>
             `,
-            iconSize: [28, 25],
-            iconAnchor: [14, 25],
-            popupAnchor: [0, -26],
+            iconSize: [26, 24],
+            iconAnchor: [13, 24],
+            popupAnchor: [0, -25],
           });
           const marker = L.marker([st.lat, st.lon], { icon });
           marker.bindPopup(`

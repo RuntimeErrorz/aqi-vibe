@@ -90,19 +90,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 25px;
-  height: 16px;
-  padding: 0 3.5px;
+  min-width: 24px;
+  height: 15px;
+  padding: 0 3px;
   border-radius: 2px;
   border: 1px solid #ffffff;
-  font-family: Arial, "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 11px;
-  font-weight: 600; /* 原版同款纤细居中字重 */
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  font-size: 10px;
+  font-weight: 400; /* 原版 1:1 单像素纤细常规体 (Normal 400)，绝不加粗 */
   line-height: 1;
-  letter-spacing: -0.3px;
+  letter-spacing: 0;
   text-align: center;
   box-sizing: border-box;
   white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* 原版标牌针脚：垂直细白杆与微圆底针 */
