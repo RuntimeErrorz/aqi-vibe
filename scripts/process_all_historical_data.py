@@ -246,9 +246,14 @@ for c in registry:
         for d_str, row in waqi_records[waqi_key].items():
             if d_str not in daily_dict:
                 daily_dict[d_str] = {}
-            for sp in ('pm25', 'pm10', 'o3', 'no2', 'so2', 'co'):
-                if row.get(sp) is not None:
-                    daily_dict[d_str][sp] = row[sp]
+                for sp in ('pm25', 'pm10', 'o3', 'no2', 'so2', 'co'):
+                    if row.get(sp) is not None:
+                        daily_dict[d_str][sp] = row[sp]
+            else:
+                # QuotSoft 官方日均值优先保留，仅补充 QuotSoft 缺失的分项指标
+                for sp in ('pm25', 'pm10', 'o3', 'no2', 'so2', 'co'):
+                    if daily_dict[d_str].get(sp) is None and row.get(sp) is not None:
+                        daily_dict[d_str][sp] = row[sp]
     
     if daily_dict:
         all_city_daily[cid] = {
