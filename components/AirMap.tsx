@@ -7,6 +7,7 @@ import { POPULAR_STATIONS } from '@/lib/constants/stations';
 import { CITIES_REGISTRY } from '@/lib/constants/cities';
 
 const WAQI_TOKEN = process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48';
+const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_KEY || 'cb1_4bl6_1_dc1bbfd8426369beb577afe4';
 
 interface AirMapProps {
   showWaqiTiles: boolean;
@@ -32,9 +33,9 @@ export default function AirMap({ showWaqiTiles, showStations, center = [35.0, 10
         zoomControl: true,
       });
 
-      // 底图：CartoDB Positron (高质量浅色清新矢量渲染)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
+      // 底图：CARTO 官方授权清爽底图 (传入 Key 去除水印，支持 4 节点并发加速)
+      L.tileLayer(`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${CARTO_KEY}`, {
+        attribution: '&copy; OpenStreetMap &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 19,
       }).addTo(map);
