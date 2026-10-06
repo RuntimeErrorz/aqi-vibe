@@ -22,6 +22,10 @@ export default function MapPage() {
   const [focusCity, setFocusCity] = useState<CityMeta>(CITIES_REGISTRY[0]);
   const [mapCenter, setMapCenter] = useState<[number, number]>([35.0, 105.0]);
   const [mapZoom, setMapZoom] = useState<number>(4);
+  const [stationStatus, setStationStatus] = useState<{ count: number; loading: boolean }>({
+    count: 0,
+    loading: false,
+  });
 
   const handleSelectCity = (city: CityMeta) => {
     setFocusCity(city);
@@ -39,7 +43,7 @@ export default function MapPage() {
             <span>全球空气质量实时热力全景地图</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            加载 WAQI 全球实时空气质量瓦片，支持缩放查看微观街区与宏观跨国扩散。
+            CARTO @2x 视网膜高清底图与 WAQI 实时高精矢量测站，任何缩放下字体与徽章均锐利无损。
           </p>
         </div>
 
@@ -52,8 +56,24 @@ export default function MapPage() {
             className="w-full sm:w-72"
           />
 
-          {/* 图层控制按钮 */}
+          {/* 实时测站状态指示器 */}
           <div className="flex items-center space-x-2 text-xs shrink-0">
+            {stationStatus.loading ? (
+              <div className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 font-medium">
+                <div className="w-3 h-3 border-2 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
+                <span>同步测站中...</span>
+              </div>
+            ) : stationStatus.count > 0 ? (
+              <div className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>已同步 {stationStatus.count} 个高清测站</span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-500">
+                <span>宏观视野 (放大查看微观测站)</span>
+              </div>
+            )}
+
             <button
               onClick={() => setShowWaqiTiles(!showWaqiTiles)}
               className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border transition-all font-semibold cursor-pointer ${
@@ -75,6 +95,7 @@ export default function MapPage() {
           center={mapCenter}
           zoom={mapZoom}
           showWaqiTiles={showWaqiTiles}
+          onStationCountChange={(count, loading) => setStationStatus({ count, loading })}
         />
 
         {/* 悬浮 AQI 色标图例 */}

@@ -52,3 +52,129 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* ========================================================
+   Leaflet 高清锐利渲染与矢量测站徽章 (Razor-Sharp Styles)
+   ======================================================== */
+
+.leaflet-tile {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+.aqi-pin-container {
+  background: transparent !important;
+  border: none !important;
+}
+
+.aqi-vector-pin {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  user-select: none;
+}
+
+.aqi-vector-pin:hover {
+  transform: translateY(-2px) scale(1.15);
+  z-index: 9999 !important;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+}
+
+.aqi-pin-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 5px;
+  border: 1.5px solid #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.aqi-pin-arrow {
+  width: 0;
+  height: 0;
+  border-left: 4.5px solid transparent;
+  border-right: 4.5px solid transparent;
+  margin-top: -1px;
+}
+
+/* AQI 六级标准色彩高对比度分级 */
+.aqi-pin-good {
+  background-color: #10b981;
+  color: #ffffff;
+}
+.aqi-arrow-good {
+  border-top: 5px solid #10b981;
+}
+
+.aqi-pin-moderate {
+  background-color: #eab308;
+  color: #0f172a; /* 黄色背景下使用深青灰文字，保障极佳对比度与锐利清晰度 */
+}
+.aqi-arrow-moderate {
+  border-top: 5px solid #eab308;
+}
+
+.aqi-pin-usg {
+  background-color: #f97316;
+  color: #ffffff;
+}
+.aqi-arrow-usg {
+  border-top: 5px solid #f97316;
+}
+
+.aqi-pin-unhealthy {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+.aqi-arrow-unhealthy {
+  border-top: 5px solid #ef4444;
+}
+
+.aqi-pin-very-unhealthy {
+  background-color: #a855f7;
+  color: #ffffff;
+}
+.aqi-arrow-very-unhealthy {
+  border-top: 5px solid #a855f7;
+}
+
+.aqi-pin-hazardous {
+  background-color: #881337;
+  color: #ffffff;
+}
+.aqi-arrow-hazardous {
+  border-top: 5px solid #881337;
+}
+
+/* 测站弹出卡片美化 */
+.leaflet-popup-content-wrapper {
+  border-radius: 14px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.leaflet-popup-tip {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+

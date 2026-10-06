@@ -47,6 +47,40 @@ export function getWAQIMapTileUrl(): string {
   return `https://tiles.aqicn.org/tiles/usepa-aqi/{z}/{x}/{y}.png?token=${WAQI_TOKEN}`;
 }
 
+export interface WaqiBoundStation {
+  lat: number;
+  lon: number;
+  uid: number;
+  aqi: string;
+  station: {
+    name: string;
+    time: string;
+  };
+}
+
+export async function fetchWAQIMapBounds(
+  minLat: number,
+  minLng: number,
+  maxLat: number,
+  maxLng: number
+): Promise<WaqiBoundStation[]> {
+  const url = `https://api.waqi.info/v2/map/bounds?latlng=${minLat},${minLng},${maxLat},${maxLng}&token=${WAQI_TOKEN}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`WAQI bounds HTTP error ${res.status}`);
+    }
+    const json = await res.json();
+    if (json.status !== 'ok' || !Array.isArray(json.data)) {
+      return [];
+    }
+    return json.data;
+  } catch (err: any) {
+    console.warn('[WAQI] Bounds fetch failed:', err?.message || err);
+    return [];
+  }
+}
+
 function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
   const iaqiRaw = data.iaqi || {};
   

@@ -1,20 +1,60 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useStandard } from '@/components/StandardContext';
 import { CITIES_REGISTRY, findCity } from '@/lib/constants/cities';
 import { getAnnualTrends, get365CalendarHeatmap, getCityAvailableYears, fetchCityDailyHistory, hasCityHistory } from '@/lib/services/history-data';
 import { CalendarHeatmap } from '@/components/CalendarHeatmap';
 import { AnnualTrendChart } from '@/components/AnnualTrendChart';
 import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
-import { History, Download, Calendar, TrendingDown, Sun, Snowflake, CheckCircle2, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
+import { History, Download, Calendar, TrendingDown, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
-export default function HistoryPage() {
+function HistoryPageContent() {
   const { standard } = useStandard();
-  const [selectedCityId, setSelectedCityId] = useState('cn-chengdu'); // 默认展示成都
-  const [selectedYear, setSelectedYear] = useState(2025);
+  const searchParams = useSearchParams();
+  const cityParam = searchParams.get('city');
+  const yearParam = searchParams.get('year');
+
+  const [selectedCityId, setSelectedCityId] = useState<string>(() => {
+    if (cityParam) {
+      const found = findCity(cityParam);
+      if (found && hasCityHistory(found.id)) {
+        return found.id;
+      }
+    }
+    return 'cn-chengdu'; // 默认展示成都
+  });
+
+  const [selectedYear, setSelectedYear] = useState<number>(() => {
+    if (yearParam) {
+      const parsedYear = Number(yearParam);
+      if (!isNaN(parsedYear)) return parsedYear;
+    }
+    return 2025;
+  });
+
   const [dailyRecords, setDailyRecords] = useState<Record<string, any>>({});
   const [loadingDaily, setLoadingDaily] = useState(false);
+
+  // 当 URL 参数变化时同步更新状态（如从排行榜点击不同城市或年份跳转过来）
+  useEffect(() => {
+    if (cityParam) {
+      const found = findCity(cityParam);
+      if (found && hasCityHistory(found.id)) {
+        setSelectedCityId(found.id);
+      }
+    }
+  }, [cityParam]);
+
+  useEffect(() => {
+    if (yearParam) {
+      const parsedYear = Number(yearParam);
+      if (!isNaN(parsedYear)) {
+        setSelectedYear(parsedYear);
+      }
+    }
+  }, [yearParam]);
 
   const rawCity = findCity(selectedCityId);
   const city = rawCity && hasCityHistory(rawCity.id) ? rawCity : (findCity('cn-chengdu') || CITIES_REGISTRY[0]);
@@ -89,7 +129,7 @@ export default function HistoryPage() {
         {/* 左侧简洁标题 */}
         <div className="flex items-center space-x-2 shrink-0">
           <History className="w-5 h-5 text-sky-600" />
-          <h1 className="text-lg font-bold text-slate-900 tracking-tight">空气质量历史“时间机器”</h1>
+          <h1 className="text-lg font-bold text-slate-900 tracking-tight">空气质量历史数据</h1>
         </div>
 
         {/* 城市与年份选择器 (给足横向宽度与呼吸空间) */}
@@ -123,24 +163,6 @@ export default function HistoryPage() {
             <Download className="w-3.5 h-3.5" />
             <span>导出 CSV</span>
           </button>
-        </div>
-      </div>
-
-      {/* 标准说明横幅 */}
-      <div className="p-3.5 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-between text-xs text-sky-900">
-        <div className="flex items-center space-x-2">
-          <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
-          <span>
-            {standard === 'CN' ? (
-              <>
-                <b>国标模式</b>：优良天数门槛为 <b>AQI ≤ 100</b>（包含一级优与二级良，对应 PM2.5 ≤ 75 μg/m³）。
-              </>
-            ) : (
-              <>
-                <b>美标模式</b>：US EPA 标准限值更严苛，<b>Good (优)</b> 仅对应 PM2.5 ≤ 12 μg/m³，<b>Moderate (良)</b> 对应 PM2.5 ≤ 35.4 μg/m³，超过 35.4 即进入不健康超标区间。
-              </>
-            )}
-          </span>
         </div>
       </div>
 
@@ -254,31 +276,21 @@ export default function HistoryPage() {
           </div>
         )}
       </section>
-
-      {/* 季节性污染特征透视 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="glass-panel rounded-2xl p-5">
-          <div className="flex items-center space-x-2 text-sky-700 font-bold text-sm mb-2">
-            <Snowflake className="w-4 h-4 text-sky-600" />
-            <span>秋冬季静稳逆温特征 (11 月 ~ 次年 2 月)</span>
-          </div>
-          <p className="text-xs text-slate-600 leading-relaxed">
-            {city.isDomestic
-              ? '受区域近地逆温层及冬季气象扩散条件减弱影响，静稳天气易发生颗粒物短时积累。过去数年间超低排放改造与清洁取暖工程实施后，峰值浓度与超标天数已显著下降。'
-              : '国际大都市在冬季受取暖排放与静稳天气共同作用，颗粒物（PM2.5 / PM10）呈周期性波峰，夏季扩散条件通常优于冬季。'}
-          </p>
-        </div>
-
-        <div className="glass-panel rounded-2xl p-5">
-          <div className="flex items-center space-x-2 text-amber-700 font-bold text-sm mb-2">
-            <Sun className="w-4 h-4 text-amber-600" />
-            <span>夏秋季光化学臭氧特征 (6 月 ~ 9 月)</span>
-          </div>
-          <p className="text-xs text-slate-600 leading-relaxed">
-            夏季光照充足、气温升高，挥发性有机物（VOCs）与氮氧化物（NOx）在强紫外线作用下发生光化学反应，首要污染物阶段性转变为臭氧（O₃），午后 14:00~17:00 为日间浓度高点。
-          </p>
-        </div>
-      </div>
     </div>
+  );
+}
+
+export default function HistoryPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-3">
+          <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
+          <p className="text-xs text-slate-500 font-medium">正在加载空气质量历史数据...</p>
+        </div>
+      }
+    >
+      <HistoryPageContent />
+    </Suspense>
   );
 }
