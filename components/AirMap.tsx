@@ -25,15 +25,15 @@ export default function AirMap({ showWaqiTiles, showStations, center = [35.0, 10
     if (!mapContainerRef.current) return;
 
     if (!mapInstanceRef.current) {
-      // 初始化 Leaflet 地图 (深色主题)
+      // 初始化 Leaflet 地图 (清爽浅色主题)
       const map = L.map(mapContainerRef.current, {
         center,
         zoom,
         zoomControl: true,
       });
 
-      // 底图：CartoDB Dark Matter
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      // 底图：CartoDB Positron (高质量浅色清新矢量渲染)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap &copy; CARTO',
         subdomains: 'abcd',
         maxZoom: 19,
@@ -44,7 +44,7 @@ export default function AirMap({ showWaqiTiles, showStations, center = [35.0, 10
         `https://tiles.aqicn.org/tiles/usepa-aqi/{z}/{x}/{y}.png?token=${WAQI_TOKEN}`,
         {
           attribution: 'Air Quality Tiles &copy; <a href="https://waqi.info">WAQI</a>',
-          opacity: 0.75,
+          opacity: 0.65,
         }
       );
       if (showWaqiTiles) {
@@ -95,7 +95,7 @@ export default function AirMap({ showWaqiTiles, showStations, center = [35.0, 10
 
     // 1. 国控站点微观打点
     POPULAR_STATIONS.forEach((station) => {
-      const color = station.isCleanStation ? '#10b981' : '#eab308';
+      const color = station.isCleanStation ? '#10b981' : '#f59e0b';
       const markerHtml = `
         <div style="
           background-color: ${color};
@@ -103,7 +103,7 @@ export default function AirMap({ showWaqiTiles, showStations, center = [35.0, 10
           height: 14px;
           border-radius: 50%;
           border: 2px solid #ffffff;
-          box-shadow: 0 0 8px ${color};
+          box-shadow: 0 1px 4px rgba(0,0,0,0.25);
         "></div>
       `;
 
@@ -116,8 +116,8 @@ export default function AirMap({ showWaqiTiles, showStations, center = [35.0, 10
 
       const marker = L.marker([station.latitude, station.longitude], { icon: customIcon });
       marker.bindPopup(`
-        <div style="color: #0f172a; font-size: 12px; font-family: sans-serif;">
-          <h4 style="margin: 0 0 4px 0; font-weight: bold; font-size: 13px;">${station.name}</h4>
+        <div style="color: #0f172a; font-size: 12px; font-family: sans-serif; padding: 2px;">
+          <h4 style="margin: 0 0 4px 0; font-weight: bold; font-size: 13px; color: #0f172a;">${station.name}</h4>
           <p style="margin: 2px 0;">城市: <b>${station.city}</b></p>
           <p style="margin: 2px 0;">国控编号: <code>${station.code}</code></p>
           <p style="margin: 2px 0;">属性: ${station.isCleanStation ? '清洁对照点' : '国控实测站'}</p>
@@ -126,20 +126,20 @@ export default function AirMap({ showWaqiTiles, showStations, center = [35.0, 10
       markersGroup.addLayer(marker);
     });
 
-    // 2. 全球名城大圈打点
+    // 2. 全球名城标签打点
     CITIES_REGISTRY.slice(0, 30).forEach((city) => {
       const isDomestic = city.isDomestic;
       const markerHtml = `
         <div style="
-          background-color: ${isDomestic ? 'rgba(56, 189, 248, 0.8)' : 'rgba(168, 85, 247, 0.8)'};
-          padding: 3px 6px;
+          background-color: ${isDomestic ? '#0284c7' : '#7c3aed'};
+          padding: 3px 7px;
           border-radius: 6px;
-          border: 1px solid rgba(255, 255, 255, 0.6);
+          border: 1.5px solid #ffffff;
           color: #ffffff;
           font-size: 10px;
           font-weight: bold;
           white-space: nowrap;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         ">
           ${city.nameZh}
         </div>
@@ -154,16 +154,16 @@ export default function AirMap({ showWaqiTiles, showStations, center = [35.0, 10
 
       const marker = L.marker([city.latitude, city.longitude], { icon: cityIcon });
       marker.bindPopup(`
-        <div style="color: #0f172a; font-size: 12px;">
-          <h4 style="margin: 0 0 4px 0; font-weight: bold;">${city.nameZh} (${city.nameEn})</h4>
-          <p style="margin: 2px 0;">国家: ${city.country}</p>
-          <p style="margin: 2px 0;">经纬度: ${city.latitude.toFixed(2)}°, ${city.longitude.toFixed(2)}°</p>
-          <a href="/?city=${city.id}" style="color: #0284c7; text-decoration: underline; font-weight: bold;">查看实时大屏 →</a>
+        <div style="color: #0f172a; font-size: 12px; padding: 2px;">
+          <h4 style="margin: 0 0 4px 0; font-weight: bold; color: #0f172a;">${city.nameZh} (${city.nameEn})</h4>
+          <p style="margin: 2px 0;">国家/地区: ${city.country}</p>
+          <p style="margin: 2px 0;">坐标: ${city.latitude.toFixed(2)}°, ${city.longitude.toFixed(2)}°</p>
+          <a href="/?city=${city.id}" style="color: #0284c7; text-decoration: underline; font-weight: bold;">查看实时大盘 →</a>
         </div>
       `);
       markersGroup.addLayer(marker);
     });
   }, [showStations]);
 
-  return <div ref={mapContainerRef} className="w-full h-full rounded-2xl overflow-hidden shadow-2xl" />;
+  return <div ref={mapContainerRef} className="w-full h-full rounded-2xl overflow-hidden" />;
 }

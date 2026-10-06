@@ -15,7 +15,7 @@ export const CompareRadarChart: React.FC<CompareRadarChartProps> = ({ cities }) 
   }, []);
 
   if (!mounted) {
-    return <div className="h-64 flex items-center justify-center text-slate-500 text-sm">加载雷达图中...</div>;
+    return <div className="h-64 flex items-center justify-center text-slate-400 text-sm">加载雷达图中...</div>;
   }
 
   const seriesData = cities.map((c) => ({
@@ -32,14 +32,16 @@ export const CompareRadarChart: React.FC<CompareRadarChartProps> = ({ cities }) 
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'item',
-      backgroundColor: '#0f172a',
-      borderColor: '#334155',
-      textStyle: { color: '#f8fafc', fontSize: 12 },
+      backgroundColor: '#ffffff',
+      borderColor: '#e2e8f0',
+      shadowBlur: 10,
+      shadowColor: 'rgba(0,0,0,0.08)',
+      textStyle: { color: '#0f172a', fontSize: 12 },
     },
     legend: {
       data: cities.map((c) => c.name),
       top: 0,
-      textStyle: { color: '#94a3b8', fontSize: 11 },
+      textStyle: { color: '#475569', fontSize: 12 },
     },
     radar: {
       indicator: [
@@ -53,20 +55,24 @@ export const CompareRadarChart: React.FC<CompareRadarChartProps> = ({ cities }) 
       shape: 'polygon',
       splitNumber: 4,
       axisName: {
-        color: '#94a3b8',
+        color: '#475569',
         fontSize: 11,
+        fontWeight: 'bold',
       },
       splitLine: {
         lineStyle: {
-          color: 'rgba(255, 255, 255, 0.08)',
+          color: '#e2e8f0',
         },
       },
       splitArea: {
-        show: false,
+        show: true,
+        areaStyle: {
+          color: ['#ffffff', '#f8fafc'],
+        },
       },
       axisLine: {
         lineStyle: {
-          color: 'rgba(255, 255, 255, 0.1)',
+          color: '#cbd5e1',
         },
       },
     },

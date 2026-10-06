@@ -16,7 +16,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city }) => {
   }, []);
 
   if (!mounted) {
-    return <div className="h-64 flex items-center justify-center text-slate-500 text-sm">加载图表中...</div>;
+    return <div className="h-64 flex items-center justify-center text-slate-400 text-sm">加载图表中...</div>;
   }
 
   const hours = data.map((d) => d.hour);
@@ -28,14 +28,16 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city }) => {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
-      backgroundColor: '#0f172a',
-      borderColor: '#334155',
-      textStyle: { color: '#f8fafc', fontSize: 12 },
+      backgroundColor: '#ffffff',
+      borderColor: '#e2e8f0',
+      shadowBlur: 10,
+      shadowColor: 'rgba(0,0,0,0.08)',
+      textStyle: { color: '#0f172a', fontSize: 12 },
     },
     legend: {
       data: ['AQI 指数', 'PM2.5 (μg/m³)', '臭氧 O₃ (μg/m³)'],
       top: 0,
-      textStyle: { color: '#94a3b8', fontSize: 11 },
+      textStyle: { color: '#475569', fontSize: 12 },
     },
     grid: {
       left: '3%',
@@ -48,12 +50,12 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city }) => {
       type: 'category',
       boundaryGap: false,
       data: hours,
-      axisLine: { lineStyle: { color: '#334155' } },
-      axisLabel: { color: '#64748b', fontSize: 10 },
+      axisLine: { lineStyle: { color: '#cbd5e1' } },
+      axisLabel: { color: '#64748b', fontSize: 11 },
     },
     yAxis: {
       type: 'value',
-      splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.05)' } },
+      splitLine: { lineStyle: { color: '#f1f5f9' } },
       axisLabel: { color: '#64748b', fontSize: 10 },
     },
     series: [
@@ -62,7 +64,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city }) => {
         type: 'line',
         smooth: true,
         data: aqiVals,
-        itemStyle: { color: '#38bdf8' },
+        itemStyle: { color: '#0284c7' },
         areaStyle: {
           color: {
             type: 'linear',
@@ -71,8 +73,8 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city }) => {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(56, 189, 248, 0.35)' },
-              { offset: 1, color: 'rgba(56, 189, 248, 0.00)' },
+              { offset: 0, color: 'rgba(2, 132, 199, 0.25)' },
+              { offset: 1, color: 'rgba(2, 132, 199, 0.00)' },
             ],
           },
         },
@@ -89,7 +91,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city }) => {
         type: 'line',
         smooth: true,
         data: o3Vals,
-        itemStyle: { color: '#a855f7' },
+        itemStyle: { color: '#9333ea' },
       },
     ],
   };

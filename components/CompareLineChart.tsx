@@ -3,12 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { getAnnualTrends } from '@/lib/services/history-data';
+import { useStandard } from './StandardContext';
 
 interface CompareLineChartProps {
   cities: { id: string; name: string; color: string }[];
 }
 
 export const CompareLineChart: React.FC<CompareLineChartProps> = ({ cities }) => {
+  const { standard } = useStandard();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -16,13 +18,13 @@ export const CompareLineChart: React.FC<CompareLineChartProps> = ({ cities }) =>
   }, []);
 
   if (!mounted) {
-    return <div className="h-64 flex items-center justify-center text-slate-500 text-sm">加载对比折线图中...</div>;
+    return <div className="h-64 flex items-center justify-center text-slate-400 text-sm">加载对比折线图中...</div>;
   }
 
   const years = [2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025].map(String);
 
   const series = cities.map((c) => {
-    const trends = getAnnualTrends(c.id);
+    const trends = getAnnualTrends(c.id, standard);
     return {
       name: c.name,
       type: 'line',
@@ -37,14 +39,16 @@ export const CompareLineChart: React.FC<CompareLineChartProps> = ({ cities }) =>
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
-      backgroundColor: '#0f172a',
-      borderColor: '#334155',
-      textStyle: { color: '#f8fafc', fontSize: 12 },
+      backgroundColor: '#ffffff',
+      borderColor: '#e2e8f0',
+      shadowBlur: 10,
+      shadowColor: 'rgba(0,0,0,0.08)',
+      textStyle: { color: '#0f172a', fontSize: 12 },
     },
     legend: {
       data: cities.map((c) => c.name),
       top: 0,
-      textStyle: { color: '#94a3b8', fontSize: 11 },
+      textStyle: { color: '#475569', fontSize: 12 },
     },
     grid: {
       left: '3%',
@@ -56,13 +60,13 @@ export const CompareLineChart: React.FC<CompareLineChartProps> = ({ cities }) =>
     xAxis: {
       type: 'category',
       data: years,
-      axisLine: { lineStyle: { color: '#334155' } },
-      axisLabel: { color: '#94a3b8', fontSize: 11 },
+      axisLine: { lineStyle: { color: '#cbd5e1' } },
+      axisLabel: { color: '#64748b', fontSize: 11 },
     },
     yAxis: {
       type: 'value',
       name: '年均 PM2.5 (μg/m³)',
-      splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.05)' } },
+      splitLine: { lineStyle: { color: '#f1f5f9' } },
       axisLabel: { color: '#64748b', fontSize: 10 },
     },
     series,

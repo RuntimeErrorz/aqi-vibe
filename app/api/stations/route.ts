@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStationsByCity, POPULAR_STATIONS } from '@/lib/constants/stations';
 
-export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
