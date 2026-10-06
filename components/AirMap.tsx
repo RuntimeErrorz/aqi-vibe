@@ -19,48 +19,42 @@ function getPinStyle(aqiNum: number) {
   if (isNaN(aqiNum) || aqiNum <= 50) {
     return {
       boxClass: 'aqi-pin-good',
-      arrowClass: 'aqi-arrow-good',
       levelText: '优 (Good)',
-      colorHex: '#10b981',
+      colorHex: '#009966',
     };
   }
   if (aqiNum <= 100) {
     return {
       boxClass: 'aqi-pin-moderate',
-      arrowClass: 'aqi-arrow-moderate',
       levelText: '良 (Moderate)',
-      colorHex: '#eab308',
+      colorHex: '#fac800',
     };
   }
   if (aqiNum <= 150) {
     return {
       boxClass: 'aqi-pin-usg',
-      arrowClass: 'aqi-arrow-usg',
       levelText: '轻度污染 (USG)',
-      colorHex: '#f97316',
+      colorHex: '#ff7e00',
     };
   }
   if (aqiNum <= 200) {
     return {
       boxClass: 'aqi-pin-unhealthy',
-      arrowClass: 'aqi-arrow-unhealthy',
       levelText: '中度污染 (Unhealthy)',
-      colorHex: '#ef4444',
+      colorHex: '#cc0033',
     };
   }
   if (aqiNum <= 300) {
     return {
       boxClass: 'aqi-pin-very-unhealthy',
-      arrowClass: 'aqi-arrow-very-unhealthy',
       levelText: '重度污染 (Very Unhealthy)',
-      colorHex: '#a855f7',
+      colorHex: '#660099',
     };
   }
   return {
     boxClass: 'aqi-pin-hazardous',
-    arrowClass: 'aqi-arrow-hazardous',
     levelText: '严重污染 (Hazardous)',
-    colorHex: '#881337',
+    colorHex: '#7e0023',
   };
 }
 
@@ -87,8 +81,8 @@ function filterVisibleStationsByGrid(
     return stations; // 微观街区/城市级：全量展示，不进行抽稀
   }
 
-  // 宏观网格单元像素大小 (px)
-  const cellSize = zoom <= 4 ? 44 : zoom <= 6 ? 30 : 20;
+  // 宏观网格单元像素大小 (px)：原版标牌紧凑精致 (24px 宽)，略微减小网格以呈现更丰富的站点
+  const cellSize = zoom <= 4 ? 36 : zoom <= 6 ? 25 : 16;
 
   // 降序排序：高污染数值或有异常读数的测站优先被代表性展示
   const sorted = [...stations].sort((a, b) => {
@@ -156,7 +150,7 @@ export default function AirMap({
         }
       ).addTo(map);
 
-      // 3. 全局纯 CSS 矢量测站微标图层 (完全取代模糊的 WAQI 栅格瓦片，宏观与微观全周期锐利)
+      // 3. 全局纯 CSS 矢量测站微标图层 (完美复刻原版 WAQI 标牌指针视觉风格)
       const markersLayer = L.layerGroup().addTo(map);
       markersLayerRef.current = markersLayer;
 
@@ -177,7 +171,7 @@ export default function AirMap({
           const aqiVal = parseInt(st.aqi, 10);
           const style = getPinStyle(aqiVal);
 
-          // 纯 CSS 矢量徽章 (DOM 矢量元素渲染，在任何高分屏、高缩放比下绝无位图模糊)
+          // 原版标牌指针拟真矢量标记 (针尖直指站点经纬度，高分屏超锐利)
           const icon = L.divIcon({
             className: 'aqi-pin-container',
             html: `
@@ -185,12 +179,12 @@ export default function AirMap({
                 <div class="aqi-pin-box ${style.boxClass}">
                   ${st.aqi || '-'}
                 </div>
-                <div class="aqi-pin-arrow ${style.arrowClass}"></div>
+                <div class="aqi-pin-pole"></div>
               </div>
             `,
-            iconSize: [34, 25],
-            iconAnchor: [17, 25],
-            popupAnchor: [0, -26],
+            iconSize: [28, 23],
+            iconAnchor: [14, 23],
+            popupAnchor: [0, -24],
           });
 
           const marker = L.marker([st.lat, st.lon], { icon });
@@ -358,12 +352,12 @@ export default function AirMap({
                 <div class="aqi-pin-box ${style.boxClass}">
                   ${st.aqi || '-'}
                 </div>
-                <div class="aqi-pin-arrow ${style.arrowClass}"></div>
+                <div class="aqi-pin-pole"></div>
               </div>
             `,
-            iconSize: [34, 25],
-            iconAnchor: [17, 25],
-            popupAnchor: [0, -26],
+            iconSize: [28, 23],
+            iconAnchor: [14, 23],
+            popupAnchor: [0, -24],
           });
           const marker = L.marker([st.lat, st.lon], { icon });
           marker.bindPopup(`

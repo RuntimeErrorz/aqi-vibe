@@ -54,7 +54,7 @@ body {
 }
 
 /* ========================================================
-   Leaflet 高清锐利渲染与矢量测站徽章 (Razor-Sharp Styles)
+   Leaflet 高清矢量测站徽章 (原版 WAQI 经典标牌拟真风格)
    ======================================================== */
 
 .leaflet-tile {
@@ -67,97 +67,82 @@ body {
   border: none !important;
 }
 
+/* 拟真原版 WAQI 标牌指针风格 */
 .aqi-vector-pin {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   position: relative;
   cursor: pointer;
-  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
   user-select: none;
+  filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.35));
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .aqi-vector-pin:hover {
-  transform: translateY(-2px) scale(1.15);
+  transform: translateY(-2px) scale(1.18);
   z-index: 9999 !important;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(2px 4px 5px rgba(0, 0, 0, 0.45));
 }
 
+/* 原版标牌矩形面板：紧凑、微圆角、细白边 */
 .aqi-pin-box {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 34px;
-  height: 22px;
-  padding: 0 5px;
-  border-radius: 5px;
-  border: 1.5px solid #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 12px;
-  font-weight: 800;
+  min-width: 24px;
+  height: 15px;
+  padding: 0 3.5px;
+  border-radius: 2px;
+  border: 1px solid #ffffff;
+  font-family: Arial, "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 10.5px;
+  font-weight: 600; /* 采用纤细适中的字重，彻底告别原先过粗臃肿的 800 字重 */
   line-height: 1;
+  letter-spacing: -0.2px;
   text-align: center;
   box-sizing: border-box;
   white-space: nowrap;
 }
 
-.aqi-pin-arrow {
-  width: 0;
-  height: 0;
-  border-left: 4.5px solid transparent;
-  border-right: 4.5px solid transparent;
-  margin-top: -1px;
+/* 原版标牌针脚/细杆：垂直细白杆，直指真实地理坐标 */
+.aqi-pin-pole {
+  width: 1.5px;
+  height: 8px;
+  background-color: #ffffff;
+  margin-top: -0.5px;
+  border-radius: 0 0 0.5px 0.5px;
 }
 
-/* AQI 六级标准色彩高对比度分级 */
+/* WAQI 官方原版六级标准配色方案 */
 .aqi-pin-good {
-  background-color: #10b981;
+  background-color: #009966;
   color: #ffffff;
-}
-.aqi-arrow-good {
-  border-top: 5px solid #10b981;
 }
 
 .aqi-pin-moderate {
-  background-color: #eab308;
-  color: #0f172a; /* 黄色背景下使用深青灰文字，保障极佳对比度与锐利清晰度 */
-}
-.aqi-arrow-moderate {
-  border-top: 5px solid #eab308;
+  background-color: #fac800;
+  color: #1e293b; /* 浅黄色背景搭配深青灰字体，兼顾原版外观与极高文字辨识度 */
 }
 
 .aqi-pin-usg {
-  background-color: #f97316;
+  background-color: #ff7e00;
   color: #ffffff;
-}
-.aqi-arrow-usg {
-  border-top: 5px solid #f97316;
 }
 
 .aqi-pin-unhealthy {
-  background-color: #ef4444;
+  background-color: #cc0033;
   color: #ffffff;
-}
-.aqi-arrow-unhealthy {
-  border-top: 5px solid #ef4444;
 }
 
 .aqi-pin-very-unhealthy {
-  background-color: #a855f7;
+  background-color: #660099;
   color: #ffffff;
-}
-.aqi-arrow-very-unhealthy {
-  border-top: 5px solid #a855f7;
 }
 
 .aqi-pin-hazardous {
-  background-color: #881337;
+  background-color: #7e0023;
   color: #ffffff;
-}
-.aqi-arrow-hazardous {
-  border-top: 5px solid #881337;
 }
 
 /* 测站弹出卡片美化 */
