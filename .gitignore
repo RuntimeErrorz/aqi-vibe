@@ -34,3 +34,5 @@ next-env.d.ts
 
 # raw offline data cache
 /data/raw/
+/data/processed/quotsoft_yearly/
+
