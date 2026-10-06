@@ -96,6 +96,21 @@ def get_level_and_color(aqi, standard='CN'):
         else:
             return 'Hazardous (有害危险)', '#7f1d1d'
 
+def aqi_to_concentration(aqi, specie):
+    """WAQI 官方数据集中污染物以美标 US EPA AQI 呈现，本函数将其精确反演为物理质量浓度 (ug/m3 或 mg/m3)"""
+    if aqi is None or aqi <= 0 or specie not in US_BP:
+        return aqi
+    bp_aqi = US_BP['aqi']
+    bp_conc = US_BP[specie]
+    max_idx = min(len(bp_aqi) - 1, len(bp_conc) - 1)
+    if aqi >= bp_aqi[max_idx]:
+        return bp_conc[max_idx]
+    for i in range(max_idx):
+        if bp_aqi[i] <= aqi <= bp_aqi[i+1]:
+            conc = ((bp_conc[i+1] - bp_conc[i]) / (bp_aqi[i+1] - bp_aqi[i])) * (aqi - bp_aqi[i]) + bp_conc[i]
+            return round(conc, 1)
+    return round(aqi, 1)
+
 # 2. Load CITIES_REGISTRY
 with open('lib/constants/cities.ts', 'r', encoding='utf-8') as f:
     content = f.read()
@@ -186,8 +201,9 @@ for fp in waqi_files:
                         city, country = CITY_ALIASES[city_lower]
                     
                     try:
-                        val = round(float(median), 1)
-                        waqi_records[(city, country)][date][specie] = val
+                        raw_aqi = float(median)
+                        phys_val = aqi_to_concentration(raw_aqi, specie)
+                        waqi_records[(city, country)][date][specie] = phys_val
                     except ValueError:
                         pass
 
