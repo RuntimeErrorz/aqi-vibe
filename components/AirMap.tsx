@@ -7,6 +7,7 @@ import { POPULAR_STATIONS } from '@/lib/constants/stations';
 import { CITIES_REGISTRY } from '@/lib/constants/cities';
 
 const WAQI_TOKEN = process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48';
+const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_KEY || 'cb1_4bl6_1_dc1bbfd8426369beb577afe4';
 
 interface AirMapProps {
   showWaqiTiles: boolean;
@@ -32,8 +33,8 @@ export default function AirMap({ showWaqiTiles, showStations, center = [35.0, 10
         zoomControl: true,
       });
 
-      // 1. 底图：CARTO Voyager 高清无字底图 (开启 Retina @2x，超高清高分屏渲染)
-      L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
+      // 1. 底图：CARTO Voyager 高清无字底图 (携带授权 Key 去水印，开启 Retina @2x 超高清渲染)
+      L.tileLayer(`https://basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`, {
         attribution: '&copy; OpenStreetMap &copy; CARTO',
         subdomains: 'abcd',
         maxZoom: 20,
@@ -54,12 +55,12 @@ export default function AirMap({ showWaqiTiles, showStations, center = [35.0, 10
       }
       waqiLayerRef.current = waqiTile;
 
-      // 3. 顶层：专属 Pane 将高清地名/城市标签置于热力图之上，杜绝地名文字被热力图模糊遮盖
+      // 3. 顶层：专属 Pane 将高清地名/城市标签置于热力图之上 (携带授权 Key，Retina @2x 高清)
       const labelsPane = map.createPane('labelsPane');
       labelsPane.style.zIndex = '620';
       labelsPane.style.pointerEvents = 'none';
 
-      L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+      L.tileLayer(`https://basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`, {
         pane: 'labelsPane',
         subdomains: 'abcd',
         maxZoom: 20,
