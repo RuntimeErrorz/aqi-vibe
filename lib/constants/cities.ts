@@ -9768,22 +9768,6 @@ export const CITIES_REGISTRY: CityMeta[] = [
   }
 ];
 
-export function createCustomCity(cityName: string): CityMeta {
-  const trimmed = cityName.trim();
-  const isChinese = /[\u4e00-\u9fa5]/.test(trimmed);
-  const cleanSlug = trimmed.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]/g, '-');
-  return {
-    id: `custom-${cleanSlug}`,
-    nameZh: trimmed,
-    nameEn: trimmed,
-    country: isChinese ? 'CN' : 'GLOBAL',
-    latitude: 35.0,
-    longitude: 105.0,
-    isDomestic: isChinese,
-    waqiSlug: cleanSlug,
-  };
-}
-
 export function findCity(query: string): CityMeta | undefined {
   if (!query) return undefined;
   const q = query.trim().toLowerCase();
@@ -9805,8 +9789,7 @@ export function findCity(query: string): CityMeta | undefined {
   );
   if (partial) return partial;
 
-  // 3. 动态生成任意输入城市
-  return createCustomCity(query);
+  return undefined;
 }
 
 export function searchCities(query: string, limit = 8): CityMeta[] {
@@ -9827,12 +9810,6 @@ export function searchCities(query: string, limit = 8): CityMeta[] {
       results.push(c);
       if (results.length >= limit) break;
     }
-  }
-
-  // 如果没有完全精确匹配的结果，把用户的输入作为一个可创建项置顶推荐
-  const hasExact = results.some(r => r.nameZh.toLowerCase() === q || r.nameEn.toLowerCase() === q);
-  if (!hasExact && q.length > 0) {
-    results.unshift(createCustomCity(query.trim()));
   }
 
   return results;

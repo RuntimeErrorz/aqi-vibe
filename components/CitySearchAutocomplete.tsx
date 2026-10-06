@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { CityMeta } from '@/lib/types';
-import { searchCities, createCustomCity } from '@/lib/constants/cities';
-import { Search, MapPin, Globe, Sparkles, X, ChevronRight } from 'lucide-react';
+import { searchCities } from '@/lib/constants/cities';
+import { Search, MapPin, Globe, X, ChevronRight } from 'lucide-react';
 
 interface CitySearchAutocompleteProps {
   selectedCity: CityMeta;
@@ -70,8 +70,6 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
       e.preventDefault();
       if (results[activeIndex]) {
         handleSelect(results[activeIndex]);
-      } else if (query.trim()) {
-        handleSelect(createCustomCity(query.trim()));
       }
     } else if (e.key === 'Escape') {
       setIsOpen(false);
@@ -118,7 +116,7 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
       {isOpen && (
         <div className="absolute left-0 right-0 top-full mt-2 z-[100] bg-white rounded-2xl border border-slate-200/90 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="p-2 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-400 px-3">
-            <span>支持中英文检索 · 即选即生效</span>
+            <span>收录 939 个官方监测站城市 · 即选即生效</span>
             <span>按 ↑↓ 选择，Enter 确认</span>
           </div>
 
@@ -126,7 +124,6 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
             {results.length > 0 ? (
               results.map((c, idx) => {
                 const isSelected = activeIndex === idx;
-                const isCustom = c.id.startsWith('custom-');
 
                 return (
                   <div
@@ -145,9 +142,7 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
                             : 'bg-purple-100 text-purple-700'
                         }`}
                       >
-                        {isCustom ? (
-                          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                        ) : c.isDomestic ? (
+                        {c.isDomestic ? (
                           <MapPin className="w-3.5 h-3.5" />
                         ) : (
                           <Globe className="w-3.5 h-3.5" />
@@ -158,11 +153,6 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
                         <div className="flex items-center space-x-2">
                           <span className="font-bold text-sm text-slate-900">{c.nameZh}</span>
                           <span className="text-xs text-slate-500 font-mono">{c.nameEn}</span>
-                          {isCustom && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-medium">
-                              自定义城市
-                            </span>
-                          )}
                         </div>
                         <p className="text-[11px] text-slate-400">
                           {c.province ? `${c.province} · ` : ''}国家/地区: {c.country}
@@ -186,12 +176,9 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
                 );
               })
             ) : (
-              <div
-                onClick={() => handleSelect(createCustomCity(query.trim()))}
-                className="p-4 text-center cursor-pointer hover:bg-slate-50 text-xs text-sky-600 font-medium"
-              >
-                <Sparkles className="w-4 h-4 mx-auto mb-1 text-sky-500" />
-                点击检索自定义城市: &quot;{query}&quot; (即刻生成全球模型预测)
+              <div className="p-4 text-center text-xs text-slate-400">
+                <MapPin className="w-4 h-4 mx-auto mb-1 text-slate-300" />
+                未找到与 &quot;{query}&quot; 匹配的官方监测城市
               </div>
             )}
           </div>
