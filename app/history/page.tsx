@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStandard } from '@/components/StandardContext';
 import { CITIES_REGISTRY, findCity } from '@/lib/constants/cities';
-import { getAnnualTrends, get365CalendarHeatmap, getCityAvailableYears, fetchCityDailyHistory } from '@/lib/services/history-data';
+import { getAnnualTrends, get365CalendarHeatmap, getCityAvailableYears, fetchCityDailyHistory, hasCityHistory } from '@/lib/services/history-data';
 import { CalendarHeatmap } from '@/components/CalendarHeatmap';
 import { AnnualTrendChart } from '@/components/AnnualTrendChart';
 import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
@@ -19,6 +19,7 @@ export default function HistoryPage() {
   const city = findCity(selectedCityId) || CITIES_REGISTRY[0];
   const annualTrends = getAnnualTrends(city.id, standard);
   const availableYears = getCityAvailableYears(city.id);
+  const hasHistory = hasCityHistory(city.id) && annualTrends.length > 0;
 
   // 当切换城市时，若当前选中的年份在目标城市中不存在，自动调整为该城市最新年份
   useEffect(() => {
@@ -102,20 +103,25 @@ export default function HistoryPage() {
 
           <select
             value={selectedYear}
+            disabled={!hasHistory || availableYears.length === 0}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-sky-500 shadow-sm shrink-0 cursor-pointer hover:bg-slate-100 transition-colors"
+            className="px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-sky-500 shadow-sm shrink-0 cursor-pointer hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {availableYears.map((y) => (
-              <option key={y} value={y}>
-                {y} 年度
-              </option>
-            ))}
+            {availableYears.length > 0 ? (
+              availableYears.map((y) => (
+                <option key={y} value={y}>
+                  {y} 年度
+                </option>
+              ))
+            ) : (
+              <option value="">暂无年份</option>
+            )}
           </select>
 
           <button
             onClick={handleExportCSV}
-            disabled={calendarData.length === 0}
-            className="flex items-center justify-center space-x-1.5 px-3.5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white font-semibold transition-colors shrink-0 shadow-sm cursor-pointer"
+            disabled={!hasHistory || calendarData.length === 0}
+            className="flex items-center justify-center space-x-1.5 px-3.5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-colors shrink-0 shadow-sm cursor-pointer"
             title="导出为 CSV 电子表格"
           >
             <Download className="w-3.5 h-3.5" />
@@ -124,10 +130,55 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {/* 标准说明横幅 */}
-      <div className="p-3.5 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-between text-xs text-sky-900">
-        <div className="flex items-center space-x-2">
-          <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
+      {!hasHistory ? (
+        <div className="glass-panel rounded-2xl p-8 sm:p-12 text-center space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto shadow-sm">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+          <div className="space-y-2 max-w-lg mx-auto">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
+              <span>{city.nameZh} ({city.nameEn})</span>
+              <span>·</span>
+              <span>{city.isDomestic ? '国内站点' : '国际名城'}</span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-900">
+              该城市暂无长期历史逐日实测归档
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+              本系统严格遵循<b>“纯真实测观测，绝不进行算法捏造或虚拟模型兜底”</b>的工程原则。WAQI 全球科研开放数据库与官方历史库中未收录【{city.nameZh}】的长期逐日归档，没有即真实显示无，不使用任何模拟数据。
+            </p>
+          </div>
+          <div className="pt-3 border-t border-slate-100 max-w-lg mx-auto">
+            <p className="text-xs text-slate-400 mb-3">推荐查看收录了完整逐日实测历史的代表性城市：</p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {[
+                { id: 'cn-beijing', name: '北京' },
+                { id: 'cn-shanghai', name: '上海' },
+                { id: 'cn-chengdu', name: '成都' },
+                { id: 'cn-guangzhou', name: '广州' },
+                { id: 'gl-tokyo', name: '东京' },
+                { id: 'gl-newyork', name: '纽约' },
+                { id: 'gl-london', name: '伦敦' },
+                { id: 'gl-paris', name: '巴黎' },
+                { id: 'gl-delhi', name: '新德里' },
+              ].map((rc) => (
+                <button
+                  key={rc.id}
+                  onClick={() => setSelectedCityId(rc.id)}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 border border-slate-200/60 text-xs font-semibold text-slate-700 transition-all cursor-pointer shadow-xs"
+                >
+                  {rc.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* 标准说明横幅 */}
+          <div className="p-3.5 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-between text-xs text-sky-900">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
           <span>
             {standard === 'CN' ? (
               <>
@@ -277,6 +328,8 @@ export default function HistoryPage() {
           </p>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

@@ -22,6 +22,7 @@ import {
   Calendar,
   Building2,
   Sparkles,
+  AlertCircle,
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -29,6 +30,7 @@ export default function DashboardPage() {
   const [selectedCity, setSelectedCity] = useState<CityMeta>(CITIES_REGISTRY[0]); // 默认北京
   const [loading, setLoading] = useState(false);
   const [record, setRecord] = useState<AirQualityRecord | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [stations, setStations] = useState<StationMeta[]>([]);
   const [trendData, setTrendData] = useState<{ hour: string; aqi: number; pm25: number; o3: number }[]>([]);
 
@@ -48,6 +50,7 @@ export default function DashboardPage() {
 
   const loadCityData = async (city: CityMeta) => {
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await fetchWAQICityData(city.id);
       setRecord(data);
@@ -55,8 +58,10 @@ export default function DashboardPage() {
       const activePM25 = data.pollutants.pm25 || 25;
       setTrendData(get24HourTrend(activeAQI, activePM25));
       setStations(getStationsByCity(city.nameZh));
-    } catch (err) {
-      console.error('Failed to load city data', err);
+    } catch (err: any) {
+      console.warn('Failed to load city data', err);
+      setRecord(null);
+      setLoadError(err?.message || '该站点当前暂无 WAQI 实时监测数据发布');
     } finally {
       setLoading(false);
     }
@@ -147,6 +152,40 @@ export default function DashboardPage() {
           ))}
         </div>
       </section>
+
+      {/* 若 WAQI 暂未发布实时数据：诚实呈现，绝不伪造数据兜底 */}
+      {loadError && !record && (
+        <div className="glass-panel rounded-2xl p-8 sm:p-12 text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto shadow-sm">
+            <AlertCircle className="w-7 h-7" />
+          </div>
+          <div className="space-y-1.5 max-w-md mx-auto">
+            <h3 className="text-lg font-bold text-slate-900">
+              【{selectedCity.nameZh} ({selectedCity.nameEn})】当前暂无 WAQI 实时监测数据
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+              {loadError}。本平台严格遵循纯真实测原则，WAQI 官方测站未收录或离线时，绝不使用随机数伪造数据兜底。
+            </p>
+          </div>
+          <div className="pt-2">
+            <p className="text-xs text-slate-400 mb-2.5">推荐切换查看测站活跃的代表性城市：</p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {quickCities.slice(0, 6).map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => {
+                    const found = findCity(c.id);
+                    if (found) setSelectedCity(found);
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-sky-50 hover:text-sky-600 text-xs font-semibold text-slate-700 transition-colors"
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 核心指标看板 Hero Section */}
       {record && evaluation && (

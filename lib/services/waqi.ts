@@ -21,9 +21,9 @@ export async function fetchWAQICityData(cityIdentifier: string): Promise<AirQual
     }
 
     return parseWAQIResponse(json.data, cityMeta);
-  } catch (err) {
-    console.warn(`[WAQI] Fetch failed for ${cityIdentifier}, using fallback model:`, err);
-    return getFallbackRecord(cityMeta, cityIdentifier);
+  } catch (err: any) {
+    console.warn(`[WAQI] Fetch failed for ${cityIdentifier}:`, err?.message || err);
+    throw new Error(err?.message || `WAQI 暂未收录该站点或当前无数据发布`);
   }
 }
 
@@ -32,14 +32,14 @@ export async function fetchWAQIGeoData(lat: number, lng: number): Promise<AirQua
 
   try {
     const res = await fetch(url, { next: { revalidate: 600 } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`WAQI HTTP status ${res.status}`);
     const json = await res.json();
-    if (json.status !== 'ok' || !json.data) throw new Error('API returned non-ok');
+    if (json.status !== 'ok' || !json.data) throw new Error('该坐标附近暂无有效 WAQI 测站');
 
     return parseWAQIResponse(json.data);
-  } catch (err) {
-    console.warn(`[WAQI] Geo fetch failed for ${lat},${lng}:`, err);
-    return getFallbackRecord(undefined, `Geo (${lat.toFixed(2)}, ${lng.toFixed(2)})`, lat, lng);
+  } catch (err: any) {
+    console.warn(`[WAQI] Geo fetch failed for ${lat},${lng}:`, err?.message || err);
+    throw new Error(err?.message || `该坐标附近暂无有效 WAQI 测站`);
   }
 }
 
@@ -106,53 +106,6 @@ function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
     } : undefined,
     sourceAttribution: data.attributions || [
       { name: 'World Air Quality Index Project', url: 'https://waqi.info/' }
-    ],
-  };
-}
-
-function getFallbackRecord(cityMeta?: any, name = '默认城市', lat = 39.9042, lng = 116.4074): AirQualityRecord {
-  const isDomestic = cityMeta ? cityMeta.isDomestic : true;
-  const pm25 = isDomestic ? Math.floor(25 + Math.random() * 35) : Math.floor(15 + Math.random() * 25);
-  const pm10 = Math.floor(pm25 * 1.6);
-  const o3 = Math.floor(35 + Math.random() * 40);
-  const no2 = Math.floor(18 + Math.random() * 20);
-  const so2 = Math.floor(5 + Math.random() * 8);
-  const co = +(0.6 + Math.random() * 0.4).toFixed(1);
-
-  const pollutants: PollutantValues = { pm25, pm10, o3, no2, so2, co };
-  const evaluationCN = evaluateAQI(pollutants, 'CN');
-  const evaluationUS = evaluateAQI(pollutants, 'US');
-
-  return {
-    id: cityMeta?.id || 'demo-city',
-    name: cityMeta?.nameZh || name,
-    nameEn: cityMeta?.nameEn || name,
-    country: cityMeta?.country || 'CN',
-    isDomestic,
-    latitude: cityMeta?.latitude || lat,
-    longitude: cityMeta?.longitude || lng,
-    updateTime: new Date().toISOString().replace('T', ' ').substring(0, 19),
-    pollutants,
-    iaqi: { pm25: evaluationCN.aqi, pm10: Math.floor(evaluationCN.aqi * 0.8), o3: 30, no2: 25 },
-    evaluationCN,
-    evaluationUS,
-    weather: {
-      temp: 21,
-      humidity: 48,
-      windSpeed: 2.3,
-      pressure: 1016,
-    },
-    forecast: {
-      pm25: [
-        { day: '2026-10-06', avg: pm25, min: pm25 - 8, max: pm25 + 12 },
-        { day: '2026-10-07', avg: pm25 + 5, min: pm25 - 4, max: pm25 + 18 },
-        { day: '2026-10-08', avg: Math.max(15, pm25 - 10), min: 12, max: pm25 },
-        { day: '2026-10-09', avg: pm25 - 2, min: pm25 - 12, max: pm25 + 8 },
-        { day: '2026-10-10', avg: pm25 + 10, min: pm25, max: pm25 + 25 },
-      ],
-    },
-    sourceAttribution: [
-      { name: 'WAQI & CNEMC 实时发布中心', url: 'https://waqi.info/' }
     ],
   };
 }

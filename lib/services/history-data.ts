@@ -35,12 +35,20 @@ export function getAnnualTrends(cityId: string, standard: StandardType = 'CN'): 
 }
 
 /**
+ * 校验该城市是否具备官方实测长期历史归档数据
+ */
+export function hasCityHistory(cityId: string): boolean {
+  const cityTrends = (historySummary as Record<string, any[]>)[cityId];
+  return Array.isArray(cityTrends) && cityTrends.length > 0;
+}
+
+/**
  * 获取该城市具备真实历史归档的全部年份列表
  */
 export function getCityAvailableYears(cityId: string): number[] {
   const trends = getAnnualTrends(cityId);
   if (trends.length === 0) {
-    return [2025, 2024, 2023, 2022, 2021, 2020, 2019];
+    return [];
   }
   return trends.map((t) => t.year).reverse(); // 降序排列
 }
@@ -51,6 +59,11 @@ export function getCityAvailableYears(cityId: string): number[] {
 export async function fetchCityDailyHistory(cityId: string): Promise<Record<string, any>> {
   if (clientDailyCache[cityId]) {
     return clientDailyCache[cityId];
+  }
+
+  // 绝不虚构兜底：若该城市未被收录于历史档案库，直接返回空，避免发起无效网络请求与产生 404
+  if (!hasCityHistory(cityId)) {
+    return {};
   }
 
   try {
