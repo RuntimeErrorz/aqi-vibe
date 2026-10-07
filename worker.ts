@@ -19,12 +19,34 @@ export default {
       }
 
       try {
+        const uid = 'u' + Date.now();
+        const tokenRes = await fetch(`https://api2.waqi.info/api/token/${idx}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `key=-&uid=${uid}`
+        });
+
+        if (!tokenRes.ok) {
+          return new Response(JSON.stringify({ error: `Token fetch error: ${tokenRes.status}` }), {
+            status: 502,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const tokenJson: any = await tokenRes.json();
+        const token = tokenJson?.rxs?.obs?.[0]?.msg?.token;
+        if (!token) {
+          return new Response(JSON.stringify({ error: 'Failed to acquire WAQI token' }), {
+            status: 502,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const feedUid = 'f' + Date.now();
         const waqiRes = await fetch(`https://api2.waqi.info/api/feed/@${idx}/aqi.json`, {
-          headers: {
-            'Origin': 'https://aqicn.org',
-            'Referer': 'https://aqicn.org/',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-          }
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `key=-&token=${token}&uid=${feedUid}&rqc=2`
         });
 
         if (!waqiRes.ok) {

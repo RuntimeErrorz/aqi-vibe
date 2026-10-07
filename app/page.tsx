@@ -166,13 +166,11 @@ export default function DashboardPage() {
 
   const activeForecast = isWaqiForecastValid
     ? validWaqiForecast.slice(0, 5)
-    : trendResult?.forecast && trendResult.forecast.length > 0
-    ? trendResult.forecast.slice(0, 5)
-    : [];
+    : (record?.forecast?.pm25 || []).slice(0, 5);
 
   const forecastSource = isWaqiForecastValid
-    ? '官方站点扩散模型'
-    : 'CAMS / ECMWF 全球数值预报';
+    ? 'WAQI 官方站点扩散模型'
+    : '官方预报暂未发布';
 
 
   const evaluation = record ? (standard === 'CN' ? record.evaluationCN : record.evaluationUS) : null;
@@ -510,11 +508,11 @@ export default function DashboardPage() {
             {trendResult?.isReal ? (
               <span className="text-[11px] px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 flex items-center space-x-1 shadow-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block mr-1"></span>
-                <span>真实大气时序监测网络 (CAMS 同化实测)</span>
+                <span>{trendResult.source}</span>
               </span>
             ) : (
-              <span className="text-[11px] px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 font-medium border border-sky-100">
-                末端点严格锚定实时实测
+              <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 font-medium border border-slate-200">
+                {trendResult?.source || '该监测点暂无逐小时实测'}
               </span>
             )}
           </div>

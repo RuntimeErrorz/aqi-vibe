@@ -108,3 +108,53 @@ export function build24HourPointsFromWaqiObs(
     };
   });
 }
+
+/**
+ * 从 WAQI 官方底层接口直接获取并解码过去 24 小时的真实逐小时实测
+ * 反编译自 aqicn.org bundle.min.js 底层通信协议：
+ * 1. 动态生成 uid 向 https://api2.waqi.info/api/token/${stationIdx} 请求会话 Token
+ * 2. 携带 token 向 https://api2.waqi.info/api/feed/@${stationIdx}/aqi.json POST 请求包含 obs 差分序列的真实时序
+ * 3. 运行前缀和累加差分解码算法，100% 还原物理实测
+ */
+export async function fetchWaqiHourlyDirect(
+  stationIdx: number,
+  standard: StandardType
+): Promise<HourlyTrendPoint[] | null> {
+  try {
+    const uid = 'u' + Date.now();
+    const tokenRes = await fetch(`https://api2.waqi.info/api/token/${stationIdx}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `key=-&uid=${uid}`,
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (!tokenRes.ok) return null;
+    const tokenJson = await tokenRes.json();
+    const token = tokenJson?.rxs?.obs?.[0]?.msg?.token;
+    if (!token) return null;
+
+    const feedUid = 'f' + Date.now();
+    const feedRes = await fetch(`https://api2.waqi.info/api/feed/@${stationIdx}/aqi.json`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `key=-&token=${token}&uid=${feedUid}&rqc=2`,
+      signal: AbortSignal.timeout(6000),
+    });
+
+    if (!feedRes.ok) return null;
+    const feedJson = await feedRes.json();
+    const obs = feedJson?.rxs?.obs?.[0]?.msg?.obs;
+    if (!obs || !obs.pm25) return null;
+
+    const points = build24HourPointsFromWaqiObs(obs, standard);
+    return points.length >= 12 ? points : null;
+  } catch (err) {
+    console.warn('Failed to fetch/decode WAQI hourly directly:', err);
+    return null;
+  }
+}
