@@ -29,10 +29,7 @@ export const Navbar: React.FC = () => {
           <div>
             <div className="flex items-center space-x-2">
               <span className="font-bold text-lg tracking-tight text-slate-900 group-hover:text-sky-600 transition-colors">
-                AQI-Vibe
-              </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-mono border border-sky-200">
-                EDGE
+                AQI Vibe
               </span>
             </div>
             <p className="text-[10px] text-slate-500 hidden sm:block">空气质量监测与历史统计</p>
@@ -61,26 +58,26 @@ export const Navbar: React.FC = () => {
           })}
         </nav>
 
-        {/* 标准切换开关与独立悬停 Tip */}
-        <div className="flex items-center rounded-xl border border-slate-200 bg-white shadow-sm hover:border-slate-300 transition-colors">
+        {/* 标准切换开关与独立悬停 Tip（固定宽度锁定，杜绝切换标准时宽度跳动影响左侧布局） */}
+        <div className="w-[186px] shrink-0 flex items-center justify-between rounded-xl border border-slate-200 bg-white shadow-sm hover:border-slate-300 transition-colors">
           {/* 左侧主体：点击切换标准，悬停不弹出大卡片 */}
           <button
             onClick={toggleStandard}
-            className="flex items-center space-x-1.5 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50 rounded-l-xl cursor-pointer select-none"
+            className="flex-1 flex items-center space-x-1.5 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50 rounded-l-xl cursor-pointer select-none"
             title="点击切换 AQI 计算标准 (中国国标 / 美国 EPA)"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <span className="text-slate-500">标准:</span>
-            <span className="font-bold text-slate-900">
+            <span className="text-slate-500 shrink-0">标准:</span>
+            <span className="w-20 inline-block text-left font-bold text-slate-900 shrink-0 whitespace-nowrap">
               {standard === 'CN' ? '国标 (HJ 633)' : '美标 (US EPA)'}
             </span>
           </button>
 
           {/* 分隔细线 */}
-          <div className="h-4 w-px bg-slate-200" />
+          <div className="h-4 w-px bg-slate-200 shrink-0" />
 
           {/* 右侧独立 Tip 图标：仅在此图标悬停时才出现说明卡片 */}
-          <div className="relative group/tip">
+          <div className="relative group/tip shrink-0">
             <button
               type="button"
               className="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-r-xl transition-colors cursor-help flex items-center justify-center"

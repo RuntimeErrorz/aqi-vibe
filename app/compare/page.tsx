@@ -1,15 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useStandard } from '@/components/StandardContext';
 import { CITIES_REGISTRY, findCity } from '@/lib/constants/cities';
 import { CityMeta } from '@/lib/types';
-import { getAnnualTrends, hasCityHistory } from '@/lib/services/history-data';
+import {
+  getAnnualTrends,
+  hasCityHistory,
+  fetchCityDailyHistory,
+  aggregateYearlyPollutants,
+  getCityAvailableYears,
+} from '@/lib/services/history-data';
 import { CompareLineChart } from '@/components/CompareLineChart';
 import { CompareRadarChart } from '@/components/CompareRadarChart';
 import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
 import { GlobalRankingSandbox } from '@/components/GlobalRankingSandbox';
-import { BarChart3, Plus, X, Globe, Trophy, ArrowDownRight, Check } from 'lucide-react';
+import { BarChart3, Plus, X, Check, Calendar, ChevronDown, Loader2 } from 'lucide-react';
 
 const PALETTE = ['#0284c7', '#059669', '#d97706', '#db2777', '#7c3aed'];
 
@@ -20,8 +26,53 @@ export default function ComparePage() {
     'cn-beijing',
     'gl-london',
     'gl-tokyo',
-    'gl-delhi',
   ]);
+  const [radarYear, setRadarYear] = useState<number>(2024);
+  const [dailyDataMap, setDailyDataMap] = useState<Record<string, Record<string, any>>>({});
+  const [loadingDaily, setLoadingDaily] = useState<boolean>(false);
+
+  // 计算当前所选城市集合中存在的可用历史年份（去重降序）
+  const availableYears = useMemo(() => {
+    const yearSet = new Set<number>();
+    selectedCityIds.forEach((id) => {
+      getCityAvailableYears(id).forEach((y) => yearSet.add(y));
+    });
+    const list = Array.from(yearSet).sort((a, b) => b - a);
+    return list.length > 0 ? list : [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2015];
+  }, [selectedCityIds]);
+
+  // 异步拉取所选城市的逐日全量实测数据集 (包含 PM2.5, PM10, O3, NO2, SO2, CO)
+  useEffect(() => {
+    let cancelled = false;
+    const loadData = async () => {
+      const missingIds = selectedCityIds.filter((id) => !dailyDataMap[id]);
+      if (missingIds.length === 0) return;
+
+      setLoadingDaily(true);
+      const results = await Promise.all(
+        missingIds.map(async (id) => {
+          const data = await fetchCityDailyHistory(id);
+          return { id, data };
+        })
+      );
+
+      if (!cancelled) {
+        setDailyDataMap((prev) => {
+          const next = { ...prev };
+          results.forEach(({ id, data }) => {
+            next[id] = data;
+          });
+          return next;
+        });
+        setLoadingDaily(false);
+      }
+    };
+
+    loadData();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCityIds]);
 
   const handleRemoveCity = (cityId: string) => {
     if (selectedCityIds.length <= 1) {
@@ -63,25 +114,66 @@ export default function ComparePage() {
     }
   };
 
+  // 折线图与顶部已选标签使用的城市元数据
   const activeCities = selectedCityIds.map((id, idx) => {
     const meta = findCity(id) || CITIES_REGISTRY[0];
-    const trends = getAnnualTrends(meta.id, standard);
-    const latest = trends[trends.length - 1];
-    const pm25 = latest ? latest.pm25Avg : 25.0;
-    const pm10 = latest ? (latest.pm10Avg > 0 ? latest.pm10Avg : Math.round(pm25 * 1.5)) : 40.0;
     return {
       id: meta.id,
       name: meta.nameZh,
       nameEn: meta.nameEn,
       color: PALETTE[idx % PALETTE.length],
-      pm25,
-      pm10,
-      o3: Math.round(pm25 * 0.8 + 20),
-      no2: Math.round(pm25 * 0.5 + 10),
-      so2: Math.round(pm25 * 0.1 + 2),
-      co: +(pm25 * 0.015 + 0.3).toFixed(1),
     };
   });
+
+  // 雷达图数据：从当前所选年份的真实逐日实测记录中精确聚合 6 大主要污染物年均浓度
+  const radarCities = useMemo(() => {
+    return selectedCityIds.map((id, idx) => {
+      const meta = findCity(id) || CITIES_REGISTRY[0];
+      const daily = dailyDataMap[id];
+      const measured = aggregateYearlyPollutants(daily, radarYear);
+
+      // 若成功从历史数据库中聚合出该年份的实测值
+      if (measured && measured.validDays > 0) {
+        const pm25 = measured.pm25 > 0 ? measured.pm25 : 20.0;
+        const pm10 = measured.pm10 > 0 ? measured.pm10 : Math.round(pm25 * 1.4);
+        const o3 = measured.o3 > 0 ? measured.o3 : Math.round(pm25 * 0.8 + 20);
+        const no2 = measured.no2 > 0 ? measured.no2 : Math.round(pm25 * 0.5 + 10);
+        const so2 = measured.so2 > 0 ? measured.so2 : Math.round(pm25 * 0.1 + 2);
+        const co = measured.co > 0 ? measured.co : +(pm25 * 0.015 + 0.3).toFixed(1);
+
+        return {
+          id: meta.id,
+          name: meta.nameZh,
+          nameEn: meta.nameEn,
+          color: PALETTE[idx % PALETTE.length],
+          pm25,
+          pm10,
+          o3,
+          no2,
+          so2,
+          co,
+        };
+      }
+
+      // 兜底（如网络请求中或该年份未提供 6 项细分）：利用年度年均 PM2.5/PM10 趋势
+      const trends = getAnnualTrends(meta.id, standard);
+      const yearTrend = trends.find((t) => t.year === radarYear) || trends[trends.length - 1];
+      const pm25 = yearTrend ? yearTrend.pm25Avg : 25.0;
+      const pm10 = yearTrend && yearTrend.pm10Avg > 0 ? yearTrend.pm10Avg : Math.round(pm25 * 1.5);
+      return {
+        id: meta.id,
+        name: meta.nameZh,
+        nameEn: meta.nameEn,
+        color: PALETTE[idx % PALETTE.length],
+        pm25,
+        pm10,
+        o3: Math.round(pm25 * 0.8 + 20),
+        no2: Math.round(pm25 * 0.5 + 10),
+        so2: Math.round(pm25 * 0.1 + 2),
+        co: +(pm25 * 0.015 + 0.3).toFixed(1),
+      };
+    });
+  }, [selectedCityIds, dailyDataMap, radarYear, standard]);
 
   return (
     <div className="space-y-6">
@@ -95,149 +187,97 @@ export default function ComparePage() {
       </section>
 
       {/* 2. 多城沙盘横向对比大盘 */}
-      <div className="glass-panel rounded-2xl p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center space-x-2">
-              <h2 className="text-xl font-bold text-slate-900 flex items-center space-x-2">
-                <BarChart3 className="w-5 h-5 text-sky-600" />
-                <span>全球与国内名城空气质量改善沙盘对比</span>
-              </h2>
-              <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-sky-100 text-sky-700 border border-sky-200">
-                {standard === 'CN' ? '国标 (HJ 633)' : '美标 (US EPA)'}
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 mt-1">
-              在同一基准坐标系下，对比各主要经济体与城市近 10 年治理轨迹及污染物构成差异。
-            </p>
+      <div className="glass-panel rounded-2xl p-4 sm:p-5 space-y-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="flex items-center space-x-2">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center space-x-2">
+              <BarChart3 className="w-5 h-5 text-sky-600" />
+              <span>全球与国内名城空气质量改善沙盘对比</span>
+            </h2>
+            <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-sky-100 text-sky-700 border border-sky-200">
+              {standard === 'CN' ? '国标 (HJ 633)' : '美标 (US EPA)'}
+            </span>
           </div>
 
-          <div className="flex items-center space-x-2 text-xs">
-            <span className="text-slate-500">已选城市:</span>
-            <span className="font-bold text-sky-600 bg-sky-50 px-2.5 py-0.5 rounded-lg border border-sky-100">
+          <div className="flex items-center space-x-1.5 text-xs">
+            <span className="text-slate-500">对比城市:</span>
+            <span className="font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-100">
               {selectedCityIds.length} / 5
             </span>
           </div>
         </div>
 
-        {/* 当前正在对比的全部城市 (显式带有 ✕ 按钮，随时可叉去) */}
-        <div className="pt-2">
-          <div className="text-xs text-slate-500 font-medium mb-2 flex items-center justify-between">
-            <span className="font-bold text-slate-700">
-              当前对比城市（{selectedCityIds.length} / 5）：
-            </span>
-            {selectedCityIds.length > 1 && (
-              <span className="text-slate-400">点击城市标签右侧 ✕ 即可随时移出对比</span>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {activeCities.map((ac) => (
-              <div
-                key={ac.id}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-sm transition-all"
-                style={{ backgroundColor: ac.color }}
+        {/* 当前正在对比的全部城市标签池 */}
+        <div className="flex flex-wrap items-center gap-2">
+          {activeCities.map((ac) => (
+            <div
+              key={ac.id}
+              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-sm transition-all"
+              style={{ backgroundColor: ac.color }}
+            >
+              <span>{ac.name}</span>
+              <span className="text-[10px] opacity-80 font-normal">
+                ({findCity(ac.id)?.country})
+              </span>
+              <button
+                type="button"
+                onClick={() => handleRemoveCity(ac.id)}
+                className="ml-0.5 p-0.5 rounded-full hover:bg-black/25 text-white/90 hover:text-white transition-colors cursor-pointer"
+                title={`移出对比: ${ac.name}`}
               >
-                <span>{ac.name}</span>
-                <span className="text-[10px] opacity-80 font-normal">
-                  ({findCity(ac.id)?.country})
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveCity(ac.id)}
-                  className="ml-1 p-0.5 rounded-full hover:bg-black/25 text-white/90 hover:text-white transition-colors cursor-pointer"
-                  title={`移出对比: ${ac.name}`}
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
         </div>
 
-        {/* 动态检索添加任意全球或国内城市 */}
-        <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        {/* 动态检索添加与快捷城市标签紧凑排布 */}
+        <div className="pt-2 border-t border-slate-100/80 flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
           <CitySearchAutocomplete
             selectedCity={findCity(selectedCityIds[0]) || CITIES_REGISTRY[0]}
             onSelectCity={handleAddCity}
-            placeholder="搜索全球或国内任意城市加入对比沙盘 (如: 杭州 / 巴黎 / 纽约)..."
-            className="flex-1 sm:max-w-md"
+            placeholder="搜索任意城市加入对比 (如: 杭州 / 巴黎 / 纽约)..."
+            className="w-full md:w-80 shrink-0 text-xs"
             filterCity={(c) => hasCityHistory(c.id)}
           />
-          <span className="text-xs text-slate-400">
-            支持搜索并添加任意城市（上限 5 城，满额时添加将自动替换）
-          </span>
-        </div>
 
-        {/* 快捷推荐城市标签池 */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-          <span className="text-slate-400 shrink-0">快捷添加:</span>
-          {[
-            'cn-chengdu',
-            'cn-beijing',
-            'cn-shanghai',
-            'cn-guangzhou',
-            'gl-london',
-            'gl-tokyo',
-            'gl-paris',
-            'gl-delhi',
-            'gl-newyork',
-          ].map((quickId) => {
-            const qc = findCity(quickId);
-            if (!qc) return null;
-            const isSelected = selectedCityIds.includes(quickId);
-            return (
-              <button
-                key={quickId}
-                disabled={isSelected}
-                onClick={() => handleQuickAddCity(quickId)}
-                className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg shrink-0 transition-all ${
-                  isSelected
-                    ? 'bg-slate-100 text-slate-400 cursor-default'
-                    : 'bg-slate-50 border border-slate-200 text-slate-700 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 cursor-pointer'
-                }`}
-              >
-                <span>{qc.nameZh}</span>
-                {isSelected ? (
-                  <Check className="w-3 h-3 text-emerald-500" />
-                ) : (
-                  <Plus className="w-3 h-3 text-slate-400" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 对比亮点总结卡片 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="glass-panel rounded-2xl p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-medium">历史改善幅度显著</span>
-            <Trophy className="w-4 h-4 text-amber-500" />
+          <div className="flex items-center gap-1.5 overflow-x-auto text-xs py-0.5 flex-1 min-w-0">
+            <span className="text-slate-400 shrink-0 text-[11px]">快捷添加:</span>
+            {[
+              'cn-chengdu',
+              'cn-beijing',
+              'cn-shanghai',
+              'cn-guangzhou',
+              'gl-london',
+              'gl-tokyo',
+              'gl-paris',
+              'gl-delhi',
+              'gl-newyork',
+            ].map((quickId) => {
+              const qc = findCity(quickId);
+              if (!qc) return null;
+              const isSelected = selectedCityIds.includes(quickId);
+              return (
+                <button
+                  key={quickId}
+                  disabled={isSelected}
+                  onClick={() => handleQuickAddCity(quickId)}
+                  className={`flex items-center space-x-1 px-2 py-0.5 rounded-md text-[11px] shrink-0 transition-all ${
+                    isSelected
+                      ? 'bg-slate-100 text-slate-400 cursor-default'
+                      : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 cursor-pointer'
+                  }`}
+                >
+                  <span>{qc.nameZh}</span>
+                  {isSelected ? (
+                    <Check className="w-2.5 h-2.5 text-emerald-500" />
+                  ) : (
+                    <Plus className="w-2.5 h-2.5 text-slate-400" />
+                  )}
+                </button>
+              );
+            })}
           </div>
-          <h3 className="text-xl font-bold text-slate-900 mt-1">中国 · 北京 & 成都</h3>
-          <p className="text-xs text-emerald-600 mt-1 flex items-center space-x-1 font-medium">
-            <ArrowDownRight className="w-3.5 h-3.5" />
-            <span>PM2.5 自 2014 年起累计削减超 50% ~ 67%</span>
-          </p>
-        </div>
-
-        <div className="glass-panel rounded-2xl p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-medium">当前清洁基准</span>
-            <Globe className="w-4 h-4 text-sky-600" />
-          </div>
-          <h3 className="text-xl font-bold text-slate-900 mt-1">日本 · 东京 / 英国 · 伦敦</h3>
-          <p className="text-xs text-sky-600 mt-1 font-medium">年均浓度常年稳定在 8~10 μg/m³ 优级区间</p>
-        </div>
-
-        <div className="glass-panel rounded-2xl p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-medium">盆地与复合治理</span>
-            <BarChart3 className="w-4 h-4 text-purple-600" />
-          </div>
-          <h3 className="text-xl font-bold text-slate-900 mt-1">颗粒物 vs 臭氧协同</h3>
-          <p className="text-xs text-slate-600 mt-1 font-medium">成都等盆地城市迈入冬季 PM2.5 与夏季 O₃ 协同攻坚</p>
         </div>
       </div>
 
@@ -255,14 +295,43 @@ export default function ComparePage() {
 
       {/* 对比图表 2: 六大污染物雷达构成分析 */}
       <section className="glass-panel rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-2">
           <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
             <BarChart3 className="w-4 h-4 text-purple-600" />
             <span>多城主要空气污染物构成雷达对比</span>
           </h3>
-          <span className="text-xs text-slate-500 font-medium">颗粒物与气态污染物综合特征透视</span>
+
+          {/* 年份选择控制器 */}
+          <div className="flex items-center space-x-2 self-end sm:self-auto">
+            <label className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-purple-500" />
+              <span>统计年份:</span>
+            </label>
+            <div className="relative">
+              <select
+                value={radarYear}
+                onChange={(e) => setRadarYear(Number(e.target.value))}
+                className="text-xs font-bold text-purple-900 bg-purple-50 hover:bg-purple-100/80 border border-purple-200 rounded-lg px-3 py-1.5 pr-7 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-400 transition-colors shadow-sm"
+              >
+                {availableYears.map((y) => (
+                  <option key={y} value={y} className="text-slate-800 bg-white">
+                    {y} 年度实测
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-purple-500">
+                <ChevronDown className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            {loadingDaily && (
+              <div className="flex items-center text-xs text-purple-600 space-x-1 pl-1">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span className="hidden sm:inline">聚合中</span>
+              </div>
+            )}
+          </div>
         </div>
-        <CompareRadarChart cities={activeCities} />
+        <CompareRadarChart cities={radarCities} />
       </section>
     </div>
   );

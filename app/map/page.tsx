@@ -20,6 +20,7 @@ const AirMap = dynamic(() => import('@/components/AirMap'), {
 export default function MapPage() {
   const [showStations, setShowStations] = useState(true);
   const [focusCity, setFocusCity] = useState<CityMeta>(CITIES_REGISTRY[0]);
+  const [focusCityInfo, setFocusCityInfo] = useState<{ name: string; aqi: number; level: string } | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([35.0, 105.0]);
   const [mapZoom, setMapZoom] = useState<number>(4);
   const [stationStatus, setStationStatus] = useState<{ count: number; loading: boolean }>({
@@ -29,6 +30,7 @@ export default function MapPage() {
 
   const handleSelectCity = (city: CityMeta) => {
     setFocusCity(city);
+    setFocusCityInfo(null);
     setMapCenter([city.latitude, city.longitude]);
     setMapZoom(10);
   };
@@ -49,12 +51,12 @@ export default function MapPage() {
           <CitySearchAutocomplete
             selectedCity={focusCity}
             onSelectCity={handleSelectCity}
-            placeholder="定位全球或国内任意城市并在地图上飞抵..."
-            className="w-full sm:w-72"
+            placeholder="定位国内 375 城市或全球 564 城市并在地图上飞抵..."
+            className="w-full sm:w-96 md:w-[480px] lg:w-[540px]"
           />
 
-          {/* 实时测站状态指示器 */}
-          <div className="flex items-center space-x-2 text-xs shrink-0">
+          {/* 实时测站状态与矢量图层控制 */}
+          <div className="flex items-center space-x-2 text-xs shrink-0 flex-wrap gap-y-1">
             {stationStatus.loading ? (
               <div className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 font-medium">
                 <div className="w-3 h-3 border-2 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
@@ -64,6 +66,11 @@ export default function MapPage() {
               <div className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold shadow-xs">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 <span>已同步 {stationStatus.count} 个高清测站</span>
+              </div>
+            ) : focusCityInfo ? (
+              <div className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-sky-50 border border-sky-200 text-sky-700 font-semibold shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span>
+                <span>已同步 {focusCityInfo.name} 实测站 (AQI: {focusCityInfo.aqi})</span>
               </div>
             ) : (
               <div className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-500">
@@ -80,7 +87,7 @@ export default function MapPage() {
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>测站图层: {showStations ? '开启' : '关闭'}</span>
+              <span>测站微标: {showStations ? '开启' : '关闭'}</span>
             </button>
           </div>
         </div>
@@ -91,8 +98,16 @@ export default function MapPage() {
         <AirMap
           center={mapCenter}
           zoom={mapZoom}
+          focusCity={focusCity}
           showStations={showStations}
-          onStationCountChange={(count, loading) => setStationStatus({ count, loading })}
+          onStationCountChange={(count, loading, focusInfo) => {
+            if (focusInfo) {
+              setFocusCityInfo(focusInfo);
+            }
+            if (count >= 0) {
+              setStationStatus({ count, loading });
+            }
+          }}
         />
 
         {/* 悬浮 AQI 色标图例 */}

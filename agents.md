@@ -1,4 +1,4 @@
-# 全球与国内空气质量监测及历史统计平台 (AQI-Vibe)
+# 全球与国内空气质量监测及历史统计平台 (AQI Vibe)
 ## 系统工程与智能协同架构指南 (`agents.md`)
 
 ---
@@ -245,6 +245,7 @@ CREATE INDEX idx_daily_target_date ON aqi_daily_stats(target_id, stat_date DESC)
 - [x] 整理并固化全国 375+ 重点城市与 2026+ 国控微站经纬度元数据字典。
 - [x] 编写 QuotSoft 离线自动抓取与解析脚本 (`scripts/ingest-quotsoft.mjs`)。
 - [x] 构建兼顾采暖季、沙尘季、光化学臭氧季的 365 天时间序列生成与日度统计模型。
+- [x] 编写每日增量自动同步与自愈流水线 (`scripts/sync_daily_quotsoft.py` 与 `.github/workflows/daily-sync-history.yml`)，实现国内历史数据零费用免运维自动化入库。
 
 ### Phase 3：标准换算算法与 API 引擎 (已完成 ✅)
 - [x] 封装完整国标 (HJ 633-2012) 与美标 (US EPA NowCast) 双标准换算引擎 (`lib/aqi-calculator.ts`)。
@@ -265,3 +266,16 @@ CREATE INDEX idx_daily_target_date ON aqi_daily_stats(target_id, stat_date DESC)
 - [x] 配置 Cloudflare Pages / Workers 部署配置文件 (`wrangler.toml`)。
 - [x] 编写 GitHub Actions 自动 CI/CD 流程 (`.github/workflows/deploy-cloudflare.yml`)，实现零服务器费用自动化部署。
 - [x] 全流程执行 `npm run build`，生产环境编译 100% 成功，0 错误交付。
+
+---
+
+## 8. 智能体行为准则与调试守则 (Agent Guidelines & Rules)
+
+> [!WARNING]
+> **严禁随意或频繁执行 `npm run build`**：
+> - **原因**：用户本地通常保持 `npm run dev` 运行进行热重载预览。全量 `npm run build` 会强行重写/清理 `.next` 编译缓存与产物，导致开发服务器热更新失效或直接崩溃，迫使用户必须频繁重启 `run dev`。
+> - **规范要求**：
+>   1. **禁止动不动执行 `npm run build`**。在日常页面优化、UI 样式微调、局部组件修改时，严禁自行触发全量 build。
+>   2. 代码正确性验证优先使用轻量静态类型检查（如 `npx tsc --noEmit`）或由开发者的 `run dev` 自动完成热编译校验。
+>   3. 仅在用户明确发出打包/构建指令，或最终交付发布审查时，才可谨慎执行 `npm run build`。
+

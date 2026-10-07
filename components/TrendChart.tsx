@@ -4,19 +4,25 @@ import React, { useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 
 interface TrendChartProps {
-  data: { hour: string; aqi: number; pm25: number; o3: number }[];
+  data: { hour: string; aqi: number; pm25: number; o3: number; isReal?: boolean }[];
   city: string;
+  isReal?: boolean;
 }
 
-export const TrendChart: React.FC<TrendChartProps> = ({ data, city }) => {
+export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = true }) => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return <div className="h-64 flex items-center justify-center text-slate-400 text-sm">加载图表中...</div>;
+  if (!mounted || !data || data.length === 0) {
+    return (
+      <div className="h-64 flex flex-col items-center justify-center text-slate-400 text-sm space-y-2">
+        <div className="w-5 h-5 border-2 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
+        <span>同步 24 小时逐小时时序数据中...</span>
+      </div>
+    );
   }
 
   const hours = data.map((d) => d.hour);
@@ -33,6 +39,29 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city }) => {
       shadowBlur: 10,
       shadowColor: 'rgba(0,0,0,0.08)',
       textStyle: { color: '#0f172a', fontSize: 12 },
+      formatter: (params: any) => {
+        if (!Array.isArray(params) || params.length === 0) return '';
+        const idx = params[0].dataIndex;
+        const isLatest = idx === hours.length - 1;
+        const hourLabel = params[0].name;
+        let html = `<div style="font-weight: bold; margin-bottom: 6px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <span>${hourLabel}</span>
+          ${
+            isLatest
+              ? '<span style="color:#0284c7; font-size:11px; background:#f0f9ff; padding:1px 6px; border-radius:4px; border:1px solid #bae6fd;">当前最新实测</span>'
+              : isReal
+              ? '<span style="color:#059669; font-size:10px; background:#ecfdf5; padding:1px 5px; border-radius:3px; border:1px solid #a7f3d0;">高频真实实测</span>'
+              : '<span style="color:#64748b; font-size:10px; background:#f1f5f9; padding:1px 5px; border-radius:3px;">日内规律反推</span>'
+          }
+        </div>`;
+        params.forEach((p: any) => {
+          html += `<div style="display:flex; justify-content:space-between; gap:16px; font-size:12px; line-height:1.7;">
+            <span style="color:#64748b;">${p.marker} ${p.seriesName}:</span>
+            <span style="font-weight:bold; color:#0f172a;">${p.value}</span>
+          </div>`;
+        });
+        return html;
+      },
     },
     legend: {
       data: ['AQI 指数', 'PM2.5 (μg/m³)', '臭氧 O₃ (μg/m³)'],

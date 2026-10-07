@@ -45,6 +45,47 @@ function calculateIAQI(concentration: number, bpConcentrations: number[], bpIAQI
   return 0;
 }
 
+/**
+ * 根据分指数 IAQI 逆向计算对应物理质量浓度
+ */
+export function calculateConcentrationFromIAQI(
+  iaqi: number,
+  bpConcentrations: number[],
+  bpIAQI: number[]
+): number {
+  if (iaqi <= 0 || isNaN(iaqi)) return 0;
+  const maxIdx = Math.min(bpConcentrations.length - 1, bpIAQI.length - 1);
+  if (iaqi >= bpIAQI[maxIdx]) {
+    return bpConcentrations[maxIdx];
+  }
+
+  for (let i = 0; i < maxIdx; i++) {
+    const iLow = bpIAQI[i];
+    const iHigh = bpIAQI[i + 1];
+    const cLow = bpConcentrations[i];
+    const cHigh = bpConcentrations[i + 1];
+
+    if (iaqi >= iLow && iaqi <= iHigh) {
+      const conc = ((cHigh - cLow) / (iHigh - iLow)) * (iaqi - iLow) + cLow;
+      return Math.round(conc * 10) / 10;
+    }
+  }
+
+  return 0;
+}
+
+export function convertIAQIToConcentration(
+  pollutant: 'pm25' | 'pm10' | 'o3' | 'no2' | 'so2' | 'co',
+  iaqiVal: number,
+  standard: StandardType = 'CN'
+): number {
+  const bp = standard === 'CN' ? CN_BREAKPOINTS : US_BREAKPOINTS;
+  const bpIAQI = standard === 'CN' ? CN_BREAKPOINTS.iaqi : US_BREAKPOINTS.aqi;
+  const bpConc = (bp as any)[pollutant];
+  if (!bpConc) return iaqiVal;
+  return calculateConcentrationFromIAQI(iaqiVal, bpConc, bpIAQI);
+}
+
 export function calculateCNIAQI(pollutants: PollutantValues): IAQIValues {
   const result: IAQIValues = {};
   if (pollutants.pm25 !== undefined) {
@@ -129,7 +170,7 @@ export function evaluateAQI(pollutants: PollutantValues, standard: StandardType 
   }
 }
 
-function getCNEvaluation(aqi: number, primaryPollutant: string): AQIEvaluation {
+export function getCNEvaluation(aqi: number, primaryPollutant = 'pm25'): AQIEvaluation {
   let level = '优';
   let levelEn = 'Good';
   let color = '#10b981'; // 绿
@@ -181,8 +222,8 @@ function getCNEvaluation(aqi: number, primaryPollutant: string): AQIEvaluation {
   };
 }
 
-function getUSEvaluation(aqi: number, primaryPollutant: string): AQIEvaluation {
-  let level = '良好 (Good)';
+export function getUSEvaluation(aqi: number, primaryPollutant = 'pm25'): AQIEvaluation {
+  let level = '优 (Good)';
   let levelEn = 'Good';
   let color = '#10b981';
   let textColor = '#ffffff';

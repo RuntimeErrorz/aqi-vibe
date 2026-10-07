@@ -1,5 +1,5 @@
 import { AirQualityRecord, PollutantValues, IAQIValues } from '../types';
-import { evaluateAQI } from '../aqi-calculator';
+import { evaluateAQI, getCNEvaluation, getUSEvaluation, convertIAQIToConcentration, calculateCNIAQI } from '../aqi-calculator';
 import { findCity } from '../constants/cities';
 
 const WAQI_TOKEN = process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48';
@@ -84,34 +84,42 @@ export async function fetchWAQIMapBounds(
 function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
   const iaqiRaw = data.iaqi || {};
   
+  // 1. WAQI 官方 API 返回的 iaqiRaw 键值（pm25.v、pm10.v 等）均为美标 (US EPA NowCast) IAQI 分指数
+  // 官方页面每一行也明确标注为 "PM2.5 AQI: 46", "PM10 AQI: 21" 等无量纲分指数。
+  const iaqiUS: IAQIValues = {
+    pm25: iaqiRaw.pm25?.v !== undefined ? Math.round(iaqiRaw.pm25.v) : undefined,
+    pm10: iaqiRaw.pm10?.v !== undefined ? Math.round(iaqiRaw.pm10.v) : undefined,
+    o3: iaqiRaw.o3?.v !== undefined ? Math.round(iaqiRaw.o3.v) : undefined,
+    no2: iaqiRaw.no2?.v !== undefined ? Math.round(iaqiRaw.no2.v) : undefined,
+    so2: iaqiRaw.so2?.v !== undefined ? Math.round(iaqiRaw.so2.v) : undefined,
+    co: iaqiRaw.co?.v !== undefined ? Math.round(iaqiRaw.co.v) : undefined,
+  };
+
+  // 2. 根据美标 US EPA 断点逆向求出真实客观的物理质量浓度 (μg/m³，CO 为 mg/m³)
+  // 空气中的物理微克质量浓度是客观存在的大气物理量，绝不随用户切换国标/美标而发生改变
   const pollutants: PollutantValues = {
-    pm25: iaqiRaw.pm25?.v,
-    pm10: iaqiRaw.pm10?.v,
-    o3: iaqiRaw.o3?.v,
-    no2: iaqiRaw.no2?.v,
-    so2: iaqiRaw.so2?.v,
-    co: iaqiRaw.co?.v,
+    pm25: iaqiRaw.pm25?.v !== undefined ? convertIAQIToConcentration('pm25', iaqiRaw.pm25.v, 'US') : undefined,
+    pm10: iaqiRaw.pm10?.v !== undefined ? convertIAQIToConcentration('pm10', iaqiRaw.pm10.v, 'US') : undefined,
+    o3: iaqiRaw.o3?.v !== undefined ? convertIAQIToConcentration('o3', iaqiRaw.o3.v, 'US') : undefined,
+    no2: iaqiRaw.no2?.v !== undefined ? convertIAQIToConcentration('no2', iaqiRaw.no2.v, 'US') : undefined,
+    so2: iaqiRaw.so2?.v !== undefined ? convertIAQIToConcentration('so2', iaqiRaw.so2.v, 'US') : undefined,
+    co: iaqiRaw.co?.v !== undefined ? convertIAQIToConcentration('co', iaqiRaw.co.v, 'US') : undefined,
   };
 
-  const iaqi: IAQIValues = {
-    pm25: iaqiRaw.pm25?.v ? Math.round(iaqiRaw.pm25.v) : undefined,
-    pm10: iaqiRaw.pm10?.v ? Math.round(iaqiRaw.pm10.v) : undefined,
-    o3: iaqiRaw.o3?.v ? Math.round(iaqiRaw.o3.v) : undefined,
-    no2: iaqiRaw.no2?.v ? Math.round(iaqiRaw.no2.v) : undefined,
-    so2: iaqiRaw.so2?.v ? Math.round(iaqiRaw.so2.v) : undefined,
-    co: iaqiRaw.co?.v ? Math.round(iaqiRaw.co.v) : undefined,
-  };
-
-  const evaluationCN = evaluateAQI(pollutants, 'CN');
-  const evaluationUS = evaluateAQI(pollutants, 'US');
-
-  // 如果 WAQI 直接有 aqi 并且是有效数值，作为美标参考
-  if (typeof data.aqi === 'number' && !isNaN(data.aqi)) {
-    evaluationUS.aqi = data.aqi;
-  }
+  // 3. 基于客观物理质量浓度计算中国国标 (HJ 633-2012) 分指数
+  const iaqiCN = calculateCNIAQI(pollutants);
 
   const geo = data.city?.geo || (cityMeta ? [cityMeta.latitude, cityMeta.longitude] : [39.9, 116.4]);
   const isDomestic = cityMeta ? cityMeta.isDomestic : (data.city?.name?.includes('China') || false);
+
+  let evaluationCN = evaluateAQI(pollutants, 'CN');
+  let evaluationUS = evaluateAQI(pollutants, 'US');
+
+  // 若 WAQI 官方直接指定了总体 AQI（注意：WAQI 全球站点统一基于美标 US EPA NowCast 体系发布）
+  if (typeof data.aqi === 'number' && !isNaN(data.aqi)) {
+    const officialAqi = Math.round(data.aqi);
+    evaluationUS = getUSEvaluation(officialAqi, evaluationUS.primaryPollutant);
+  }
 
   return {
     id: cityMeta?.id || `station-${data.idx || 'unknown'}`,
@@ -123,7 +131,9 @@ function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
     longitude: geo[1] || 0,
     updateTime: data.time?.s || new Date().toLocaleString(),
     pollutants,
-    iaqi,
+    iaqi: iaqiUS,
+    iaqiCN,
+    iaqiUS,
     evaluationCN,
     evaluationUS,
     weather: {
@@ -133,7 +143,12 @@ function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
       pressure: iaqiRaw.p?.v,
     },
     forecast: data.forecast?.daily ? {
-      pm25: data.forecast.daily.pm25 || [],
+      pm25: (data.forecast.daily.pm25 || []).map((f: any) => ({
+        day: f.day,
+        min: typeof f.min === 'number' ? convertIAQIToConcentration('pm25', f.min, 'US') : 0,
+        max: typeof f.max === 'number' ? convertIAQIToConcentration('pm25', f.max, 'US') : 0,
+        avg: typeof f.avg === 'number' ? convertIAQIToConcentration('pm25', f.avg, 'US') : 0,
+      })),
       pm10: data.forecast.daily.pm10 || [],
       o3: data.forecast.daily.o3 || [],
       uvi: data.forecast.daily.uvi || [],

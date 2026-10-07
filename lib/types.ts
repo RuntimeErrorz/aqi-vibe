@@ -62,6 +62,8 @@ export interface AirQualityRecord {
   updateTime: string;
   pollutants: PollutantValues;
   iaqi: IAQIValues;
+  iaqiCN?: IAQIValues;
+  iaqiUS?: IAQIValues;
   evaluationCN: AQIEvaluation;
   evaluationUS: AQIEvaluation;
   weather?: WeatherInfo;
@@ -113,3 +115,19 @@ export interface AnnualTrend {
   heavyPollutionDays: number; // 重污染天数 (国标 AQI>200, 美标 AQI>150)
   aqiAvg?: number; // 年均等效 AQI (随标准动态变化)
 }
+
+export interface CalendarHeatmapDay {
+  date: string;
+  aqi: number;
+  level: string;
+  color: string;
+  primaryPollutant: string;
+  primaryPollutantName: string;
+  pm25?: number;
+  pm10?: number;
+  o3?: number;
+  no2?: number;
+  so2?: number;
+  co?: number;
+}
+

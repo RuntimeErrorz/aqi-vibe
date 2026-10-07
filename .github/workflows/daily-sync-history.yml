@@ -1,0 +1,57 @@
+name: 每日定时同步国内空气质量历史数据
+
+on:
+  schedule:
+    # 每天 UTC 18:30 (对应北京时间凌晨 02:30，确保官方前一日 24h 数据完成结算入库)
+    - cron: '30 18 * * *'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: '向前自愈检查天数 (默认 3 天)'
+        required: false
+        default: '3'
+      specific_date:
+        description: '指定抓取特定日期 (可选，格式 YYYYMMDD，如 20261006)'
+        required: false
+        default: ''
+
+jobs:
+  sync-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 授予自动提交并推送到仓库权限
+    steps:
+      - name: 检出仓库代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: 设置 Python 运行环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 执行增量同步流水线
+        run: |
+          if [ -n "${{ github.event.inputs.specific_date }}" ]; then
+            python scripts/sync_daily_quotsoft.py --date "${{ github.event.inputs.specific_date }}"
+          else
+            DAYS="${{ github.event.inputs.days || '3' }}"
+            python scripts/sync_daily_quotsoft.py --days "$DAYS"
+          fi
+
+      - name: 检查数据变更并推送到仓库
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # 仅在数据目录有实质变化时提交
+          if [ -n "$(git status --porcelain data/ public/data/history/)" ]; then
+            git add data/processed/ public/data/history/
+            SYNC_TIME=$(date -u +'%Y-%m-%d')
+            git commit -m "chore(data): auto-sync domestic air quality history for $SYNC_TIME"
+            git push origin ${{ github.ref_name }}
+            echo "::notice::历史数据已成功增量同步并推送到仓库，将自动触发 Cloudflare Pages 部署！"
+          else
+            echo "::notice::本地数据已是最新，无任何新数据变更。"
+          fi

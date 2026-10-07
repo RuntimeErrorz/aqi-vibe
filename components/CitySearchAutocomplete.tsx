@@ -117,7 +117,7 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
 
       {/* Algolia 风格即时预览悬浮下拉面板 */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-2 z-[100] bg-white rounded-2xl border border-slate-200/90 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute left-0 right-0 w-full min-w-full sm:min-w-[460px] max-w-[92vw] top-full mt-2 z-[100] bg-white rounded-2xl border border-slate-200/90 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="p-2 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-400 px-3">
             <span>支持直接输入国家、省份或城市 (如: 美国 / 日本 / 英国 / 成都)</span>
             <span>按 ↑↓ 选择，Enter 确认</span>
@@ -158,8 +158,10 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
                           <span className="font-bold text-sm text-slate-900">{c.nameZh}</span>
                           <span className="text-xs text-slate-500 font-mono">{c.nameEn}</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 flex items-center space-x-1 mt-0.5">
-                          <span>{countryInfo.flag}</span>
+                        <p className="text-[11px] text-slate-500 flex items-center space-x-1.5 mt-0.5">
+                          <span className="px-1 py-0.2 rounded bg-slate-100 text-slate-500 font-mono text-[9px] font-bold border border-slate-200 uppercase">
+                            {c.country}
+                          </span>
                           <span className="font-medium text-slate-600">{countryInfo.nameZh}</span>
                           {c.province && <span>· {c.province}</span>}
                         </p>
@@ -174,7 +176,7 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
                             : 'bg-purple-50 text-purple-700 border-purple-200'
                         }`}
                       >
-                        {c.isDomestic ? '国内 375+ 城' : '全球名城'}
+                        {c.isDomestic ? '国内 375 城' : '全球 564 城'}
                       </span>
                       <ChevronRight className="w-4 h-4 text-slate-300" />
                     </div>

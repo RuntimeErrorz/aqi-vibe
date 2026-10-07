@@ -1,65 +1,69 @@
 import React from 'react';
-import { ExternalLink, ShieldCheck, Heart } from 'lucide-react';
+import { Wind, ExternalLink } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="w-full border-t border-slate-200 bg-white mt-16 py-10 text-xs text-slate-500">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div>
-          <div className="flex items-center space-x-2 text-slate-900 font-semibold text-sm mb-3">
-            <span>AQI-Vibe 空气质量平台</span>
+    <footer className="w-full border-t border-slate-200/80 bg-white/60 backdrop-blur-md mt-10 py-4 text-xs text-slate-500">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-3">
+        {/* 左侧：Logo + 品牌 + 极简定位与版权 */}
+        <div className="flex items-center flex-wrap justify-center md:justify-start gap-2">
+          <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-sky-500 to-emerald-400 flex items-center justify-center text-white shadow-sm shrink-0">
+            <Wind className="w-3 h-3 stroke-[2.5]" />
           </div>
-          <p className="leading-relaxed text-slate-600">
-            融合中国 375+ 城市、2026+ 国控站点微观数据与全球名城宏观观测，提供自 2014 年以来的逐小时长周期分析与实时健康指导。
-          </p>
-          <div className="mt-3 flex items-center space-x-1.5 text-emerald-600 text-[11px]">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>支持 Cloudflare Pages / Workers 0 成本边缘部署</span>
-          </div>
+          <span className="font-bold text-slate-800 tracking-tight">AQI Vibe</span>
+          <span className="text-slate-300">·</span>
+          <span className="text-slate-500 text-[11px]">
+            全球与国内空气质量监测及历史统计平台 (HJ 633 / US EPA)
+          </span>
+          <span className="text-slate-300 hidden sm:inline">·</span>
+          <span className="text-slate-400 text-[11px] hidden sm:inline">© 2026</span>
         </div>
 
-        <div>
-          <h4 className="text-slate-900 font-medium mb-3">多源数据合规与归属</h4>
-          <ul className="space-y-1.5 text-slate-600">
-            <li>
-              <a href="https://waqi.info/" target="_blank" rel="noreferrer" className="hover:text-sky-600 flex items-center space-x-1">
-                <span>WAQI (World Air Quality Index Project)</span>
-                <ExternalLink className="w-2.5 h-2.5" />
-              </a>
-            </li>
-            <li>
-              <a href="https://quotsoft.net/air/" target="_blank" rel="noreferrer" className="hover:text-sky-600 flex items-center space-x-1">
-                <span>QuotSoft 全国逐小时历史数据镜像库</span>
-                <ExternalLink className="w-2.5 h-2.5" />
-              </a>
-            </li>
-            <li>
-              <a href="http://www.cnemc.cn/" target="_blank" rel="noreferrer" className="hover:text-sky-600 flex items-center space-x-1">
-                <span>中国环境监测总站 (CNEMC) 官方发布平台</span>
-                <ExternalLink className="w-2.5 h-2.5" />
-              </a>
-            </li>
-            <li>
-              <a href="https://openaq.org/" target="_blank" rel="noreferrer" className="hover:text-sky-600 flex items-center space-x-1">
-                <span>OpenAQ 全球开放空气质量数据基金会</span>
-                <ExternalLink className="w-2.5 h-2.5" />
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="text-slate-900 font-medium mb-3">标准与健康免责</h4>
-          <p className="leading-relaxed text-slate-600">
-            实时与历史 AQI 依照中国国标 (HJ 633-2012) 或美标 (US EPA NowCast) 动态换算。监测数值受传感器清洗与气象剧烈波动影响可能存在修正，具体防护请结合当地气象与环保部门官方通告。
-          </p>
-          <p className="mt-3 text-slate-500 flex items-center space-x-1">
-            <span>AQI-Vibe © 2026 · Built with</span>
-            <Heart className="w-3 h-3 text-rose-500 fill-rose-500 mx-0.5 inline" />
-            <span>for Clean Air & Blue Sky</span>
-          </p>
+        {/* 右侧：紧凑数据源外链 */}
+        <div className="flex items-center flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
+          <span className="text-slate-400">数据源:</span>
+          <a
+            href="https://waqi.info/"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
+          >
+            <span>WAQI</span>
+            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+          </a>
+          <span className="text-slate-200">/</span>
+          <a
+            href="https://quotsoft.net/air/"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
+          >
+            <span>QuotSoft</span>
+            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+          </a>
+          <span className="text-slate-200">/</span>
+          <a
+            href="http://www.cnemc.cn/"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
+          >
+            <span>CNEMC</span>
+            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+          </a>
+          <span className="text-slate-200">/</span>
+          <a
+            href="https://openaq.org/"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
+          >
+            <span>OpenAQ</span>
+            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+          </a>
         </div>
       </div>
     </footer>
   );
 };
+

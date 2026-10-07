@@ -178,3 +178,62 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
 }
 
+/* 主城市焦点地标微标 (突出当前飞抵/选中的重点城市，解决偏远/单站城市无散点时的空白感) */
+.aqi-focus-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aqi-focus-city-pin {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+
+.aqi-focus-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  border: 1.5px solid #ffffff;
+  font-family: inherit;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.aqi-focus-city-pin:hover .aqi-focus-badge {
+  transform: scale(1.1);
+}
+
+.aqi-focus-pin-pole {
+  width: 2px;
+  height: 10px;
+  background-color: #ffffff;
+  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.3);
+}
+
+.aqi-focus-pulse {
+  position: absolute;
+  bottom: -4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #0284c7;
+  animation: aqi-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes aqi-ping {
+  75%, 100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+

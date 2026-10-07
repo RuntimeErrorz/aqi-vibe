@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useStandard } from './StandardContext';
 import {
   getAllCitiesRanking,
@@ -11,24 +11,23 @@ import {
 import { COUNTRIES_META } from '@/lib/constants/countries';
 import {
   Trophy,
-  Medal,
   Globe,
-  Filter,
   Search,
   ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   TrendingDown,
   TrendingUp,
   Plus,
   Check,
   Building2,
-  ChevronLeft,
-  ChevronRight,
-  Sparkles,
-  Layers,
-  Flame,
-  Leaf,
   Calendar,
   ExternalLink,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Leaf,
+  Flame,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -41,8 +40,8 @@ interface GlobalRankingSandboxProps {
 
 type TabType = 'cities' | 'countries';
 type GeoScope = 'all' | 'domestic' | 'international';
-type RankMode = 'cleanest' | 'polluted' | 'improved';
-type SortMetric = 'aqi' | 'pm25' | 'pm10' | 'goodRatio' | 'heavyDays';
+type SortMetric = 'aqi' | 'pm25' | 'pm10' | 'goodRatio' | 'heavyDays' | 'improved';
+type SortOrder = 'asc' | 'desc';
 
 const AVAILABLE_YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019];
 
@@ -61,13 +60,49 @@ export function GlobalRankingSandbox({
   const [selectedYear, setSelectedYear] = useState<number>(2025);
   const [geoScope, setGeoScope] = useState<GeoScope>('all');
   const [selectedCountry, setSelectedCountry] = useState<string>('ALL');
-  const [rankMode, setRankMode] = useState<RankMode>('cleanest');
   const [sortMetric, setSortMetric] = useState<SortMetric>('aqi');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
+  type RankMode = 'cleanest' | 'polluted' | 'improved';
+
+  const rankMode: RankMode =
+    sortMetric === 'improved'
+      ? 'improved'
+      : sortMetric === 'aqi' && sortOrder === 'desc'
+      ? 'polluted'
+      : 'cleanest';
+
+  const setRankMode = (mode: RankMode) => {
+    if (mode === 'cleanest') {
+      setSortMetric('aqi');
+      setSortOrder('asc');
+    } else if (mode === 'polluted') {
+      setSortMetric('aqi');
+      setSortOrder('desc');
+    } else if (mode === 'improved') {
+      setSortMetric('improved');
+      setSortOrder('asc');
+    }
+  };
+
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isSearchPreviewOpen, setIsSearchPreviewOpen] = useState<boolean>(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // 分页状态
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(15);
+
+  // 点击外部自动关闭搜索即时下拉面板
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsSearchPreviewOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // 1. 获取基础数据
   const rawCities = useMemo(() => {
@@ -101,8 +136,8 @@ export function GlobalRankingSandbox({
     });
   }, [rawCities]);
 
-  // 3. 过滤并排序城市榜单
-  const filteredCities = useMemo(() => {
+  // 3. 基础范围过滤与全量客观排序（在关键词搜索前确立真实权威排名）
+  const sortedCitiesWithRank = useMemo(() => {
     let list = [...rawCities];
 
     // 地理范围过滤
@@ -117,95 +152,88 @@ export function GlobalRankingSandbox({
       list = list.filter((c) => c.country === selectedCountry);
     }
 
-    // 关键词搜索过滤
-    const q = searchQuery.trim().toLowerCase();
-    if (q) {
-      list = list.filter(
-        (c) =>
-          c.nameZh.toLowerCase().includes(q) ||
-          c.nameEn.toLowerCase().includes(q) ||
-          c.countryZh.toLowerCase().includes(q) ||
-          (c.province && c.province.toLowerCase().includes(q))
-      );
-    }
-
-    // 排序逻辑
+    // 权威排序逻辑
     list.sort((a, b) => {
-      if (rankMode === 'improved') {
-        // 改善幅度排序（负值越大改善越多）
+      let diff = 0;
+      if (sortMetric === 'improved') {
         const aImp = a.improvementRate ?? 999;
         const bImp = b.improvementRate ?? 999;
-        return aImp - bImp;
-      }
-
-      let valA = a.aqiAvg;
-      let valB = b.aqiAvg;
-
-      if (sortMetric === 'pm25') {
-        valA = a.pm25Avg;
-        valB = b.pm25Avg;
+        diff = aImp - bImp;
+      } else if (sortMetric === 'pm25') {
+        diff = a.pm25Avg - b.pm25Avg;
       } else if (sortMetric === 'pm10') {
-        valA = a.pm10Avg;
-        valB = b.pm10Avg;
+        diff = a.pm10Avg - b.pm10Avg;
       } else if (sortMetric === 'goodRatio') {
-        valA = a.goodDaysRatio;
-        valB = b.goodDaysRatio;
+        diff = b.goodDaysRatio - a.goodDaysRatio; // 优良率默认高者在前
       } else if (sortMetric === 'heavyDays') {
-        valA = a.heavyPollutionDays;
-        valB = b.heavyPollutionDays;
+        diff = a.heavyPollutionDays - b.heavyPollutionDays;
+      } else {
+        // 'aqi'
+        diff = a.aqiAvg - b.aqiAvg;
       }
 
-      if (rankMode === 'cleanest') {
-        // 优良率越高越好，其他越低越好
-        return sortMetric === 'goodRatio' ? valB - valA : valA - valB;
-      } else {
-        // 污染最重榜
-        return sortMetric === 'goodRatio' ? valA - valB : valB - valA;
-      }
+      return sortOrder === 'asc' ? diff : -diff;
     });
 
-    return list;
-  }, [rawCities, geoScope, selectedCountry, searchQuery, rankMode, sortMetric]);
+    // 赋予每座城市在当前全量榜单中的客观权威名次 (1 ~ N)
+    return list.map((item, index) => ({
+      ...item,
+      rank: index + 1,
+    }));
+  }, [rawCities, geoScope, selectedCountry, sortMetric, sortOrder]);
 
-  // 4. 过滤并排序国家榜单
-  const filteredCountries = useMemo(() => {
+  // 4. 应用关键词搜索过滤城市（保留城市既有权威排名，不重置为1）
+  const filteredCities = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return sortedCitiesWithRank;
+
+    return sortedCitiesWithRank.filter(
+      (c) =>
+        c.nameZh.toLowerCase().includes(q) ||
+        c.nameEn.toLowerCase().includes(q) ||
+        c.countryZh.toLowerCase().includes(q) ||
+        (c.province && c.province.toLowerCase().includes(q))
+    );
+  }, [sortedCitiesWithRank, searchQuery]);
+
+  // 5. 排序国家榜单并确立全量客观权威排名
+  const sortedCountriesWithRank = useMemo(() => {
     let list = [...rawCountries];
 
-    // 关键词搜索
-    const q = searchQuery.trim().toLowerCase();
-    if (q) {
-      list = list.filter(
-        (c) =>
-          c.nameZh.toLowerCase().includes(q) ||
-          c.nameEn.toLowerCase().includes(q) ||
-          c.countryCode.toLowerCase().includes(q)
-      );
-    }
-
     list.sort((a, b) => {
-      let valA = a.aqiAvg;
-      let valB = b.aqiAvg;
-
+      let diff = 0;
       if (sortMetric === 'pm25') {
-        valA = a.pm25Avg;
-        valB = b.pm25Avg;
+        diff = a.pm25Avg - b.pm25Avg;
       } else if (sortMetric === 'pm10') {
-        valA = a.pm10Avg;
-        valB = b.pm10Avg;
+        diff = a.pm10Avg - b.pm10Avg;
       } else if (sortMetric === 'goodRatio') {
-        valA = a.goodDaysRatioAvg;
-        valB = b.goodDaysRatioAvg;
+        diff = b.goodDaysRatioAvg - a.goodDaysRatioAvg;
+      } else {
+        // 'aqi'
+        diff = a.aqiAvg - b.aqiAvg;
       }
 
-      if (rankMode === 'cleanest' || rankMode === 'improved') {
-        return sortMetric === 'goodRatio' ? valB - valA : valA - valB;
-      } else {
-        return sortMetric === 'goodRatio' ? valA - valB : valB - valA;
-      }
+      return sortOrder === 'asc' ? diff : -diff;
     });
 
-    return list;
-  }, [rawCountries, searchQuery, rankMode, sortMetric]);
+    return list.map((cItem, index) => ({
+      ...cItem,
+      rank: index + 1,
+    }));
+  }, [rawCountries, sortMetric, sortOrder]);
+
+  // 6. 关键词搜索过滤国家榜单（保留国家既有权威排名）
+  const filteredCountries = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return sortedCountriesWithRank;
+
+    return sortedCountriesWithRank.filter(
+      (c) =>
+        c.nameZh.toLowerCase().includes(q) ||
+        c.nameEn.toLowerCase().includes(q) ||
+        c.countryCode.toLowerCase().includes(q)
+    );
+  }, [sortedCountriesWithRank, searchQuery]);
 
   // 分页计算
   const totalItems = activeTab === 'cities' ? filteredCities.length : filteredCountries.length;
@@ -225,31 +253,31 @@ export function GlobalRankingSandbox({
     setCurrentPage(1);
   };
 
-  // 奖牌样式辅助
+  // 切换城市/国家 Tab 时同步清理指标
+  const handleTabSwitch = (tab: TabType) => {
+    setActiveTab(tab);
+    if (tab === 'countries' && (sortMetric === 'heavyDays' || sortMetric === 'improved')) {
+      setSortMetric('aqi');
+      setSortOrder('asc');
+    }
+    handleFilterChange();
+  };
+
+  // 点击排序指标：若再次点击当前指标则翻转顺序（正序/逆序），若点击新指标则激活新指标
+  const handleSortMetricClick = (metric: SortMetric) => {
+    if (sortMetric === metric) {
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortMetric(metric);
+      setSortOrder('asc');
+    }
+    handleFilterChange();
+  };
+
+  // 统一规范的排名展示（移除前三名特殊的金银铜与奖牌 Emoji 表示）
   const renderRankBadge = (rank: number) => {
-    if (rank === 1) {
-      return (
-        <span className="flex items-center justify-center w-7 h-7 rounded-full bg-amber-400 text-amber-950 font-black text-xs shadow-md shadow-amber-300/40">
-          🥇 1
-        </span>
-      );
-    }
-    if (rank === 2) {
-      return (
-        <span className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-300 text-slate-800 font-black text-xs shadow-md shadow-slate-300/40">
-          🥈 2
-        </span>
-      );
-    }
-    if (rank === 3) {
-      return (
-        <span className="flex items-center justify-center w-7 h-7 rounded-full bg-amber-600/80 text-white font-black text-xs shadow-md shadow-amber-600/30">
-          🥉 3
-        </span>
-      );
-    }
     return (
-      <span className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-600 font-semibold text-xs border border-slate-200">
+      <span className="inline-flex items-center justify-center min-w-[26px] h-6 px-1.5 rounded-md bg-slate-100 text-slate-600 font-bold text-xs tabular-nums border border-slate-200/70">
         {rank}
       </span>
     );
@@ -304,9 +332,9 @@ export function GlobalRankingSandbox({
   };
 
   return (
-    <div className="glass-panel rounded-2xl p-5 space-y-5">
+    <div className="glass-panel rounded-2xl p-4 sm:p-5 space-y-3.5">
       {/* 头部标题与主 Tab 切换 */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
           <div className="flex items-center space-x-2">
             <Trophy className="w-5 h-5 text-amber-500" />
@@ -317,18 +345,12 @@ export function GlobalRankingSandbox({
               {standard === 'CN' ? 'HJ 633 国标' : 'US EPA 美标'}
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            覆盖全球 90+ 国家与地区、920+ 座官方监测城市，支持跨国对比与一键加入沙盘
-          </p>
         </div>
 
         {/* 城市榜 vs 国家榜 切换器 */}
         <div className="flex items-center bg-slate-100/80 p-1 rounded-xl self-start md:self-auto border border-slate-200/60">
           <button
-            onClick={() => {
-              setActiveTab('cities');
-              handleFilterChange();
-            }}
+            onClick={() => handleTabSwitch('cities')}
             className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
               activeTab === 'cities'
                 ? 'bg-white text-sky-700 shadow-sm shadow-slate-200'
@@ -339,10 +361,7 @@ export function GlobalRankingSandbox({
             <span>城市精细榜 (928城)</span>
           </button>
           <button
-            onClick={() => {
-              setActiveTab('countries');
-              handleFilterChange();
-            }}
+            onClick={() => handleTabSwitch('countries')}
             className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
               activeTab === 'countries'
                 ? 'bg-white text-sky-700 shadow-sm shadow-slate-200'
@@ -356,8 +375,8 @@ export function GlobalRankingSandbox({
       </div>
 
       {/* 综合多维筛选工具栏 */}
-      <div className="bg-slate-50/70 rounded-xl p-3.5 border border-slate-200/60 space-y-3">
-        {/* 第一行筛选器：地理范围、国家单选、榜单模式、年份 */}
+      <div className="bg-slate-50/70 rounded-xl p-3 border border-slate-200/60 space-y-2.5">
+        {/* 第一行筛选器：地理范围、国家单选、年份 */}
         <div className="flex flex-wrap items-center gap-2.5 text-xs">
           {/* 地理范围单选（仅城市榜有效） */}
           {activeTab === 'cities' && (
@@ -386,7 +405,7 @@ export function GlobalRankingSandbox({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                中国国内 (375+)
+                中国国内 (375)
               </button>
               <button
                 onClick={() => {
@@ -399,7 +418,7 @@ export function GlobalRankingSandbox({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                海外国际 (530+)
+                海外国际 (564)
               </button>
             </div>
           )}
@@ -419,60 +438,12 @@ export function GlobalRankingSandbox({
                 <option value="ALL">全部国家 / 地区 (93国)</option>
                 {countryOptions.map((co) => (
                   <option key={co.code} value={co.code}>
-                    {co.flag} {co.nameZh} ({co.count}城)
+                    {co.code} · {co.nameZh} ({co.count}城)
                   </option>
                 ))}
               </select>
             </div>
           )}
-
-          {/* 榜单类型选择：红榜（最清洁）vs 黑榜（污染重）vs 改善先锋 */}
-          <div className="flex items-center bg-white rounded-lg p-0.5 border border-slate-200">
-            <button
-              onClick={() => {
-                setRankMode('cleanest');
-                handleFilterChange();
-              }}
-              className={`flex items-center space-x-1 px-2.5 py-1 rounded-md font-semibold transition-all ${
-                rankMode === 'cleanest'
-                  ? 'bg-emerald-600 text-white'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Leaf className="w-3 h-3" />
-              <span>空气最佳榜</span>
-            </button>
-            <button
-              onClick={() => {
-                setRankMode('polluted');
-                handleFilterChange();
-              }}
-              className={`flex items-center space-x-1 px-2.5 py-1 rounded-md font-semibold transition-all ${
-                rankMode === 'polluted'
-                  ? 'bg-rose-600 text-white'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Flame className="w-3 h-3" />
-              <span>污染关注榜</span>
-            </button>
-            {activeTab === 'cities' && (
-              <button
-                onClick={() => {
-                  setRankMode('improved');
-                  handleFilterChange();
-                }}
-                className={`flex items-center space-x-1 px-2.5 py-1 rounded-md font-semibold transition-all ${
-                  rankMode === 'improved'
-                    ? 'bg-sky-600 text-white'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <TrendingDown className="w-3 h-3" />
-                <span>治理改善先锋榜</span>
-              </button>
-            )}
-          </div>
 
           {/* 归档年份单选 */}
           <div className="flex items-center space-x-1 bg-white px-2.5 py-1 rounded-lg border border-slate-200 ml-auto">
@@ -494,90 +465,228 @@ export function GlobalRankingSandbox({
           </div>
         </div>
 
-        {/* 第二行筛选器：指标排序选择、即时搜索框、单页数量 */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs">
-          {/* 指标排序维度 */}
-          <div className="flex items-center space-x-2">
-            <span className="text-slate-400 font-medium flex items-center space-x-1">
-              <ArrowUpDown className="w-3 h-3" />
-              <span>排序依据:</span>
-            </span>
-            <div className="flex items-center space-x-1.5">
-              {[
-                { key: 'aqi', label: '综合 AQI' },
-                { key: 'pm25', label: 'PM2.5 均值' },
-                { key: 'pm10', label: 'PM10 均值' },
-                { key: 'goodRatio', label: '达标优良率' },
-                ...(activeTab === 'cities' ? [{ key: 'heavyDays', label: '重污染天数' }] : []),
-              ].map((m) => (
+        {/* 第二行筛选器：指标排序与正反序切换、即时预览搜索框 */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+          {/* 指标排序维度与顺序翻转 */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(activeTab === 'cities'
+              ? [
+                  { key: 'aqi', label: '综合 AQI' },
+                  { key: 'pm25', label: 'PM2.5 均值' },
+                  { key: 'pm10', label: 'PM10 均值' },
+                  { key: 'goodRatio', label: '达标优良率' },
+                  { key: 'heavyDays', label: '重污染天数' },
+                  { key: 'improved', label: '治理改善' },
+                ]
+              : [
+                  { key: 'aqi', label: '全国综合 AQI' },
+                  { key: 'pm25', label: 'PM2.5 均值' },
+                  { key: 'pm10', label: 'PM10 均值' },
+                  { key: 'goodRatio', label: '平均优良率' },
+                ]
+            ).map((m) => {
+              const isActive = sortMetric === m.key;
+              return (
                 <button
                   key={m.key}
-                  onClick={() => {
-                    setSortMetric(m.key as SortMetric);
-                    handleFilterChange();
-                  }}
-                  className={`px-2 py-0.5 rounded-md font-semibold transition-colors ${
-                    sortMetric === m.key
-                      ? 'bg-slate-800 text-white'
-                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                  type="button"
+                  onClick={() => handleSortMetricClick(m.key as SortMetric)}
+                  className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-sky-600 text-white shadow-sm ring-1 ring-sky-600/20'
+                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900'
                   }`}
+                  title={
+                    isActive
+                      ? `当前按【${m.label}】${
+                          sortOrder === 'asc' ? '正序 (优良/低值在前)' : '逆序 (污染/高值在前)'
+                        }，再次点击直接切换顺序`
+                      : `按【${m.label}】排序`
+                  }
                 >
-                  {m.label}
+                  <span>{m.label}</span>
+                  {isActive && (
+                    <span className="flex items-center text-white ml-0.5">
+                      {sortOrder === 'asc' ? (
+                        <ArrowUp className="w-3.5 h-3.5 stroke-[2.5]" />
+                      ) : (
+                        <ArrowDown className="w-3.5 h-3.5 stroke-[2.5]" />
+                      )}
+                    </span>
+                  )}
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
 
-          {/* 即时搜索框 */}
-          <div className="relative flex-1 max-w-xs">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          {/* 即时搜索框与预览悬浮下拉面板 */}
+          <div ref={searchContainerRef} className="relative flex-1 min-w-[260px] max-w-sm">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
+              onFocus={() => {
+                if (searchQuery.trim()) setIsSearchPreviewOpen(true);
+              }}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
+                setIsSearchPreviewOpen(true);
                 handleFilterChange();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setIsSearchPreviewOpen(false);
               }}
               placeholder={
                 activeTab === 'cities'
-                  ? '模糊搜索城市名 / 省份 / 国家...'
-                  : '搜索国家名称 / 代码...'
+                  ? geoScope === 'domestic'
+                    ? '搜索国内 375 城市查排名 (如: 成都 / 北京)...'
+                    : geoScope === 'international'
+                    ? '搜索海外 564 城市查排名 (如: 伦敦 / 东京)...'
+                    : '搜索全球 939 城市查排名 (如: 成都 / 纽约)...'
+                  : '搜索国家名称 / 代码 (如: 中国 / CN)...'
               }
-              className="w-full pl-8 pr-3 py-1 bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-sky-500 placeholder:text-slate-400 text-xs"
+              className="w-full pl-8 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 placeholder:text-slate-400 text-xs shadow-sm"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setIsSearchPreviewOpen(false);
+                  handleFilterChange();
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer"
+                title="清空搜索"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {/* 即时搜索智能预览卡片面板 */}
+            {isSearchPreviewOpen && searchQuery.trim() && (
+              <div className="absolute left-0 right-0 sm:right-auto sm:w-[420px] top-full mt-1.5 z-50 bg-white rounded-xl border border-slate-200/90 shadow-2xl overflow-hidden animate-in fade-in duration-100">
+                <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                  <span>
+                    找到 <b className="text-slate-900">{totalItems}</b> 个符合条件的{activeTab === 'cities' ? '城市' : '国家/地区'}
+                  </span>
+                  <span className="text-[10px] text-slate-400">点击直达定位</span>
+                </div>
+
+                <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
+                  {activeTab === 'cities' ? (
+                    filteredCities.slice(0, 6).length > 0 ? (
+                      filteredCities.slice(0, 6).map((c) => (
+                        <div
+                          key={c.id}
+                          onClick={() => {
+                            setSearchQuery(c.nameZh);
+                            setIsSearchPreviewOpen(false);
+                          }}
+                          className="px-3 py-2 flex items-center justify-between hover:bg-sky-50/70 cursor-pointer transition-colors group"
+                        >
+                          <div className="flex items-center space-x-2 min-w-0">
+                            <span className="min-w-[28px] h-5 px-1 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-700 font-bold text-[11px] border border-slate-200 tabular-nums">
+                              #{c.rank}
+                            </span>
+                            <span className="w-6 h-4.5 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-600 font-mono text-[9px] font-bold border border-slate-200 uppercase">
+                              {c.country}
+                            </span>
+                            <div className="min-w-0">
+                              <div className="flex items-center space-x-1">
+                                <span className="font-bold text-xs text-slate-900 group-hover:text-sky-600 transition-colors truncate">
+                                  {c.nameZh}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono truncate">
+                                  ({c.nameEn})
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-500 truncate">
+                                {c.province ? `${c.province} · ` : ''}{c.countryZh}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-2 shrink-0">
+                            <div className="text-right">
+                              <div className="text-xs font-black text-slate-900">AQI {c.aqiAvg}</div>
+                              <div className="text-[10px] text-slate-400">PM2.5 {c.pm25Avg}</div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleCity(c.id);
+                              }}
+                              className={`p-1 rounded-md text-xs transition-colors cursor-pointer ${
+                                selectedCityIds.includes(c.id)
+                                  ? 'bg-sky-100 text-sky-700'
+                                  : 'bg-slate-100 text-slate-600 hover:bg-sky-50 hover:text-sky-600'
+                              }`}
+                              title={selectedCityIds.includes(c.id) ? '已加入沙盘，点击移出' : '加入沙盘对比'}
+                            >
+                              {selectedCityIds.includes(c.id) ? (
+                                <Check className="w-3.5 h-3.5 text-sky-600" />
+                              ) : (
+                                <Plus className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-4 text-center text-xs text-slate-400">无匹配城市</div>
+                    )
+                  ) : (
+                    filteredCountries.slice(0, 6).length > 0 ? (
+                      filteredCountries.slice(0, 6).map((co) => (
+                        <div
+                          key={co.countryCode}
+                          onClick={() => {
+                            setSearchQuery(co.nameZh);
+                            setIsSearchPreviewOpen(false);
+                          }}
+                          className="px-3 py-2 flex items-center justify-between hover:bg-sky-50/70 cursor-pointer transition-colors group"
+                        >
+                          <div className="flex items-center space-x-2 min-w-0">
+                            <span className="min-w-[28px] h-5 px-1 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-700 font-bold text-[11px] border border-slate-200 tabular-nums">
+                              #{co.rank}
+                            </span>
+                            <span className="w-7 h-5 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-bold border border-slate-200 uppercase">
+                              {co.countryCode}
+                            </span>
+                            <div>
+                              <div className="font-bold text-xs text-slate-900 group-hover:text-sky-600 transition-colors">
+                                {co.nameZh} ({co.nameEn})
+                              </div>
+                              <div className="text-[10px] text-slate-500">
+                                纳入 {co.cityCount} 城 · 最清洁: {co.cleanestCity.nameZh}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <div className="text-xs font-black text-slate-900">AQI {co.aqiAvg}</div>
+                            <div className="text-[10px] text-slate-400">PM2.5 {co.pm25Avg}</div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-4 text-center text-xs text-slate-400">无匹配国家</div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* 榜单统计信息条 */}
-      <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-        <div>
-          <span>共筛选出 </span>
-          <span className="font-bold text-slate-900">{totalItems}</span>
-          <span> 个{activeTab === 'cities' ? '城市' : '国家/地区'}</span>
-          {activeTab === 'cities' && (
-            <span className="ml-2 text-slate-400">
-              · 点击右侧按钮可直接将其纳入上方多城沙盘对比
-            </span>
-          )}
+      {/* 搜索提示（未搜索时不占任何高度，彻底消除多余空隙） */}
+      {searchQuery.trim() && (
+        <div className="text-xs text-slate-500 px-1 py-0.5">
+          已找到 <span className="font-bold text-sky-600">{totalItems}</span> 个符合条件的对象
         </div>
-        <div className="flex items-center space-x-2">
-          <span>每页显示:</span>
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="bg-slate-50 border border-slate-200 rounded-md px-1.5 py-0.5 text-xs text-slate-700"
-          >
-            <option value={10}>10 条</option>
-            <option value={15}>15 条</option>
-            <option value={30}>30 条</option>
-            <option value={50}>50 条</option>
-          </select>
-        </div>
-      </div>
+      )}
 
       {/* 榜单表格展示 */}
       {activeTab === 'cities' ? (
@@ -599,12 +708,28 @@ export function GlobalRankingSandbox({
               {paginatedCities.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400">
-                    未找到符合当前筛选条件的官方监测城市
+                    <div className="space-y-1.5">
+                      <div>未找到符合当前筛选条件的官方监测城市</div>
+                      {geoScope !== 'all' && searchQuery.trim() && (
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setGeoScope('all');
+                              setSelectedCountry('ALL');
+                            }}
+                            className="text-xs text-sky-600 hover:text-sky-700 underline cursor-pointer"
+                          >
+                            当前处于「{geoScope === 'domestic' ? '中国国内' : '国际海外'}」范围，点击切换为「全部全球」搜索
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (
-                paginatedCities.map((item, idx) => {
-                  const globalRank = (currentPage - 1) * pageSize + idx + 1;
+                paginatedCities.map((item) => {
+                  const rank = item.rank;
                   const isSelectedInSandbox = selectedCityIds.includes(item.id);
 
                   return (
@@ -618,14 +743,20 @@ export function GlobalRankingSandbox({
                     >
                       {/* 排名 */}
                       <td className="py-3 px-3 text-center">
-                        <div className="flex justify-center">{renderRankBadge(globalRank)}</div>
+                        <div className="flex justify-center">{renderRankBadge(rank)}</div>
                       </td>
 
                       {/* 城市与国家 */}
                       <td className="py-3 px-3">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-base">{item.countryFlag}</span>
-                          <div>
+                        <div className="flex items-center space-x-2.5">
+                          {/* 统一规范的定宽微型国际代码徽标，彻底消除字符宽度不一导致的参差不齐 */}
+                          <span
+                            className="w-7 h-5 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-600 font-mono text-[10px] font-bold border border-slate-200/80 uppercase select-none tracking-tight"
+                            title={`${item.countryZh} (${item.country})`}
+                          >
+                            {item.country}
+                          </span>
+                          <div className="min-w-0">
                             <div className="flex items-center space-x-1.5">
                               <span className="font-bold text-slate-900 group-hover:text-sky-600 transition-colors inline-flex items-center space-x-1">
                                 <span>{item.nameZh}</span>
@@ -633,7 +764,7 @@ export function GlobalRankingSandbox({
                               </span>
                               <span className="text-[10px] text-slate-400">({item.nameEn})</span>
                             </div>
-                            <div className="text-[10px] text-slate-500">
+                            <div className="text-[10px] text-slate-500 truncate">
                               {item.province ? `${item.province} · ` : ''}
                               {item.countryZh}
                             </div>
@@ -759,20 +890,25 @@ export function GlobalRankingSandbox({
                   </td>
                 </tr>
               ) : (
-                paginatedCountries.map((cItem, idx) => {
-                  const globalRank = (currentPage - 1) * pageSize + idx + 1;
+                paginatedCountries.map((cItem) => {
+                  const rank = cItem.rank;
 
                   return (
                     <tr key={cItem.countryCode} className="hover:bg-sky-50/40 transition-colors">
                       {/* 排名 */}
                       <td className="py-3 px-3 text-center">
-                        <div className="flex justify-center">{renderRankBadge(globalRank)}</div>
+                        <div className="flex justify-center">{renderRankBadge(rank)}</div>
                       </td>
 
                       {/* 国家 */}
                       <td className="py-3 px-3">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xl">{cItem.flag}</span>
+                        <div className="flex items-center space-x-2.5">
+                          <span
+                            className="w-8 h-5.5 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-700 font-mono text-xs font-bold border border-slate-200 uppercase select-none tracking-wider"
+                            title={`${cItem.nameZh} (${cItem.countryCode})`}
+                          >
+                            {cItem.countryCode}
+                          </span>
                           <div>
                             <span className="font-bold text-slate-900 text-sm">
                               {cItem.nameZh}
@@ -872,16 +1008,40 @@ export function GlobalRankingSandbox({
       )}
 
       {/* 分页控制栏 */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-2 text-xs">
-          <div className="text-slate-500">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 text-xs text-slate-500">
+        <div className="flex items-center space-x-2">
+          <span>
+            共 <span className="font-bold text-slate-800">{totalItems}</span> {activeTab === 'cities' ? '城' : '国'}
+          </span>
+          <span className="text-slate-300">·</span>
+          <span>
             第 <span className="font-bold text-slate-800">{currentPage}</span> / {totalPages} 页
+          </span>
+          <span className="text-slate-300">·</span>
+          <div className="flex items-center space-x-1">
+            <span>每页:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-xs text-slate-700 cursor-pointer"
+            >
+              <option value={10}>10条</option>
+              <option value={15}>15条</option>
+              <option value={30}>30条</option>
+              <option value={50}>50条</option>
+            </select>
           </div>
+        </div>
+
+        {totalPages > 1 && (
           <div className="flex items-center space-x-1">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage <= 1}
-              className="flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 transition-colors shadow-sm"
+              className="flex items-center space-x-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 transition-colors shadow-sm cursor-pointer"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               <span>上一页</span>
@@ -889,14 +1049,14 @@ export function GlobalRankingSandbox({
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage >= totalPages}
-              className="flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 transition-colors shadow-sm"
+              className="flex items-center space-x-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 transition-colors shadow-sm cursor-pointer"
             >
               <span>下一页</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

@@ -3,16 +3,22 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { fetchWAQIMapBounds, WaqiBoundStation } from '@/lib/services/waqi';
+import { fetchWAQIMapBounds, fetchWAQICityData, WaqiBoundStation } from '@/lib/services/waqi';
+import { CityMeta } from '@/lib/types';
 
 const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_KEY || 'cb1_4bl6_1_dc1bbfd8426369beb577afe4';
+const WAQI_TOKEN = process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48';
 
 interface AirMapProps {
   showStations?: boolean;
-  showWaqiTiles?: boolean;
   center?: [number, number];
   zoom?: number;
-  onStationCountChange?: (count: number, loading: boolean) => void;
+  focusCity?: CityMeta;
+  onStationCountChange?: (
+    count: number,
+    loading: boolean,
+    focusInfo?: { name: string; aqi: number; level: string }
+  ) => void;
 }
 
 function getPinStyle(aqiNum: number) {
@@ -113,11 +119,13 @@ export default function AirMap({
   showStations = true,
   center = [35.0, 105.0],
   zoom = 4,
+  focusCity,
   onStationCountChange,
 }: AirMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const focusMarkerLayerRef = useRef<L.LayerGroup | null>(null);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stationCacheRef = useRef<Map<number, WaqiBoundStation>>(new Map());
   const showStationsRef = useRef(showStations);
@@ -150,7 +158,11 @@ export default function AirMap({
         }
       ).addTo(map);
 
-      // 3. 全局纯 CSS 矢量测站微标图层 (完美复刻原版 WAQI 标牌指针视觉风格)
+      // 3. 专属主城市焦点地标矢量图层 (独立图层，置顶显示，纯矢量微标)
+      const focusMarkerLayer = L.layerGroup().addTo(map);
+      focusMarkerLayerRef.current = focusMarkerLayer;
+
+      // 4. 全局纯 CSS 矢量测站微标图层 (周围国控/海外微站散点，100% 矢量指针)
       const markersLayer = L.layerGroup().addTo(map);
       markersLayerRef.current = markersLayer;
 
@@ -383,6 +395,124 @@ export default function AirMap({
       }
     }
   }, [showStations]);
+
+  // 响应焦点城市变更：在地图正中央渲染专属主城市实测微标并异步加载官方数据，解决偏远或单站城市周边散点为 0 时的空白感
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const layer = focusMarkerLayerRef.current;
+    if (!map || !layer || !focusCity) return;
+
+    layer.clearLayers();
+
+    // 1. 初始渲染占位微标 (高 z-index 确保置顶)
+    const initialHtml = `
+      <div class="aqi-focus-city-pin">
+        <div class="aqi-focus-badge bg-sky-600 text-white shadow-xl">
+          <span class="font-extrabold text-xs tracking-tight">${escapeHtml(focusCity.nameZh)}</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping ml-1"></span>
+        </div>
+        <div class="aqi-focus-pin-pole"></div>
+      </div>
+    `;
+
+    const initialIcon = L.divIcon({
+      className: 'aqi-focus-container',
+      html: initialHtml,
+      iconSize: [88, 38],
+      iconAnchor: [44, 38],
+      popupAnchor: [0, -40],
+    });
+
+    const tempMarker = L.marker([focusCity.latitude, focusCity.longitude], {
+      icon: initialIcon,
+      zIndexOffset: 3000,
+    });
+    layer.addLayer(tempMarker);
+
+    // 2. 异步请求官方单点实测数据
+    let isCancelled = false;
+    fetchWAQICityData(focusCity.id)
+      .then((data) => {
+        if (isCancelled || !layer || !mapInstanceRef.current) return;
+        layer.clearLayers();
+
+        const aqiNum = data.evaluationUS.aqi;
+        const style = getPinStyle(aqiNum);
+
+        const updatedHtml = `
+          <div class="aqi-focus-city-pin">
+            <div class="aqi-focus-badge ${style.boxClass} shadow-xl ring-2 ring-white">
+              <span class="font-black text-xs tracking-tight">${escapeHtml(focusCity.nameZh)}</span>
+              <span class="mx-1 opacity-60 font-normal">|</span>
+              <span class="font-black text-xs">${aqiNum}</span>
+            </div>
+            <div class="aqi-focus-pin-pole"></div>
+            <div class="aqi-focus-pulse" style="border-color: ${style.colorHex};"></div>
+          </div>
+        `;
+
+        const activeIcon = L.divIcon({
+          className: 'aqi-focus-container',
+          html: updatedHtml,
+          iconSize: [96, 42],
+          iconAnchor: [48, 42],
+          popupAnchor: [0, -44],
+        });
+
+        const activeMarker = L.marker([focusCity.latitude, focusCity.longitude], {
+          icon: activeIcon,
+          zIndexOffset: 3000,
+        });
+
+        const formattedTime = data.updateTime || '实时';
+
+        activeMarker.bindPopup(`
+          <div class="p-3.5 min-w-[260px] max-w-[300px]">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+              <span class="text-[11px] font-bold text-sky-700 uppercase tracking-wide flex items-center space-x-1">
+                <span>📍 官方核心代表测站</span>
+              </span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full font-bold" style="background-color: ${style.colorHex}20; color: ${style.colorHex};">
+                ${style.levelText}
+              </span>
+            </div>
+            <div class="mt-2.5">
+              <h4 class="text-sm font-bold text-slate-900 leading-snug">
+                ${escapeHtml(data.name)} (${escapeHtml(focusCity.nameEn)})
+              </h4>
+              <div class="mt-2 flex items-baseline space-x-2">
+                <span class="text-3xl font-black text-slate-900">${aqiNum}</span>
+                <span class="text-xs font-semibold text-slate-500">AQI (美标 NowCast)</span>
+              </div>
+              ${data.pollutants.pm25 ? `<p class="text-xs text-slate-500 mt-1">PM2.5: <strong class="text-slate-800 font-semibold">${data.pollutants.pm25} μg/m³</strong></p>` : ''}
+            </div>
+            <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+              <span>更新时间: ${formattedTime}</span>
+              <span class="font-medium text-sky-600">WAQI 实测同步</span>
+            </div>
+          </div>
+        `, { maxWidth: 320, closeButton: false });
+
+        layer.addLayer(activeMarker);
+
+        // 如果用户主动检索了该城市，自动展开 Popup 气泡
+        activeMarker.openPopup();
+
+        // 通知父页面主城市信息
+        onStationCountChange?.(-1, false, {
+          name: focusCity.nameZh,
+          aqi: aqiNum,
+          level: style.levelText,
+        });
+      })
+      .catch((err) => {
+        console.warn('[AirMap] Failed to load focus city data:', err);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [focusCity]);
 
   return <div ref={mapContainerRef} className="w-full h-full rounded-2xl overflow-hidden" />;
 }
