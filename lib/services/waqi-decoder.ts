@@ -1,6 +1,6 @@
 import { HourlyTrendPoint } from './history-data';
 import { StandardType } from '../types';
-import { evaluateAQI } from '../aqi-calculator';
+import { evaluateAQI, convertIAQIToConcentration, calculateCNIAQI } from '../aqi-calculator';
 
 export interface WaqiObsSeries {
   e?: number;
@@ -51,6 +51,8 @@ export function decodeWaqiObsSeries(obsItem?: WaqiObsSeries): { timestamp: numbe
 
 /**
  * 基于反编译出的 WAQI 官方底层实测流，解码提取过去 24 小时的真实逐小时数据
+ * 注意：WAQI obs 序列解码后的数值原生为【美标 (US EPA NowCast) IAQI 分指数】
+ * 严禁将其误当做微克质量浓度二次带入 evaluateAQI，否则会导致 72 被二次放大为 159！
  */
 export function build24HourPointsFromWaqiObs(
   obs: Record<string, WaqiObsSeries>,
@@ -80,30 +82,58 @@ export function build24HourPointsFromWaqiObs(
   return last24.map((pt) => {
     const d = new Date(pt.timestamp);
     const hourLabel = String(d.getHours()).padStart(2, '0') + ':00';
-    const p25 = pt.value;
-    const ozone = o3Map.get(pt.timestamp) ?? 0;
-    const p10 = pm10Map.get(pt.timestamp) ?? 0;
-    const n2 = no2Map.get(pt.timestamp) ?? 0;
-    const s2 = so2Map.get(pt.timestamp) ?? 0;
-    const coVal = coMap.get(pt.timestamp) ?? 0.5;
+    
+    // WAQI 解码出来的数值是原生美标 IAQI 分指数
+    const usIaqiPm25 = Math.round(pt.value);
+    const usIaqiO3 = Math.round(o3Map.get(pt.timestamp) ?? 0);
+    const usIaqiPm10 = Math.round(pm10Map.get(pt.timestamp) ?? 0);
+    const usIaqiNo2 = Math.round(no2Map.get(pt.timestamp) ?? 0);
+    const usIaqiSo2 = Math.round(so2Map.get(pt.timestamp) ?? 0);
+    const usIaqiCo = Math.round(coMap.get(pt.timestamp) ?? 0);
 
-    const evalRes = evaluateAQI(
-      {
-        pm25: p25 > 0 ? p25 : undefined,
-        pm10: p10 > 0 ? p10 : undefined,
-        o3: ozone > 0 ? ozone : undefined,
-        no2: n2 > 0 ? n2 : undefined,
-        so2: s2 > 0 ? s2 : undefined,
-        co: coVal > 0 ? coVal : undefined,
-      },
-      standard
-    );
+    let aqiVal: number;
+    let pm25Val: number;
+    let o3Val: number;
+
+    if (standard === 'US') {
+      // 1. 美标体系 (WAQI 官方原生):
+      // 总 AQI 等于各项美标分指数的最大值：AQI = max(IAQI_pm25, IAQI_o3, ...)
+      // 当 PM2.5 为 72，且为首要污染物时，AQI 精准等于 72！
+      aqiVal = Math.max(usIaqiPm25, usIaqiO3, usIaqiPm10, usIaqiNo2, usIaqiSo2, usIaqiCo);
+      pm25Val = usIaqiPm25;
+      o3Val = usIaqiO3;
+    } else {
+      // 2. 中国国标体系 (HJ 633-2012):
+      // 先将美标 IAQI 逆运算还原为客观物理质量浓度 (μg/m³)，再计算国标 AQI
+      const concPm25 = convertIAQIToConcentration('pm25', usIaqiPm25, 'US');
+      const concO3 = convertIAQIToConcentration('o3', usIaqiO3, 'US');
+      const concPm10 = usIaqiPm10 > 0 ? convertIAQIToConcentration('pm10', usIaqiPm10, 'US') : undefined;
+      const concNo2 = usIaqiNo2 > 0 ? convertIAQIToConcentration('no2', usIaqiNo2, 'US') : undefined;
+      const concSo2 = usIaqiSo2 > 0 ? convertIAQIToConcentration('so2', usIaqiSo2, 'US') : undefined;
+      const concCo = usIaqiCo > 0 ? convertIAQIToConcentration('co', usIaqiCo, 'US') : undefined;
+
+      const evalCN = evaluateAQI(
+        {
+          pm25: concPm25 > 0 ? concPm25 : undefined,
+          pm10: concPm10,
+          o3: concO3 > 0 ? concO3 : undefined,
+          no2: concNo2,
+          so2: concSo2,
+          co: concCo,
+        },
+        'CN'
+      );
+      aqiVal = evalCN.aqi;
+      const cnIaqi = calculateCNIAQI({ pm25: concPm25, o3: concO3 });
+      pm25Val = cnIaqi.pm25 !== undefined ? cnIaqi.pm25 : Math.round(concPm25);
+      o3Val = cnIaqi.o3 !== undefined ? cnIaqi.o3 : Math.round(concO3);
+    }
 
     return {
       hour: hourLabel,
-      aqi: evalRes.aqi,
-      pm25: Math.round(p25),
-      o3: Math.round(ozone),
+      aqi: aqiVal,
+      pm25: pm25Val,
+      o3: o3Val,
       isReal: true,
     };
   });

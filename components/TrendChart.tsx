@@ -64,7 +64,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = tru
       },
     },
     legend: {
-      data: ['AQI 指数', 'PM2.5 (μg/m³)', '臭氧 O₃ (μg/m³)'],
+      data: ['AQI 指数', 'PM2.5', '臭氧 O₃'],
       top: 0,
       textStyle: { color: '#475569', fontSize: 12 },
     },
@@ -109,14 +109,14 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = tru
         },
       },
       {
-        name: 'PM2.5 (μg/m³)',
+        name: 'PM2.5',
         type: 'line',
         smooth: true,
         data: pm25Vals,
         itemStyle: { color: '#f59e0b' },
       },
       {
-        name: '臭氧 O₃ (μg/m³)',
+        name: '臭氧 O₃',
         type: 'line',
         smooth: true,
         data: o3Vals,
