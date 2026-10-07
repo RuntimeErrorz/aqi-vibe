@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <!-- 渐变底色：从 sky-500 到 emerald-400，与导航栏 Logo 徽章完全一致 -->
+    <linearGradient id="aqiGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="45%" stop-color="#0ea5e9" />
+      <stop offset="100%" stop-color="#34d399" />
+    </linearGradient>
+
+    <!-- 顶部高光微拟物立体质感 -->
+    <linearGradient id="aqiGloss" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.32" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.0" />
+    </linearGradient>
+
+    <!-- 弥散阴影 -->
+    <filter id="aqiGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#0284c7" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- 徽章底板圆角矩形 -->
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#aqiGrad)" filter="url(#aqiGlow)" />
+  
+  <!-- 微光立体层 -->
+  <rect x="8" y="8" width="112" height="56" rx="28" fill="url(#aqiGloss)" />
+
+  <!-- 核心气流风纹 Wind 矢量符号 (与导航栏 Wind 图标 100% 对齐) -->
+  <g transform="translate(32, 32) scale(2.6667)" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12.8 19.6A2 2 0 1 0 14 16H2" />
+    <path d="M17.5 8a2.5 2.5 0 1 1 2 4H2" />
+    <path d="M9.8 4.4A2 2 0 1 1 11 8H2" />
+  </g>
+</svg>

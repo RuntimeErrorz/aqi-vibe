@@ -7,6 +7,16 @@ import { Footer } from '@/components/Footer';
 export const metadata: Metadata = {
   title: 'AQI Vibe | 全球与国内空气质量监测及历史统计平台',
   description: '高精度实时监控 375 座国内城市、564 座全球城市与 2026+ 国控站点，回溯 2014 年至今的长期环境数据趋势。支持中国国标与美标一键切换。',
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: '32x32' },
+    ],
+    apple: [
+      { url: '/apple-icon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: ['/icon.svg'],
+  },
 };
 
 export default function RootLayout({

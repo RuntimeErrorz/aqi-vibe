@@ -8,7 +8,7 @@ import { getAnnualTrends, get365CalendarHeatmap, getCityAvailableYears, fetchCit
 import { CalendarHeatmap } from '@/components/CalendarHeatmap';
 import { AnnualTrendChart } from '@/components/AnnualTrendChart';
 import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
-import { History, Download, Calendar, TrendingDown, CheckCircle2, AlertCircle, Loader2, Gauge } from 'lucide-react';
+import { History, Download, Calendar, TrendingDown, TrendingUp, CheckCircle2, AlertCircle, Loader2, Gauge } from 'lucide-react';
 import { getCNEvaluation, getUSEvaluation } from '@/lib/aqi-calculator';
 
 function HistoryPageContent() {
@@ -99,13 +99,31 @@ function HistoryPageContent() {
 
   const avgEvaluation = standard === 'CN' ? getCNEvaluation(avgAQI) : getUSEvaluation(avgAQI);
 
-  // 动态计算该城市历史第一年到最近一年的真实 PM2.5 削减改善幅度
+  // 动态计算选定年份较历史基准年（如 2014）与较上一年度（环比）的真实 PM2.5 治理成效
   const firstYearObj = annualTrends[0];
-  const lastYearObj = annualTrends[annualTrends.length - 1];
+  const currentYearObj = annualTrends.find((t) => t.year === selectedYear);
+  const prevYearObj = annualTrends.find((t) => t.year === selectedYear - 1);
+
   const firstYearPM25 = firstYearObj?.pm25Avg || 0;
-  const lastYearPM25 = lastYearObj?.pm25Avg || 0;
-  const reductionRate =
-    firstYearPM25 > 0 ? (((lastYearPM25 - firstYearPM25) / firstYearPM25) * 100).toFixed(1) : '0';
+  const currentYearPM25 =
+    currentYearObj?.pm25Avg ??
+    (validTotalDays > 0
+      ? Math.round((calendarData.reduce((acc, d) => acc + (d.pm25 || 0), 0) / validTotalDays) * 10) / 10
+      : 0);
+
+  const isBaselineYear = Boolean(firstYearObj && selectedYear === firstYearObj.year);
+
+  // 较基准年累积削减改善率
+  const baselineRate =
+    !isBaselineYear && firstYearPM25 > 0 && currentYearPM25 > 0
+      ? (((currentYearPM25 - firstYearPM25) / firstYearPM25) * 100).toFixed(1)
+      : null;
+
+  // 较上一年环比变化率
+  const yoyRate =
+    prevYearObj && prevYearObj.pm25Avg > 0 && currentYearPM25 > 0
+      ? (((currentYearPM25 - prevYearObj.pm25Avg) / prevYearObj.pm25Avg) * 100).toFixed(1)
+      : null;
 
   // 导出 CSV 功能
   const handleExportCSV = () => {
@@ -226,24 +244,53 @@ function HistoryPageContent() {
           <AlertCircle className="w-8 h-8 text-rose-500/20 shrink-0" />
         </div>
 
-        {/* 卡片 4: 治理改善成效 */}
+        {/* 卡片 4: 治理改善成效 (随选中年份动态联动) */}
         <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
           <div className="flex-1 min-w-0 pr-3">
             <p className="text-xs text-slate-500 font-medium">
-              治理改善成效 {firstYearObj ? `(较 ${firstYearObj.year})` : ''}
+              {isBaselineYear
+                ? '治理监测基准'
+                : `治理改善成效 ${firstYearObj ? `(较 ${firstYearObj.year})` : ''}`}
             </p>
             <div className="flex items-baseline space-x-2 mt-1.5">
-              <span className="text-3xl font-black text-sky-600">
-                {Number(reductionRate) > 0 ? `+${reductionRate}%` : `${reductionRate}%`}
-              </span>
+              {isBaselineYear ? (
+                <span className="text-2xl sm:text-3xl font-black text-slate-700">基准首年</span>
+              ) : baselineRate !== null ? (
+                <span
+                  className={`text-3xl font-black ${
+                    Number(baselineRate) <= 0 ? 'text-sky-600' : 'text-rose-600'
+                  }`}
+                >
+                  {Number(baselineRate) > 0 ? `+${baselineRate}%` : `${baselineRate}%`}
+                </span>
+              ) : (
+                <span className="text-3xl font-black text-slate-400">--</span>
+              )}
             </div>
             <p className="text-xs text-slate-500 mt-1 truncate">
-              {firstYearObj && lastYearObj
-                ? `${firstYearObj.pm25Avg} → ${lastYearObj.pm25Avg} μg/m³`
-                : 'PM2.5 真实演进轨迹'}
+              {isBaselineYear ? (
+                `起始首年 PM2.5: ${firstYearPM25} μg/m³`
+              ) : firstYearObj && currentYearPM25 > 0 ? (
+                <span>
+                  {firstYearPM25} → {currentYearPM25} μg/m³
+                  {yoyRate !== null && (
+                    <span className="ml-1 text-slate-400 font-normal">
+                      (环比{Number(yoyRate) > 0 ? `+${yoyRate}` : yoyRate}%)
+                    </span>
+                  )}
+                </span>
+              ) : (
+                'PM2.5 真实演进轨迹'
+              )}
             </p>
           </div>
-          <TrendingDown className="w-8 h-8 text-sky-500/20 shrink-0" />
+          {isBaselineYear ? (
+            <Gauge className="w-8 h-8 text-slate-400/20 shrink-0" />
+          ) : Number(baselineRate ?? 0) <= 0 ? (
+            <TrendingDown className="w-8 h-8 text-sky-500/20 shrink-0" />
+          ) : (
+            <TrendingUp className="w-8 h-8 text-rose-500/20 shrink-0" />
+          )}
         </div>
       </div>
 
