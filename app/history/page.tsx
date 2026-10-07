@@ -8,7 +8,7 @@ import { getAnnualTrends, get365CalendarHeatmap, getCityAvailableYears, fetchCit
 import { CalendarHeatmap } from '@/components/CalendarHeatmap';
 import { AnnualTrendChart } from '@/components/AnnualTrendChart';
 import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
-import { History, Download, Calendar, TrendingDown, TrendingUp, CheckCircle2, AlertCircle, Loader2, Gauge } from 'lucide-react';
+import { History, Download, TrendingDown, TrendingUp, CheckCircle2, AlertCircle, Loader2, Gauge } from 'lucide-react';
 import { getCNEvaluation, getUSEvaluation } from '@/lib/aqi-calculator';
 
 function HistoryPageContent() {
@@ -136,8 +136,7 @@ function HistoryPageContent() {
   // 导出 CSV 功能
   const handleExportCSV = () => {
     let csvContent = 'data:text/csv;charset=utf-8,\uFEFF';
-    const stdLabel = standard === 'CN' ? '国标(HJ 633)' : '美标(US EPA)';
-    csvContent += `日期,AQI(${stdLabel}),质量等级,首要污染物,PM2.5(ug/m3),PM10(ug/m3),O3(ug/m3),NO2(ug/m3),SO2(ug/m3),CO(mg/m3)\n`;
+    csvContent += '日期,AQI,质量等级,首要污染物,PM2.5(ug/m3),PM10(ug/m3),O3(ug/m3),NO2(ug/m3),SO2(ug/m3),CO(mg/m3)\n';
     calendarData.forEach((row) => {
       const primary = row.aqi <= 50 ? '无' : (row.primaryPollutantName || row.primaryPollutant || 'PM2.5');
       csvContent += `${row.date},${row.aqi},${row.level},${primary},${row.pm25 ?? '--'},${row.pm10 ?? '--'},${row.o3 ?? '--'},${row.no2 ?? '--'},${row.so2 ?? '--'},${row.co ?? '--'}\n`;
@@ -230,9 +229,7 @@ function HistoryPageContent() {
                   {avgEvaluation.level}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
-                全年在册实测均值 ({standard === 'CN' ? '国标 HJ 633' : '美标 US EPA'})
-              </p>
+              <p className="text-xs text-slate-400 mt-1">全年在册实测均值</p>
             </div>
             <Gauge className="w-8 h-8 shrink-0" style={{ color: `${avgEvaluation.color}50` }} />
           </div>
@@ -240,9 +237,7 @@ function HistoryPageContent() {
           {/* 卡片 2: 优良/达标天数比例 */}
           <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
             <div className="flex-1 min-w-0 pr-3">
-              <p className="text-xs text-slate-500 font-medium">
-                {standard === 'CN' ? '国标优良天数比例 (优+良)' : '美标达标天数比例 (Good+Mod)'}
-              </p>
+              <p className="text-xs text-slate-500 font-medium">优良天数比例</p>
               <div className="flex items-baseline space-x-2 mt-1.5">
                 <span className="text-3xl font-black text-emerald-600">{compliantRatio}%</span>
               </div>
@@ -256,9 +251,7 @@ function HistoryPageContent() {
           {/* 卡片 3: 超标污染天数 */}
           <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
             <div className="flex-1 min-w-0 pr-3">
-              <p className="text-xs text-slate-500 font-medium">
-                {standard === 'CN' ? '超标污染天数 (轻度及以上)' : '美标不健康天数 (USG及以上)'}
-              </p>
+              <p className="text-xs text-slate-500 font-medium">超标污染天数</p>
               <div className="flex items-baseline space-x-2 mt-1.5">
                 <span className="text-3xl font-black text-rose-600">{pollutedDaysCount} 天</span>
               </div>
@@ -322,36 +315,14 @@ function HistoryPageContent() {
 
       {/* 核心图表 1: 365 天时间机器日历热力图 */}
       <section className="glass-panel rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
-            <Calendar className="w-4 h-4 text-sky-600" />
-            <span>
-              {city.nameZh} {selectedYear} 年逐日日历热力全景谱系
-            </span>
-          </h3>
-          <div className="flex items-center space-x-2 text-xs text-slate-500">
-            {loadingDaily && (
-              <span className="flex items-center space-x-1 text-sky-600">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>实测数据同步中...</span>
-              </span>
-            )}
-            <span>
-              换算基准: {standard === 'CN' ? '中国国标 (HJ 633)' : '美标 (US EPA NowCast)'} · 格子颜色对应实测等级
-            </span>
-          </div>
-        </div>
-        {validTotalDays > 0 ? (
-          <CalendarHeatmap data={calendarData} year={selectedYear} standard={standard} />
-        ) : (
-          <div className="h-56 flex flex-col items-center justify-center text-slate-400 text-sm space-y-2">
-            <Calendar className="w-8 h-8 text-slate-300" />
-            <p>该城市在 {selectedYear} 年度暂无官方逐日实测归档记录</p>
-            <p className="text-xs text-slate-400">
-              请在上方下拉菜单中切换到该城市有实测记录的年份 ({availableYears.join(', ')})
-            </p>
-          </div>
-        )}
+        <CalendarHeatmap
+          data={calendarData}
+          year={selectedYear}
+          standard={standard}
+          cityName={city.nameZh}
+          loadingDaily={loadingDaily}
+          availableYears={availableYears}
+        />
       </section>
 
       {/* 核心图表 2: 长期治理改善折线与优良率柱状图 */}
@@ -363,9 +334,6 @@ function HistoryPageContent() {
               {annualTrends.length > 0 ? `${annualTrends[0].year} ~ ${annualTrends[annualTrends.length - 1].year}` : ''} 年际长期治理成效与蓝天保卫战成果
             </span>
           </h3>
-          <span className="text-xs text-slate-500">
-            评价标准: {standard === 'CN' ? '中国国标 (HJ 633)' : '美标 (US EPA)'} · 基于真实实测数据按所选标准动态计算
-          </span>
         </div>
         {annualTrends.length > 0 ? (
           <AnnualTrendChart data={annualTrends} cityName={city.nameZh} standard={standard} />
