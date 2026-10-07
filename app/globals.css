@@ -85,21 +85,21 @@ body {
   filter: drop-shadow(2px 3px 5px rgba(0, 0, 0, 0.45));
 }
 
-/* 原版标牌矩形面板：精致微圆角、细白边、高辨识度 */
+/* 原版标牌矩形面板：矢量高辨识度方框，字体与尺寸放大一号更清晰易读 */
 .aqi-pin-box {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 15px;
-  padding: 0 3px;
-  border-radius: 2px;
-  border: 1px solid #ffffff;
-  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
-  font-size: 10px;
-  font-weight: 400; /* 原版 1:1 单像素纤细常规体 (Normal 400)，绝不加粗 */
+  min-width: 28px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 3px;
+  border: 1.2px solid #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
   line-height: 1;
-  letter-spacing: 0;
+  letter-spacing: -0.2px;
   text-align: center;
   box-sizing: border-box;
   white-space: nowrap;
