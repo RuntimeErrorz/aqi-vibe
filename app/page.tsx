@@ -6,7 +6,7 @@ import { useStandard } from '@/components/StandardContext';
 import { CITIES_REGISTRY, findCity } from '@/lib/constants/cities';
 import { getStationsByCity } from '@/lib/constants/stations';
 import { fetchWAQICityData, fetchWAQIGeoData } from '@/lib/services/waqi';
-import { get24HourTrend, fetch24HourHourlyTrend, HourlyTrendResult } from '@/lib/services/history-data';
+import { fetch24HourHourlyTrend, HourlyTrendResult } from '@/lib/services/history-data';
 import { calculateCNIAQI, calculateUSIAQI, evaluateAQI } from '@/lib/aqi-calculator';
 import { AirQualityRecord, CityMeta, StationMeta } from '@/lib/types';
 import { TrendChart } from '@/components/TrendChart';
@@ -253,7 +253,7 @@ export default function DashboardPage() {
       )}
 
       {/* 核心指标看板 Hero Section */}
-      {record && evaluation && (
+      {record && evaluation ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* 左侧：主 AQI 指数卡片 */}
           <div className="lg:col-span-5 glass-panel rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between">
@@ -271,9 +271,6 @@ export default function DashboardPage() {
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                       {record.name}
                     </h1>
-                    <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono border border-slate-200">
-                      {record.isDomestic ? '国内站点' : '国际名城'}
-                    </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-1 flex items-center space-x-1">
                     <span>{record.nameEn}</span>
@@ -442,7 +439,64 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      )}
+      ) : !loadError ? (
+        /* 首屏加载/刷新骨架屏：杜绝卡片消失塌陷，1:1 稳固结构 */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* 左侧主 AQI 卡片骨架 */}
+          <div className="lg:col-span-5 glass-panel rounded-2xl p-6 min-h-[380px] flex flex-col justify-between animate-pulse">
+            <div>
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <div className="h-7 w-32 bg-slate-200 rounded-lg" />
+                  <div className="h-3.5 w-48 bg-slate-100 rounded" />
+                </div>
+                <div className="h-8 w-8 bg-slate-100 rounded-lg" />
+              </div>
+              <div className="mt-7 flex items-baseline space-x-4">
+                <div className="h-16 w-24 bg-slate-200 rounded-xl" />
+                <div className="space-y-2">
+                  <div className="h-6 w-20 bg-slate-200 rounded-full" />
+                  <div className="h-3.5 w-32 bg-slate-100 rounded" />
+                </div>
+              </div>
+              <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2.5">
+                <div className="h-3.5 w-full bg-slate-200 rounded" />
+                <div className="h-3 w-4/5 bg-slate-100 rounded" />
+              </div>
+            </div>
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+              <div className="h-3 w-28 bg-slate-100 rounded" />
+              <div className="h-3 w-28 bg-slate-100 rounded" />
+            </div>
+          </div>
+
+          {/* 右侧六大污染物卡片骨架 */}
+          <div className="lg:col-span-7 glass-panel rounded-2xl p-6 flex flex-col justify-between min-h-[380px] animate-pulse">
+            <div>
+              <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+                <div className="h-5 w-40 bg-slate-200 rounded" />
+                <div className="h-4 w-32 bg-slate-100 rounded" />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 mt-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <div className="h-3.5 w-14 bg-slate-200 rounded" />
+                      <div className="h-3 w-10 bg-slate-100 rounded" />
+                    </div>
+                    <div className="h-7 w-16 bg-slate-200 rounded" />
+                    <div className="h-1.5 w-full bg-slate-200 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
+              <div className="h-3 w-36 bg-slate-100 rounded" />
+              <div className="h-3 w-32 bg-slate-100 rounded" />
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* 24 小时逐小时走势分析图 */}
       <section className="glass-panel rounded-2xl p-5">
@@ -513,7 +567,7 @@ export default function DashboardPage() {
               ))
             ) : (
               <div className="p-8 text-center text-slate-400 text-xs">
-                该区域为国际名城或未分配微观国控站，可通过全景地图查看 WAQI 全球打点。
+                该区域暂未分配国控微观监测站，可通过全景地图查看实时监测分布。
               </div>
             )}
           </div>

@@ -7,35 +7,52 @@ interface StandardContextProps {
   standard: StandardType;
   setStandard: (std: StandardType) => void;
   toggleStandard: () => void;
+  mounted: boolean;
 }
 
 const StandardContext = createContext<StandardContextProps>({
-  standard: 'CN',
+  standard: 'US',
   setStandard: () => {},
   toggleStandard: () => {},
+  mounted: false,
 });
 
 export const StandardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [standard, setStandardState] = useState<StandardType>('CN');
+  const [standard, setStandardState] = useState<StandardType>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = (localStorage.getItem('aqi_standard_v2') || localStorage.getItem('aqi_standard')) as StandardType;
+        if (saved === 'CN' || saved === 'US') return saved;
+      } catch (e) {}
+    }
+    return 'US';
+  });
+  const [mounted, setMounted] = useState<boolean>(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('aqi_standard') as StandardType;
-    if (saved === 'CN' || saved === 'US') {
-      setStandardState(saved);
-    }
+    try {
+      const saved = (localStorage.getItem('aqi_standard_v2') || localStorage.getItem('aqi_standard')) as StandardType;
+      if (saved === 'CN' || saved === 'US') {
+        setStandardState(saved);
+      }
+    } catch (e) {}
+    setMounted(true);
   }, []);
 
   const setStandard = (std: StandardType) => {
     setStandardState(std);
-    localStorage.setItem('aqi_standard', std);
+    try {
+      localStorage.setItem('aqi_standard_v2', std);
+      localStorage.setItem('aqi_standard', std);
+    } catch (e) {}
   };
 
   const toggleStandard = () => {
-    setStandard(standard === 'CN' ? 'US' : 'CN');
+    setStandard(standard === 'US' ? 'CN' : 'US');
   };
 
   return (
-    <StandardContext.Provider value={{ standard, setStandard, toggleStandard }}>
+    <StandardContext.Provider value={{ standard, setStandard, toggleStandard, mounted }}>
       {children}
     </StandardContext.Provider>
   );

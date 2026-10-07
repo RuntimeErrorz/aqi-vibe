@@ -11,7 +11,7 @@ const clientDailyCache: Record<string, Record<string, any>> = {};
  * 获取城市的年际长期演进趋势
  * 严格由逐日真实历史实测记录在对应标准下按年聚合得出，无任何人工伪造数据。
  */
-export function getAnnualTrends(cityId: string, standard: StandardType = 'CN'): AnnualTrend[] {
+export function getAnnualTrends(cityId: string, standard: StandardType = 'US'): AnnualTrend[] {
   const cityTrends = (historySummary as Record<string, any[]>)[cityId];
   if (!cityTrends || !Array.isArray(cityTrends)) {
     return [];
@@ -31,6 +31,7 @@ export function getAnnualTrends(cityId: string, standard: StandardType = 'CN'): 
           : (t.pollutedDaysUS ?? Math.max(0, t.daysCount - Math.round((t.goodDaysRatioUS * t.daysCount) / 100))),
       heavyPollutionDays: standard === 'CN' ? t.heavyPollutionDaysCN : t.heavyPollutionDaysUS,
       aqiAvg: standard === 'CN' ? t.aqiAvgCN : t.aqiAvgUS,
+      daysCount: t.daysCount,
     }));
 }
 
@@ -135,7 +136,7 @@ export function aggregateYearlyPollutants(
 export function get365CalendarHeatmap(
   cityId: string,
   year = 2025,
-  standard: StandardType = 'CN',
+  standard: StandardType = 'US',
   dailyRecords?: Record<string, any>
 ): CalendarHeatmapDay[] {
   let records = dailyRecords || clientDailyCache[cityId];
@@ -197,78 +198,6 @@ export function get365CalendarHeatmap(
   return result;
 }
 
-function getDiurnalFactor(hour: number): number {
-  if (hour >= 6 && hour <= 9) return 1.2;    // 早高峰积累
-  if (hour >= 13 && hour <= 16) return 0.85; // 午后扩散条件较好
-  if (hour >= 20 && hour <= 23) return 1.15; // 晚高峰与夜间逆温
-  return 1.0;
-}
-
-function getO3Factor(hour: number): number {
-  if (hour >= 12 && hour <= 17) return 1.5;  // 强光照光化学生成高峰
-  if (hour >= 10 && hour <= 19) return 1.2;  // 日间光照时段
-  if (hour >= 0 && hour <= 6) return 0.6;    // 夜间无光照消耗
-  return 0.8;
-}
-
-/**
- * 24 小时日内变化典型规律
- * 严格以当前实时实测值为基准锚点（终点 100% 吻合实测），历史 23 小时按日内规律相对反推闭合
- */
-export function get24HourTrend(
-  currentAQI = 65,
-  currentPM25 = 32,
-  currentO3 = 40,
-  updateTime?: string
-): { hour: string; aqi: number; pm25: number; o3: number }[] {
-  const points = [];
-  let now = new Date();
-  if (updateTime) {
-    const parsed = new Date(updateTime.replace(/-/g, '/'));
-    if (!isNaN(parsed.getTime())) {
-      now = parsed;
-    }
-  }
-
-  const nowHour = now.getHours();
-  const baseFactor = getDiurnalFactor(nowHour);
-  const baseO3Factor = getO3Factor(nowHour);
-
-  for (let i = 23; i >= 0; i--) {
-    const h = new Date(now.getTime() - i * 3600 * 1000);
-    const hourLabel = `${h.getHours().toString().padStart(2, '0')}:00`;
-    const hourVal = h.getHours();
-
-    let hourAQI: number;
-    let hourPM25: number;
-    let hourO3: number;
-
-    if (i === 0) {
-      // 关键修复：当前时刻必须 100% 严格锚定实测实时数据，与卡片绝对一致
-      hourAQI = currentAQI;
-      hourPM25 = currentPM25;
-      hourO3 = currentO3;
-    } else {
-      // 历史时刻按日内规律相对演化，确保终点平滑闭合
-      const relCycle = getDiurnalFactor(hourVal) / baseFactor;
-      hourAQI = Math.max(1, Math.round(currentAQI * relCycle));
-      hourPM25 = Math.max(1, Math.round(currentPM25 * relCycle));
-
-      const relO3 = getO3Factor(hourVal) / baseO3Factor;
-      hourO3 = Math.max(1, Math.round(currentO3 * relO3));
-    }
-
-    points.push({
-      hour: hourLabel,
-      aqi: hourAQI,
-      pm25: hourPM25,
-      o3: hourO3,
-    });
-  }
-
-  return points;
-}
-
 export interface HourlyTrendPoint {
   hour: string;
   aqi: number;
@@ -285,14 +214,13 @@ export interface HourlyTrendResult {
 }
 
 /**
- * 优先从 Open-Meteo Air Quality 接口异步拉取过去 24 小时真正的逐小时历史实测/再分析数据
- * 若拉取成功，返回真小时流水并根据用户标准 (CN/US) 换算 AQI；
- * 若拉取失败或超时，自动兜底调用 get24HourTrend（终点依然 100% 锚定实测）。
+ * 从 Open-Meteo Air Quality 接口异步拉取欧洲中期天气预报中心 (ECMWF / CAMS) 过去的真实逐小时大气时序
+ * 100% 采用原始客观物理质量浓度，杜绝任何全局倍数人为缩放或虚构正弦波兜底。
  */
 export async function fetch24HourHourlyTrend(
   lat: number,
   lng: number,
-  standard: StandardType = 'CN',
+  standard: StandardType = 'US',
   currentAQI = 65,
   currentPM25 = 32,
   currentO3 = 40,
@@ -300,7 +228,7 @@ export async function fetch24HourHourlyTrend(
 ): Promise<HourlyTrendResult> {
   try {
     const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}&hourly=pm2_5,pm10,ozone,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,us_aqi&past_days=1&forecast_days=7&timezone=auto`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(4500) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const hourly = data?.hourly;
@@ -331,24 +259,8 @@ export async function fetch24HourHourlyTrend(
       throw new Error('Not enough hourly records');
     }
 
-    // 获取数值模型在最新时刻的基准值，用于进行“地面测站实测同化偏差校正 (Bias Calibration)”
-    const latestIdx = sliceIndices[sliceIndices.length - 1];
-    const latestModelP25 = Math.max(1, pm25Arr[latestIdx] ?? 50);
-    const latestModelO3 = Math.max(1, o3Arr[latestIdx] ?? 40);
-
-    let latestModelAqi = 100;
-    if (standard === 'CN') {
-      latestModelAqi = evaluateAQI({ pm25: latestModelP25 }, 'CN').aqi;
-    } else {
-      latestModelAqi = (usAqiArr[latestIdx] != null && !isNaN(usAqiArr[latestIdx]!)) ? usAqiArr[latestIdx]! : 100;
-    }
-    latestModelAqi = Math.max(1, latestModelAqi);
-
-    // 计算地面实测与大网格模型的同化比例因子（消除模型大区域系统性偏差，彻底解决断崖跳水）
-    const aqiScale = currentAQI > 0 ? (currentAQI / latestModelAqi) : 1.0;
-    const pm25Scale = currentPM25 > 0 ? (currentPM25 / latestModelP25) : 1.0;
-    const o3Scale = currentO3 > 0 ? (currentO3 / latestModelO3) : 1.0;
-
+    // 100% 采用欧洲中期天气预报中心（ECMWF / CAMS）真实的逐小时未缩放物理浓度
+    // 彻底删除任何粗暴全局倍数放大
     const points: HourlyTrendPoint[] = sliceIndices.map((idx, pos) => {
       const isLatest = pos === sliceIndices.length - 1;
       const timeStr = times[idx];
@@ -378,29 +290,24 @@ export async function fetch24HourHourlyTrend(
       } else {
         aqiVal = (usAqiArr[idx] != null && !isNaN(usAqiArr[idx]!))
           ? usAqiArr[idx]!
-          : evaluateAQI({ pm25: p25 > 0 ? p25 : undefined }, 'US').aqi;
+          : evaluateAQI(
+              {
+                pm25: p25 > 0 ? p25 : undefined,
+                pm10: p10 > 0 ? p10 : undefined,
+                o3: ozone > 0 ? ozone : undefined,
+                no2: n2 > 0 ? n2 : undefined,
+                so2: s2 > 0 ? s2 : undefined,
+                co: coVal > 0 ? coVal : undefined,
+              },
+              'US'
+            ).aqi;
       }
-
-      if (isLatest) {
-        return {
-          hour: hourLabel,
-          aqi: currentAQI > 0 ? currentAQI : Math.round(aqiVal),
-          pm25: currentPM25 > 0 ? currentPM25 : Math.round(p25),
-          o3: currentO3 > 0 ? currentO3 : Math.round(ozone),
-          isReal: true,
-        };
-      }
-
-      // 地面实测同化校正：保留真实日内相对演化形态，同时彻底消除模型与地面测站断崖偏差
-      const calibratedAqi = Math.max(1, Math.round(aqiVal * aqiScale));
-      const calibratedPm25 = Math.max(1, Math.round(p25 * pm25Scale));
-      const calibratedO3 = Math.max(1, Math.round(ozone * o3Scale));
 
       return {
         hour: hourLabel,
-        aqi: calibratedAqi,
-        pm25: calibratedPm25,
-        o3: calibratedO3,
+        aqi: isLatest && currentAQI > 0 ? currentAQI : Math.round(aqiVal),
+        pm25: isLatest && currentPM25 > 0 ? currentPM25 : Math.round(p25),
+        o3: isLatest && currentO3 > 0 ? currentO3 : Math.round(ozone),
         isReal: true,
       };
     });
@@ -433,11 +340,11 @@ export async function fetch24HourHourlyTrend(
       forecast,
     };
   } catch (err) {
-    const fallbackPoints = get24HourTrend(currentAQI, currentPM25, currentO3, updateTime);
+    // 彻底移除虚构正弦波兜底，失败时返回空点集，绝不伪造虚假数据
     return {
-      points: fallbackPoints.map((p) => ({ ...p, isReal: false })),
+      points: [],
       isReal: false,
-      source: '典型日内规律平滑反推（端点实测严格锚定）',
+      source: '大气时序同步失败',
     };
   }
 }
@@ -482,7 +389,7 @@ export interface CountryRankingItem {
 /**
  * 获取指定年份全球与国内所有城市的统一排名列表
  */
-export function getAllCitiesRanking(year = 2025, standard: StandardType = 'CN'): CityRankingItem[] {
+export function getAllCitiesRanking(year = 2025, standard: StandardType = 'US'): CityRankingItem[] {
   const summaryMap = historySummary as Record<string, any[]>;
   const list: CityRankingItem[] = [];
 
@@ -528,7 +435,7 @@ export function getAllCitiesRanking(year = 2025, standard: StandardType = 'CN'):
 /**
  * 聚合获取指定年份全球各国家/地区的综合空气质量排行榜
  */
-export function getAllCountriesRanking(year = 2025, standard: StandardType = 'CN'): CountryRankingItem[] {
+export function getAllCountriesRanking(year = 2025, standard: StandardType = 'US'): CountryRankingItem[] {
   const cities = getAllCitiesRanking(year, standard);
   const countryGroups = new Map<string, CityRankingItem[]>();
 

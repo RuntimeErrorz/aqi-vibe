@@ -12,7 +12,7 @@ import { History, Download, Calendar, TrendingDown, TrendingUp, CheckCircle2, Al
 import { getCNEvaluation, getUSEvaluation } from '@/lib/aqi-calculator';
 
 function HistoryPageContent() {
-  const { standard } = useStandard();
+  const { standard, mounted } = useStandard();
   const searchParams = useSearchParams();
   const cityParam = searchParams.get('city');
   const yearParam = searchParams.get('year');
@@ -86,23 +86,31 @@ function HistoryPageContent() {
 
   const calendarData = get365CalendarHeatmap(city.id, selectedYear, standard, dailyRecords);
 
-  // 统计不同标准下的天数分布与年均 AQI（基于该年份实际有效实测天数）
-  const validTotalDays = calendarData.length;
-  const goodDaysCount = calendarData.filter((d) => d.aqi <= (standard === 'CN' ? 100 : 50)).length;
-  const compliantDaysCount = calendarData.filter((d) => d.aqi <= 100).length;
-  const compliantRatio = validTotalDays > 0 ? Math.round((compliantDaysCount / validTotalDays) * 100) : 0;
-  const pollutedDaysCount = calendarData.filter((d) => d.aqi > 100).length;
-  const avgAQI =
-    validTotalDays > 0
-      ? Math.round(calendarData.reduce((acc, d) => acc + d.aqi, 0) / validTotalDays)
-      : (annualTrends.find((t) => t.year === selectedYear)?.aqiAvg ?? 0);
-
-  const avgEvaluation = standard === 'CN' ? getCNEvaluation(avgAQI) : getUSEvaluation(avgAQI);
-
-  // 动态计算选定年份较历史基准年（如 2014）与较上一年度（环比）的真实 PM2.5 治理成效
+  // 动态获取当前年份的预聚合历史基准（首屏立即可用，避免逐日数据异步加载期间出现 0 天/0% 的错误占位）
   const firstYearObj = annualTrends[0];
   const currentYearObj = annualTrends.find((t) => t.year === selectedYear);
   const prevYearObj = annualTrends.find((t) => t.year === selectedYear - 1);
+
+  // 统计不同标准下的天数分布与年均 AQI
+  const validTotalDays = calendarData.length > 0 ? calendarData.length : (currentYearObj?.daysCount ?? 365);
+  const compliantDaysCount =
+    calendarData.length > 0
+      ? calendarData.filter((d) => d.aqi <= 100).length
+      : Math.max(0, validTotalDays - (currentYearObj?.pollutedDays ?? 0));
+  const compliantRatio =
+    calendarData.length > 0
+      ? Math.round((compliantDaysCount / validTotalDays) * 100)
+      : (currentYearObj?.goodDaysRatio ?? 0);
+  const pollutedDaysCount =
+    calendarData.length > 0
+      ? calendarData.filter((d) => d.aqi > 100).length
+      : (currentYearObj?.pollutedDays ?? 0);
+  const avgAQI =
+    calendarData.length > 0
+      ? Math.round(calendarData.reduce((acc, d) => acc + d.aqi, 0) / validTotalDays)
+      : (currentYearObj?.aqiAvg ?? 0);
+
+  const avgEvaluation = standard === 'CN' ? getCNEvaluation(avgAQI) : getUSEvaluation(avgAQI);
 
   const firstYearPM25 = firstYearObj?.pm25Avg || 0;
   const currentYearPM25 =
@@ -189,60 +197,77 @@ function HistoryPageContent() {
       </div>
 
       {/* 年度总体成就 Scorecard: 4 卡片现代化权威看板 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 卡片 1: 年度综合等效 AQI (独立大字显眼看板) */}
-        <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
-          <div className="flex-1 min-w-0 pr-3">
-            <p className="text-xs text-slate-500 font-medium">年度综合等效 AQI</p>
-            <div className="flex items-baseline space-x-2.5 mt-1.5">
-              <span className="text-3xl font-black" style={{ color: avgEvaluation.color }}>
-                {avgAQI}
-              </span>
-              <span
-                className="text-[11px] px-2 py-0.5 rounded-md font-bold shrink-0"
-                style={{ backgroundColor: `${avgEvaluation.color}18`, color: avgEvaluation.color }}
-              >
-                {avgEvaluation.level}
-              </span>
+      {!mounted ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="glass-panel rounded-2xl p-5 flex items-center justify-between min-h-[110px]">
+              <div className="flex-1 min-w-0 pr-3 space-y-2.5">
+                <div className="h-3.5 w-24 bg-slate-200 rounded" />
+                <div className="flex items-baseline space-x-2 mt-1">
+                  <div className="h-8 w-16 bg-slate-200 rounded-lg" />
+                  <div className="h-5 w-14 bg-slate-100 rounded-md" />
+                </div>
+                <div className="h-3 w-36 bg-slate-100 rounded" />
+              </div>
+              <div className="w-8 h-8 rounded-full bg-slate-100 shrink-0" />
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              全年在册实测均值 ({standard === 'CN' ? '国标 HJ 633' : '美标 US EPA'})
-            </p>
-          </div>
-          <Gauge className="w-8 h-8 shrink-0" style={{ color: `${avgEvaluation.color}50` }} />
+          ))}
         </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 卡片 1: 年度综合等效 AQI (独立大字显眼看板) */}
+          <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
+            <div className="flex-1 min-w-0 pr-3">
+              <p className="text-xs text-slate-500 font-medium">年度综合等效 AQI</p>
+              <div className="flex items-baseline space-x-2.5 mt-1.5">
+                <span className="text-3xl font-black" style={{ color: avgEvaluation.color }}>
+                  {avgAQI}
+                </span>
+                <span
+                  className="text-[11px] px-2 py-0.5 rounded-md font-bold shrink-0"
+                  style={{ backgroundColor: `${avgEvaluation.color}18`, color: avgEvaluation.color }}
+                >
+                  {avgEvaluation.level}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                全年在册实测均值 ({standard === 'CN' ? '国标 HJ 633' : '美标 US EPA'})
+              </p>
+            </div>
+            <Gauge className="w-8 h-8 shrink-0" style={{ color: `${avgEvaluation.color}50` }} />
+          </div>
 
-        {/* 卡片 2: 优良/达标天数比例 */}
-        <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
-          <div className="flex-1 min-w-0 pr-3">
-            <p className="text-xs text-slate-500 font-medium">
-              {standard === 'CN' ? '国标优良天数比例 (优+良)' : '美标达标天数比例 (Good+Mod)'}
-            </p>
-            <div className="flex items-baseline space-x-2 mt-1.5">
-              <span className="text-3xl font-black text-emerald-600">{compliantRatio}%</span>
+          {/* 卡片 2: 优良/达标天数比例 */}
+          <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
+            <div className="flex-1 min-w-0 pr-3">
+              <p className="text-xs text-slate-500 font-medium">
+                {standard === 'CN' ? '国标优良天数比例 (优+良)' : '美标达标天数比例 (Good+Mod)'}
+              </p>
+              <div className="flex items-baseline space-x-2 mt-1.5">
+                <span className="text-3xl font-black text-emerald-600">{compliantRatio}%</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                共 {compliantDaysCount} 天达标 / 实测 {validTotalDays} 天
+              </p>
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              共 {compliantDaysCount} 天达标 / 实测 {validTotalDays} 天
-            </p>
+            <CheckCircle2 className="w-8 h-8 text-emerald-500/20 shrink-0" />
           </div>
-          <CheckCircle2 className="w-8 h-8 text-emerald-500/20 shrink-0" />
-        </div>
 
-        {/* 卡片 3: 超标污染天数 */}
-        <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
-          <div className="flex-1 min-w-0 pr-3">
-            <p className="text-xs text-slate-500 font-medium">
-              {standard === 'CN' ? '超标污染天数 (轻度及以上)' : '美标不健康天数 (USG及以上)'}
-            </p>
-            <div className="flex items-baseline space-x-2 mt-1.5">
-              <span className="text-3xl font-black text-rose-600">{pollutedDaysCount} 天</span>
+          {/* 卡片 3: 超标污染天数 */}
+          <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
+            <div className="flex-1 min-w-0 pr-3">
+              <p className="text-xs text-slate-500 font-medium">
+                {standard === 'CN' ? '超标污染天数 (轻度及以上)' : '美标不健康天数 (USG及以上)'}
+              </p>
+              <div className="flex items-baseline space-x-2 mt-1.5">
+                <span className="text-3xl font-black text-rose-600">{pollutedDaysCount} 天</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                超标占比 {validTotalDays > 0 ? ((pollutedDaysCount / validTotalDays) * 100).toFixed(1) : 0}%
+              </p>
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              超标占比 {validTotalDays > 0 ? ((pollutedDaysCount / validTotalDays) * 100).toFixed(1) : 0}%
-            </p>
+            <AlertCircle className="w-8 h-8 text-rose-500/20 shrink-0" />
           </div>
-          <AlertCircle className="w-8 h-8 text-rose-500/20 shrink-0" />
-        </div>
 
         {/* 卡片 4: 治理改善成效 (随选中年份动态联动) */}
         <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
@@ -293,6 +318,7 @@ function HistoryPageContent() {
           )}
         </div>
       </div>
+      )}
 
       {/* 核心图表 1: 365 天时间机器日历热力图 */}
       <section className="glass-panel rounded-2xl p-5">

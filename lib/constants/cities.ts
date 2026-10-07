@@ -4695,7 +4695,7 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 40.7128,
     "longitude": -74.006,
     "isDomestic": false,
-    "waqiSlug": "newyork"
+    "waqiSlug": "usa/newyork"
   },
   {
     "id": "gl-losangeles",

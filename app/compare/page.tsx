@@ -192,7 +192,7 @@ export default function ComparePage() {
           <div className="flex items-center space-x-2">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center space-x-2">
               <BarChart3 className="w-5 h-5 text-sky-600" />
-              <span>全球与国内名城空气质量改善沙盘对比</span>
+              <span>重点城市空气质量改善横向对比</span>
             </h2>
             <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-sky-100 text-sky-700 border border-sky-200">
               {standard === 'CN' ? '国标 (HJ 633)' : '美标 (US EPA)'}

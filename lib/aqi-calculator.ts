@@ -77,7 +77,7 @@ export function calculateConcentrationFromIAQI(
 export function convertIAQIToConcentration(
   pollutant: 'pm25' | 'pm10' | 'o3' | 'no2' | 'so2' | 'co',
   iaqiVal: number,
-  standard: StandardType = 'CN'
+  standard: StandardType = 'US'
 ): number {
   const bp = standard === 'CN' ? CN_BREAKPOINTS : US_BREAKPOINTS;
   const bpIAQI = standard === 'CN' ? CN_BREAKPOINTS.iaqi : US_BREAKPOINTS.aqi;
@@ -141,7 +141,7 @@ const POLLUTANT_NAMES_ZH: Record<string, string> = {
   co: '一氧化碳 (CO)',
 };
 
-export function evaluateAQI(pollutants: PollutantValues, standard: StandardType = 'CN'): AQIEvaluation {
+export function evaluateAQI(pollutants: PollutantValues, standard: StandardType = 'US'): AQIEvaluation {
   const iaqi = standard === 'CN' ? calculateCNIAQI(pollutants) : calculateUSIAQI(pollutants);
 
   let maxAQI = 0;

@@ -158,3 +158,6 @@ function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
     ],
   };
 }
+
+
+

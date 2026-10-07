@@ -8,13 +8,13 @@ import { Wind, Map, History, BarChart3, Sparkles, HelpCircle } from 'lucide-reac
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
-  const { standard, toggleStandard } = useStandard();
+  const { standard, toggleStandard, mounted } = useStandard();
 
   const navLinks = [
     { href: '/', label: '实时总览', icon: Wind },
     { href: '/map', label: '全景地图', icon: Map },
     { href: '/history', label: '历史数据', icon: History },
-    { href: '/compare', label: '全球沙盘', icon: BarChart3 },
+    { href: '/compare', label: '全球对比', icon: BarChart3 },
   ];
 
   return (
@@ -23,7 +23,7 @@ export const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-emerald-400 flex items-center justify-center shadow-md shadow-sky-500/20 group-hover:scale-105 transition-transform">
+          <div className="w-10 h-10 rounded-xl bg-sky-600 flex items-center justify-center shadow-md shadow-sky-600/20 group-hover:scale-105 transition-transform">
             <Wind className="w-5 h-5 text-white stroke-[2.5]" />
           </div>
           <div>
@@ -64,12 +64,18 @@ export const Navbar: React.FC = () => {
           <button
             onClick={toggleStandard}
             className="flex-1 flex items-center space-x-1.5 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50 rounded-l-xl cursor-pointer select-none"
-            title="点击切换 AQI 计算标准 (中国国标 / 美国 EPA)"
+            title="点击切换 AQI 计算标准 (美国 EPA / 中国国标)"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             <span className="text-slate-500 shrink-0">标准:</span>
-            <span className="w-20 inline-block text-left font-bold text-slate-900 shrink-0 whitespace-nowrap">
-              {standard === 'CN' ? '国标 (HJ 633)' : '美标 (US EPA)'}
+            <span className="w-20 inline-flex items-center text-left shrink-0">
+              {!mounted ? (
+                <span className="h-3.5 w-16 bg-slate-200/90 rounded-md animate-pulse inline-block" />
+              ) : (
+                <span className="font-bold text-slate-900 whitespace-nowrap">
+                  {standard === 'US' ? '美标 (US EPA)' : '国标 (HJ 633)'}
+                </span>
+              )}
             </span>
           </button>
 
@@ -99,28 +105,7 @@ export const Navbar: React.FC = () => {
                   </span>
                 </div>
 
-                {/* 国标模式卡片 */}
-                <div
-                  className={`p-2.5 rounded-xl transition-all border ${
-                    standard === 'CN'
-                      ? 'bg-sky-50/80 border-sky-200 text-sky-950 shadow-sm'
-                      : 'bg-slate-50/60 border-slate-100 text-slate-600'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-slate-900">中国国标 (HJ 633-2012)</span>
-                    {standard === 'CN' && (
-                      <span className="text-[10px] bg-sky-600 text-white px-1.5 py-0.2 rounded font-bold">
-                        当前生效
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] leading-relaxed">
-                    优良门槛为 <b>AQI ≤ 100</b>（包含一级优 PM2.5 ≤ 35 μg/m³、二级良 PM2.5 ≤ 75 μg/m³），更符合国内日常通报口径。
-                  </p>
-                </div>
-
-                {/* 美标模式卡片 */}
+                {/* 美标模式卡片（排在最上面） */}
                 <div
                   className={`p-2.5 rounded-xl transition-all border ${
                     standard === 'US'
@@ -138,6 +123,27 @@ export const Navbar: React.FC = () => {
                   </div>
                   <p className="text-[11px] leading-relaxed">
                     标准限值更严苛，<b>Good (优)</b> 仅对应 PM2.5 ≤ 12 μg/m³，<b>Moderate (良)</b> 对应 PM2.5 ≤ 35.4 μg/m³，超过 35.4 即进入不健康超标区间。
+                  </p>
+                </div>
+
+                {/* 国标模式卡片（排在美标下面） */}
+                <div
+                  className={`p-2.5 rounded-xl transition-all border ${
+                    standard === 'CN'
+                      ? 'bg-sky-50/80 border-sky-200 text-sky-950 shadow-sm'
+                      : 'bg-slate-50/60 border-slate-100 text-slate-600'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-slate-900">中国国标 (HJ 633-2012)</span>
+                    {standard === 'CN' && (
+                      <span className="text-[10px] bg-sky-600 text-white px-1.5 py-0.2 rounded font-bold">
+                        当前生效
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] leading-relaxed">
+                    优良门槛为 <b>AQI ≤ 100</b>（包含一级优 PM2.5 ≤ 35 μg/m³、二级良 PM2.5 ≤ 75 μg/m³），更符合国内日常通报口径。
                   </p>
                 </div>
 
