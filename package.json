@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy": "wrangler pages deploy out"
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
     "clsx": "^2.1.1",

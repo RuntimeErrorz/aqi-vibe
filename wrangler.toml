@@ -1,18 +1,7 @@
 name = "aqi-vibe"
+main = "worker.ts"
 compatibility_date = "2024-09-23"
-pages_build_output_dir = "out"
 
-# 如果使用 Cloudflare D1 边缘数据库，可解除以下注释绑定：
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "aqi_vibe_d1"
-# database_id = "your-database-id-here"
-
-# 如果使用 Cloudflare R2 存储历史 Parquet/CSV 数据湖，可解除以下注释：
-# [[r2_buckets]]
-# binding = "DATA_LAKE"
-# bucket_name = "aqi-vibe-archive"
-
-# 定时任务 (Cron Trigger): 每小时第 15 分钟自动从边缘节点同步最新城市 AQI
-# [triggers]
-# crons = ["15 * * * *"]
+[assets]
+directory = "./out"
+binding = "ASSETS"
