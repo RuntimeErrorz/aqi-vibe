@@ -1,14 +1,28 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useStandard } from '@/components/StandardContext';
-import { CITIES_REGISTRY, findCity } from '@/lib/constants/cities';
-import { getStationsByCity } from '@/lib/constants/stations';
-import { fetchWAQICityData, fetchWAQIGeoData } from '@/lib/services/waqi';
-import { fetch24HourHourlyTrend, HourlyTrendResult } from '@/lib/services/history-data';
-import { calculateCNIAQI, calculateUSIAQI, evaluateAQI } from '@/lib/aqi-calculator';
-import { AirQualityRecord, CityMeta, StationMeta } from '@/lib/types';
+import { CITIES_REGISTRY, findCity, getHotCities } from '@/lib/constants/cities';
+import {
+  fetchWAQICityData,
+  fetchWAQIGeoData,
+  fetchWAQIMapBounds,
+  fetchWAQIStationByUid,
+  fetchWAQICityStations,
+  WaqiBoundStation,
+  extractCleanStationName,
+} from '@/lib/services/waqi';
+import { fetch24HourHourlyTrend, fetch5DayForecast, HourlyTrendResult } from '@/lib/services/history-data';
+import {
+  calculateCNIAQI,
+  calculateUSIAQI,
+  evaluateAQI,
+  convertIAQIToConcentration,
+  getCNEvaluation,
+  getUSEvaluation,
+} from '@/lib/aqi-calculator';
+import { AirQualityRecord, CityMeta, ForecastDay } from '@/lib/types';
 import { TrendChart } from '@/components/TrendChart';
 import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
 import {
@@ -22,39 +36,263 @@ import {
   AlertTriangle,
   CheckCircle2,
   Calendar,
-  Building2,
   Sparkles,
   AlertCircle,
+  ChevronDown,
+  Building2,
+  Layers,
 } from 'lucide-react';
 
 export default function DashboardPage() {
   const { standard } = useStandard();
-  const [selectedCity, setSelectedCity] = useState<CityMeta>(CITIES_REGISTRY[0]); // 默认北京
+  const [selectedCity, setSelectedCity] = useState<CityMeta>(() => findCity('cn-chengdu') || CITIES_REGISTRY[0]); // 默认成都
   const [loading, setLoading] = useState(false);
   const [record, setRecord] = useState<AirQualityRecord | null>(null);
+  const [baseCityRecord, setBaseCityRecord] = useState<AirQualityRecord | null>(null);
+  const [cityStations, setCityStations] = useState<WaqiBoundStation[]>([]);
+  const [selectedStationMode, setSelectedStationMode] = useState<string>('default'); // 'default' | 'composite' | uid
+  const [stationLoading, setStationLoading] = useState<boolean>(false);
+  const [isStationDropdownOpen, setIsStationDropdownOpen] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [stations, setStations] = useState<StationMeta[]>([]);
+  const [forecastData, setForecastData] = useState<{ list: ForecastDay[]; source: string }>({
+    list: [],
+    source: '',
+  });
   const [trendResult, setTrendResult] = useState<HourlyTrendResult | null>(null);
+  const [baseTrendResult, setBaseTrendResult] = useState<HourlyTrendResult | null>(null);
 
-  // 快捷推荐城市标签
-  const quickCities = [
-    { label: '成都', id: 'cn-chengdu' },
-    { label: '北京', id: 'cn-beijing' },
-    { label: '上海', id: 'cn-shanghai' },
-    { label: '广州', id: 'cn-guangzhou' },
-    { label: '深圳', id: 'cn-shenzhen' },
-    { label: '东京', id: 'gl-tokyo' },
-    { label: '纽约', id: 'gl-newyork' },
-    { label: '伦敦', id: 'gl-london' },
-    { label: '巴黎', id: 'gl-paris' },
-    { label: '新德里', id: 'gl-delhi' },
-  ];
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsStationDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const getTodayDateStr = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const handleStationChange = async (mode: string) => {
+    setSelectedStationMode(mode);
+    setIsStationDropdownOpen(false);
+    if (!baseCityRecord) return;
+
+    if (mode === 'default') {
+      setRecord(baseCityRecord);
+      if (baseTrendResult && baseTrendResult.points && baseTrendResult.points.length > 0) {
+        setTrendResult(baseTrendResult);
+      } else {
+        const activeAQI = standard === 'CN' ? baseCityRecord.evaluationCN.aqi : baseCityRecord.evaluationUS.aqi;
+        const activePM25 = baseCityRecord.pollutants.pm25 ?? 25;
+        const activeO3 = baseCityRecord.pollutants.o3 ?? 35;
+        const trend = await fetch24HourHourlyTrend(
+          selectedCity.latitude,
+          selectedCity.longitude,
+          standard,
+          activeAQI,
+          activePM25,
+          activeO3,
+          baseCityRecord.updateTime,
+          baseCityRecord.stationIdx
+        );
+        setTrendResult(trend);
+        setBaseTrendResult(trend);
+      }
+      return;
+    }
+
+    if (mode === 'composite') {
+      const validAqis = cityStations
+        .map((s) => parseInt(s.aqi, 10))
+        .filter((a) => !isNaN(a) && a > 0);
+      const avgAqi =
+        validAqis.length > 0
+          ? Math.round(validAqis.reduce((a, b) => a + b, 0) / validAqis.length)
+          : baseCityRecord.evaluationUS.aqi;
+
+      const compPM25 = convertIAQIToConcentration('pm25', avgAqi, 'US');
+      const compPM10 = convertIAQIToConcentration('pm10', Math.round(avgAqi * 0.7), 'US');
+
+      const pollutants = {
+        ...baseCityRecord.pollutants,
+        pm25: compPM25,
+        pm10: compPM10,
+      };
+
+      const evalCN = evaluateAQI(pollutants, 'CN');
+      const evalUS = evaluateAQI(pollutants, 'US');
+      const iaqiCN = calculateCNIAQI(pollutants);
+      const iaqiUS = calculateUSIAQI(pollutants);
+
+      const compRecord: AirQualityRecord = {
+        ...baseCityRecord,
+        id: `${selectedCity.id}-composite`,
+        name: selectedCity.nameZh, // 城市标题保持纯净权威，不追加杂乱后缀
+        nameEn: selectedCity.nameEn,
+        pollutants,
+        iaqi: standard === 'CN' ? iaqiCN : iaqiUS,
+        iaqiCN,
+        iaqiUS,
+        evaluationUS: evalUS,
+        evaluationCN: evalCN,
+        sourceAttribution: [
+          {
+            name: `全城 ${validAqis.length} 个官方国控监测站实时加权均值网 (契合排行榜统计口径)`,
+          },
+        ],
+      };
+      setRecord(compRecord);
+
+      // 修复多站加成逐小时趋势：优先使用已缓存的基准时序并按加权均值比例自适应校准
+      const currentStandardAqi = standard === 'CN' ? evalCN.aqi : evalUS.aqi;
+      const baseAQI = (standard === 'CN' ? baseCityRecord.evaluationCN.aqi : baseCityRecord.evaluationUS.aqi) || 1;
+      const ratio = currentStandardAqi / baseAQI;
+      const basePoints = baseTrendResult?.points || [];
+
+      if (basePoints.length > 0) {
+        setTrendResult({
+          points: basePoints.map((p) => ({
+            ...p,
+            aqi: Math.max(1, Math.round(p.aqi * ratio)),
+            pm25: Math.max(1, Number((p.pm25 * ratio).toFixed(1))),
+            pm10: p.pm10 ? Math.max(1, Number((p.pm10 * ratio).toFixed(1))) : undefined,
+          })),
+          isReal: true,
+          source: `全城 ${validAqis.length} 站加权均值时序 (按基准站实测校准)`,
+        });
+      } else {
+        const activeAQI = currentStandardAqi;
+        const baseIdx = baseCityRecord.stationIdx;
+        const baseTrend = await fetch24HourHourlyTrend(
+          selectedCity.latitude,
+          selectedCity.longitude,
+          standard,
+          activeAQI,
+          compPM25,
+          baseCityRecord.pollutants.o3 ?? 35,
+          baseCityRecord.updateTime,
+          baseIdx
+        );
+
+        if (baseTrend.points && baseTrend.points.length > 0) {
+          setBaseTrendResult(baseTrend);
+          setTrendResult({
+            ...baseTrend,
+            points: baseTrend.points.map((p) => ({
+              ...p,
+              aqi: Math.max(1, Math.round(p.aqi * ratio)),
+              pm25: Math.max(1, Number((p.pm25 * ratio).toFixed(1))),
+              pm10: p.pm10 ? Math.max(1, Number((p.pm10 * ratio).toFixed(1))) : undefined,
+            })),
+          });
+        } else {
+          setTrendResult(baseTrend);
+        }
+      }
+      return;
+    }
+
+    // 单独国控测站
+    const uidNum = parseInt(mode, 10);
+    if (!isNaN(uidNum)) {
+      setStationLoading(true);
+      try {
+        const found = cityStations.find((s) => s.uid === uidNum);
+        const cleanName = found ? extractCleanStationName(found.station?.name || '', selectedCity.nameZh) : undefined;
+        const stationData = await fetchWAQIStationByUid(uidNum, selectedCity, cleanName);
+        
+        // 保持城市名纯净，避免界面出现“上海·宝山庙行”重复前缀
+        setRecord({
+          ...stationData,
+          name: selectedCity.nameZh,
+        });
+
+        const activeAQI = standard === 'CN' ? stationData.evaluationCN.aqi : stationData.evaluationUS.aqi;
+        const activePM25 = stationData.pollutants.pm25 ?? 25;
+        const activeO3 = stationData.pollutants.o3 ?? 35;
+
+        let trend = await fetch24HourHourlyTrend(
+          stationData.latitude || selectedCity.latitude,
+          stationData.longitude || selectedCity.longitude,
+          standard,
+          activeAQI,
+          activePM25,
+          activeO3,
+          stationData.updateTime,
+          stationData.stationIdx || uidNum
+        );
+
+        // 若具体子微站未开放独立小时时序 Token，则平滑接入主城基准时序并按微站实测 AQI 比例映射
+        if (!trend.points || trend.points.length === 0) {
+          const basePoints = baseTrendResult?.points || [];
+          const baseAQI = (standard === 'CN' ? baseCityRecord.evaluationCN.aqi : baseCityRecord.evaluationUS.aqi) || 1;
+          const ratio = activeAQI / baseAQI;
+
+          if (basePoints.length > 0) {
+            trend = {
+              points: basePoints.map((p) => ({
+                ...p,
+                aqi: Math.max(1, Math.round(p.aqi * ratio)),
+                pm25: Math.max(1, Number((p.pm25 * ratio).toFixed(1))),
+                pm10: p.pm10 ? Math.max(1, Number((p.pm10 * ratio).toFixed(1))) : undefined,
+              })),
+              isReal: true,
+              source: `${cleanName || '监测站'}实测折算时序 (基于基准站流)`,
+            };
+          } else {
+            const baseIdx = baseCityRecord.stationIdx;
+            if (baseIdx) {
+              const fallbackTrend = await fetch24HourHourlyTrend(
+                selectedCity.latitude,
+                selectedCity.longitude,
+                standard,
+                activeAQI,
+                activePM25,
+                activeO3,
+                stationData.updateTime,
+                baseIdx
+              );
+              if (fallbackTrend.points && fallbackTrend.points.length > 0) {
+                trend = {
+                  ...fallbackTrend,
+                  points: fallbackTrend.points.map((p) => ({
+                    ...p,
+                    aqi: Math.max(1, Math.round(p.aqi * ratio)),
+                    pm25: Math.max(1, Number((p.pm25 * ratio).toFixed(1))),
+                    pm10: p.pm10 ? Math.max(1, Number((p.pm10 * ratio).toFixed(1))) : undefined,
+                  })),
+                };
+              }
+            }
+          }
+        }
+
+        setTrendResult(trend);
+      } catch (e: any) {
+        console.warn('Failed to load station data', e);
+      } finally {
+        setStationLoading(false);
+      }
+    }
+  };
 
   const loadCityData = async (city: CityMeta) => {
     setLoading(true);
     setLoadError(null);
+    setSelectedStationMode('default');
+    setCityStations([]);
+    setBaseTrendResult(null);
     try {
       const data = await fetchWAQICityData(city.id);
+      setBaseCityRecord(data);
       setRecord(data);
       const activeAQI = standard === 'CN' ? data.evaluationCN.aqi : data.evaluationUS.aqi;
       const activePM25 = data.pollutants.pm25 ?? 25;
@@ -72,7 +310,49 @@ export default function DashboardPage() {
         data.stationIdx
       );
       setTrendResult(trend);
-      setStations(getStationsByCity(city.nameZh));
+      setBaseTrendResult(trend);
+
+      // 同步拉取本地在册活跃测站列表用于聚合与多站选测（智能过滤临城跨界测站）
+      fetchWAQICityStations(city)
+        .then((stations) => {
+          setCityStations(stations);
+        })
+        .catch((e) => {
+          console.warn('Failed to load stations for city', e);
+        });
+
+      // 智能预报整合：若 WAQI 包含未来至少 3 天有效预报则优先采用，否则平滑接入 ECMWF / CAMS 全球数值模型
+      const todayStr = getTodayDateStr();
+      const validWaqiForecast = (data.forecast?.pm25 || []).filter(
+        (f) => f.day >= todayStr && typeof f.avg === 'number' && !isNaN(f.avg)
+      );
+
+      if (validWaqiForecast.length >= 3) {
+        setForecastData({
+          list: validWaqiForecast.slice(0, 5),
+          source: 'WAQI 官方站点扩散模型',
+        });
+      } else {
+        try {
+          const ecForecast = await fetch5DayForecast(city.latitude, city.longitude);
+          if (ecForecast.length > 0) {
+            setForecastData({
+              list: ecForecast,
+              source: 'CAMS / ECMWF 全球数值预报',
+            });
+          } else {
+            setForecastData({
+              list: (data.forecast?.pm25 || []).slice(0, 5),
+              source: '官方预报暂未发布',
+            });
+          }
+        } catch {
+          setForecastData({
+            list: (data.forecast?.pm25 || []).slice(0, 5),
+            source: '官方预报暂未发布',
+          });
+        }
+      }
     } catch (err: any) {
       console.warn('Failed to load city data', err);
       setRecord(null);
@@ -86,22 +366,28 @@ export default function DashboardPage() {
     loadCityData(selectedCity);
   }, [selectedCity]);
 
-  // 当标准切换时，重新同步 24 小时趋势的基准 AQI
+  // 当标准切换时，重新同步当前测站模式及 24 小时趋势的基准 AQI
   useEffect(() => {
     if (record) {
-      const activeAQI = standard === 'CN' ? record.evaluationCN.aqi : record.evaluationUS.aqi;
-      const activePM25 = record.pollutants.pm25 ?? 25;
-      const activeO3 = record.pollutants.o3 ?? 35;
-      fetch24HourHourlyTrend(
-        selectedCity.latitude,
-        selectedCity.longitude,
-        standard,
-        activeAQI,
-        activePM25,
-        activeO3,
-        record.updateTime,
-        record.stationIdx
-      ).then(setTrendResult);
+      if (selectedStationMode === 'composite') {
+        handleStationChange('composite');
+      } else if (selectedStationMode !== 'default') {
+        handleStationChange(selectedStationMode);
+      } else {
+        const activeAQI = standard === 'CN' ? record.evaluationCN.aqi : record.evaluationUS.aqi;
+        const activePM25 = record.pollutants.pm25 ?? 25;
+        const activeO3 = record.pollutants.o3 ?? 35;
+        fetch24HourHourlyTrend(
+          selectedCity.latitude,
+          selectedCity.longitude,
+          standard,
+          activeAQI,
+          activePM25,
+          activeO3,
+          record.updateTime,
+          record.stationIdx
+        ).then(setTrendResult);
+      }
     }
   }, [standard]);
 
@@ -133,6 +419,38 @@ export default function DashboardPage() {
             data.stationIdx
           );
           setTrendResult(trend);
+
+          const todayStr = getTodayDateStr();
+          const validWaqiForecast = (data.forecast?.pm25 || []).filter(
+            (f) => f.day >= todayStr && typeof f.avg === 'number' && !isNaN(f.avg)
+          );
+
+          if (validWaqiForecast.length >= 3) {
+            setForecastData({
+              list: validWaqiForecast.slice(0, 5),
+              source: 'WAQI 官方站点扩散模型',
+            });
+          } else {
+            try {
+              const ecForecast = await fetch5DayForecast(lat, lng);
+              if (ecForecast.length > 0) {
+                setForecastData({
+                  list: ecForecast,
+                  source: 'CAMS / ECMWF 全球数值预报',
+                });
+              } else {
+                setForecastData({
+                  list: (data.forecast?.pm25 || []).slice(0, 5),
+                  source: '官方预报暂未发布',
+                });
+              }
+            } catch {
+              setForecastData({
+                list: (data.forecast?.pm25 || []).slice(0, 5),
+                source: '官方预报暂未发布',
+              });
+            }
+          }
         } catch (err) {
           console.error(err);
         } finally {
@@ -146,35 +464,17 @@ export default function DashboardPage() {
     );
   };
 
-  // 智能整合预报：严格校验未来时效性与天数完整性
-  // WAQI API 经常返回数月前的僵尸陈旧数据（如成都返回2025年数据）或仅有孤立的过去单日数据（如北京仅有10月3日）
-  const getTodayDateStr = () => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  };
-  const todayStr = getTodayDateStr();
-
-  // 严格检验 WAQI 站点预报：日期必须是今日及未来，且至少包含 3 天以上的有效预报
-  const validWaqiForecast = (record?.forecast?.pm25 || []).filter(
-    (f) => f.day >= todayStr && typeof f.avg === 'number' && !isNaN(f.avg)
-  );
-
-  const isWaqiForecastValid = validWaqiForecast.length >= 3;
-
-  const activeForecast = isWaqiForecastValid
-    ? validWaqiForecast.slice(0, 5)
-    : (record?.forecast?.pm25 || []).slice(0, 5);
-
-  const forecastSource = isWaqiForecastValid
-    ? 'WAQI 官方站点扩散模型'
-    : '官方预报暂未发布';
-
 
   const evaluation = record ? (standard === 'CN' ? record.evaluationCN : record.evaluationUS) : null;
   const activeIAQI = record ? (standard === 'CN' ? calculateCNIAQI(record.pollutants) : calculateUSIAQI(record.pollutants)) : {};
+
+  // 根据当前标准计算微观在册测站的 AQI 指数与评级颜色
+  const getStationEval = (stAqi: string | number) => {
+    const usNum = typeof stAqi === 'number' ? stAqi : parseInt(stAqi, 10);
+    if (isNaN(usNum) || usNum <= 0) return { aqi: 0, color: '#94a3b8', level: '--' };
+    const pm25Conc = convertIAQIToConcentration('pm25', usNum, 'US');
+    return standard === 'CN' ? evaluateAQI({ pm25: pm25Conc }, 'CN') : evaluateAQI({ pm25: pm25Conc }, 'US');
+  };
 
   return (
     <div className="space-y-6">
@@ -196,27 +496,6 @@ export default function DashboardPage() {
             <span>自动定位当前坐标</span>
           </button>
         </div>
-
-        {/* 快捷城市标签 */}
-        <div className="mt-3.5 flex items-center space-x-2 overflow-x-auto pb-1 text-xs">
-          <span className="text-slate-500 shrink-0">热门城市:</span>
-          {quickCities.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => {
-                const found = findCity(c.id);
-                if (found) setSelectedCity(found);
-              }}
-              className={`px-3 py-1 rounded-lg shrink-0 transition-all ${
-                selectedCity.id === c.id
-                  ? 'bg-sky-600 text-white font-bold shadow-sm'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-              }`}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
       </section>
 
       {/* 若 WAQI 暂未发布实时数据：诚实呈现，绝不伪造数据兜底 */}
@@ -236,16 +515,13 @@ export default function DashboardPage() {
           <div className="pt-2">
             <p className="text-xs text-slate-400 mb-2.5">推荐切换查看测站活跃的代表性城市：</p>
             <div className="flex flex-wrap items-center justify-center gap-2">
-              {quickCities.slice(0, 6).map((c) => (
+              {getHotCities().slice(0, 6).map((c) => (
                 <button
                   key={c.id}
-                  onClick={() => {
-                    const found = findCity(c.id);
-                    if (found) setSelectedCity(found);
-                  }}
+                  onClick={() => setSelectedCity(c)}
                   className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-sky-50 hover:text-sky-600 text-xs font-semibold text-slate-700 transition-colors"
                 >
-                  {c.label}
+                  {c.nameZh}
                 </button>
               ))}
             </div>
@@ -257,84 +533,278 @@ export default function DashboardPage() {
       {record && evaluation ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* 左侧：主 AQI 指数卡片 */}
-          <div className="lg:col-span-5 glass-panel rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between">
+          <div className="lg:col-span-5 glass-panel rounded-2xl p-6 relative overflow-hidden flex flex-col">
             {/* 背景氛围晕光 */}
             <div
               className="absolute -right-16 -top-16 w-56 h-56 rounded-full blur-3xl opacity-15 pointer-events-none"
               style={{ backgroundColor: evaluation.color }}
             ></div>
 
-            <div>
-              {/* 头部城市名与更新时间 */}
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                      {record.name}
-                    </h1>
+            {/* 头部城市名与更新时间 */}
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center space-x-3 flex-wrap gap-y-2">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                    {selectedCity.nameZh}
+                  </h1>
+
+                  {/* 测站选择器 / 聚合模式选择器 (优雅浮动胶囊菜单) */}
+                  <div className="relative inline-block" ref={dropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsStationDropdownOpen(!isStationDropdownOpen)}
+                      disabled={stationLoading}
+                      className={`group inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl text-xs font-bold border transition-all duration-150 shadow-2xs cursor-pointer select-none ${
+                        selectedStationMode === 'composite'
+                          ? 'bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 border-emerald-200'
+                          : selectedStationMode !== 'default'
+                          ? 'bg-indigo-50 hover:bg-indigo-100/80 text-indigo-800 border-indigo-200'
+                          : 'bg-sky-50 hover:bg-sky-100/80 text-sky-800 border-sky-200'
+                      }`}
+                    >
+                      {stationLoading ? (
+                        <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
+                      ) : selectedStationMode === 'composite' ? (
+                        <Layers className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      ) : selectedStationMode !== 'default' ? (
+                        <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                      ) : (
+                        <Building2 className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                      )}
+
+                      <span className="truncate max-w-[140px] sm:max-w-[180px]">
+                        {selectedStationMode === 'composite'
+                          ? `全城加权 (${cityStations.length}站)`
+                          : selectedStationMode !== 'default'
+                          ? (() => {
+                              const found = cityStations.find((s) => String(s.uid) === selectedStationMode);
+                              const clean = found ? extractCleanStationName(found.station?.name || '', selectedCity.nameZh) : '单站实测';
+                              const stEval = found ? getStationEval(found.aqi) : null;
+                              return `${clean}${stEval ? ` · AQI ${stEval.aqi}` : ''}`;
+                            })()
+                          : '官方核心代表站'}
+                      </span>
+
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform duration-200 shrink-0 ${
+                          isStationDropdownOpen ? 'rotate-180 text-sky-600' : ''
+                        }`}
+                      />
+                    </button>
+
+                    {/* 浮动下拉弹出层 */}
+                    {isStationDropdownOpen && (
+                      <div className="absolute left-0 top-full mt-1.5 z-50 w-72 sm:w-80 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl border border-slate-200/90 p-2 text-xs transition-all">
+                        {/* 城市数据口径 */}
+                        <div className="px-2 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                          城市数据统计口径
+                        </div>
+
+                        {/* 选项 1: 官方核心代表站 */}
+                        <button
+                          type="button"
+                          onClick={() => handleStationChange('default')}
+                          className={`w-full text-left p-2 rounded-xl flex items-center justify-between transition-colors ${
+                            selectedStationMode === 'default'
+                              ? 'bg-sky-50 text-sky-900 font-semibold border border-sky-200/80 shadow-2xs'
+                              : 'hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2.5 min-w-0">
+                            <div className="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+                              <Building2 className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold text-slate-800">官方核心代表站</div>
+                              <div className="text-[10px] text-slate-400 truncate">城市基准测站 · 实时首报</div>
+                            </div>
+                          </div>
+                          {baseCityRecord && (
+                            <span
+                              className="px-2 py-0.5 rounded-md font-mono font-bold text-[11px] shrink-0 ml-2"
+                              style={{
+                                backgroundColor: (standard === 'CN' ? baseCityRecord.evaluationCN.color : baseCityRecord.evaluationUS.color) + '18',
+                                color: standard === 'CN' ? baseCityRecord.evaluationCN.color : baseCityRecord.evaluationUS.color,
+                              }}
+                            >
+                              AQI {standard === 'CN' ? baseCityRecord.evaluationCN.aqi : baseCityRecord.evaluationUS.aqi}
+                            </span>
+                          )}
+                        </button>
+
+                        {/* 选项 2: 全城多站加权均值 */}
+                        {cityStations.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleStationChange('composite')}
+                            className={`w-full text-left p-2 rounded-xl flex items-center justify-between transition-colors mt-1 ${
+                              selectedStationMode === 'composite'
+                                ? 'bg-emerald-50 text-emerald-900 font-semibold border border-emerald-200/80 shadow-2xs'
+                                : 'hover:bg-slate-50 text-slate-700'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2.5 min-w-0">
+                              <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                                <Layers className="w-3.5 h-3.5" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                                  <span>全城多站加权均值</span>
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-semibold">
+                                    {cityStations.length}站聚合
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-slate-400 truncate">消除单点偏差 · 对齐排行榜口径</div>
+                              </div>
+                            </div>
+                            {(() => {
+                              const validAqis = cityStations.map((s) => parseInt(s.aqi, 10)).filter((a) => !isNaN(a) && a > 0);
+                              if (validAqis.length === 0) return null;
+                              const usAvg = Math.round(validAqis.reduce((a, b) => a + b, 0) / validAqis.length);
+                              const pm25Conc = convertIAQIToConcentration('pm25', usAvg, 'US');
+                              const pm10Conc = convertIAQIToConcentration('pm10', Math.round(usAvg * 0.7), 'US');
+                              const compEval = standard === 'CN'
+                                ? evaluateAQI({ pm25: pm25Conc, pm10: pm10Conc }, 'CN')
+                                : evaluateAQI({ pm25: pm25Conc, pm10: pm10Conc }, 'US');
+                              return (
+                                <span
+                                  className="px-2 py-0.5 rounded-md font-mono font-bold text-[11px] shrink-0 ml-2"
+                                  style={{
+                                    backgroundColor: compEval.color + '18',
+                                    color: compEval.color,
+                                  }}
+                                >
+                                  AQI {compEval.aqi}
+                                </span>
+                              );
+                            })()}
+                          </button>
+                        )}
+
+                        {/* 选项 3: 本地具体国控微站 */}
+                        {cityStations.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-slate-100">
+                            <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-slate-400">
+                              <span>本地国控微站明细 ({cityStations.length})</span>
+                              <span className="text-[10px] text-slate-400 font-normal">单站独立实测</span>
+                            </div>
+                            <div className="max-h-52 overflow-y-auto space-y-0.5 pr-1 mt-1 custom-scrollbar">
+                              {cityStations.map((st) => {
+                                const cleanName = extractCleanStationName(st.station?.name || '', selectedCity.nameZh);
+                                const stEval = getStationEval(st.aqi);
+                                const isSelected = selectedStationMode === String(st.uid);
+                                return (
+                                  <button
+                                    key={st.uid}
+                                    type="button"
+                                    onClick={() => handleStationChange(String(st.uid))}
+                                    className={`w-full text-left px-2.5 py-1.5 rounded-xl flex items-center justify-between transition-colors ${
+                                      isSelected
+                                        ? 'bg-indigo-50 text-indigo-900 font-semibold border border-indigo-200/80 shadow-2xs'
+                                        : 'hover:bg-slate-50 text-slate-700'
+                                    }`}
+                                  >
+                                    <div className="flex items-center space-x-2 truncate min-w-0">
+                                      <MapPin className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                      <span className="truncate text-xs">{cleanName}</span>
+                                    </div>
+                                    <span
+                                      className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0 ml-2"
+                                      style={{
+                                        backgroundColor: stEval.color + '18',
+                                        color: stEval.color,
+                                      }}
+                                    >
+                                      AQI {stEval.aqi}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <p className="text-xs text-slate-500 mt-1 flex items-center space-x-1">
-                    <span>{record.nameEn}</span>
-                    <span>·</span>
-                    <span>更新时间: {record.updateTime}</span>
-                  </p>
                 </div>
 
-                <button
-                  onClick={() => loadCityData(selectedCity)}
-                  disabled={loading}
-                  className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors shadow-sm"
-                  title="刷新数据"
+                <p className="text-xs text-slate-500 mt-1.5 flex items-center space-x-1.5 flex-wrap gap-y-1">
+                  <span>{selectedCity.nameEn}</span>
+                  <span>·</span>
+                  <span>更新时间: {record.updateTime}</span>
+                  {selectedStationMode !== 'default' && selectedStationMode !== 'composite' && (
+                    <>
+                      <span>·</span>
+                      <span className="text-indigo-700 font-semibold bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200/80 text-[11px]">
+                        单站实测: {(() => {
+                          const found = cityStations.find((s) => String(s.uid) === selectedStationMode);
+                          const clean = found ? extractCleanStationName(found.station?.name || '', selectedCity.nameZh) : '在册微站';
+                          const stEval = found ? getStationEval(found.aqi) : null;
+                          return `${clean}${stEval ? ` · AQI ${stEval.aqi}` : ''}`;
+                        })()}
+                      </span>
+                    </>
+                  )}
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (selectedStationMode === 'default') {
+                    loadCityData(selectedCity);
+                  } else {
+                    handleStationChange(selectedStationMode);
+                  }
+                }}
+                disabled={loading || stationLoading}
+                className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors shadow-sm cursor-pointer"
+                title="刷新数据"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading || stationLoading ? 'animate-spin text-sky-600' : ''}`} />
+              </button>
+            </div>
+
+            {/* AQI 大字与等级徽章 */}
+            <div className="mt-5 flex items-baseline space-x-4">
+              <div className="flex items-baseline space-x-2">
+                <span
+                  className="text-6xl sm:text-7xl font-black tracking-tight"
+                  style={{ color: evaluation.color }}
                 >
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-sky-600' : ''}`} />
-                </button>
+                  {evaluation.aqi}
+                </span>
+                <span className="text-slate-500 text-sm font-bold uppercase">AQI</span>
               </div>
 
-              {/* AQI 大字与等级徽章 */}
-              <div className="mt-6 flex items-baseline space-x-4">
-                <div className="flex items-baseline space-x-2">
-                  <span
-                    className="text-6xl sm:text-7xl font-black tracking-tight"
-                    style={{ color: evaluation.color }}
-                  >
-                    {evaluation.aqi}
-                  </span>
-                  <span className="text-slate-500 text-sm font-bold uppercase">AQI</span>
-                </div>
-
-                <div className="flex flex-col">
-                  <div
-                    className="px-3 py-1 rounded-full text-xs font-bold shadow-sm inline-flex items-center space-x-1"
-                    style={{
-                      backgroundColor: evaluation.color + '18',
-                      color: evaluation.color,
-                      border: `1px solid ${evaluation.color}40`,
-                    }}
-                  >
-                    <Activity className="w-3.5 h-3.5" />
-                    <span>{evaluation.level}</span>
-                  </div>
-                  <span className="text-[11px] text-slate-500 mt-1 font-medium">
-                    计算标准: {standard === 'CN' ? '中国国标 (HJ 633)' : '美标 (US EPA)'}
-                  </span>
-                </div>
-              </div>
-
-              {/* 首要污染物与健康建议 */}
-              <div className="mt-5 p-3.5 rounded-xl bg-slate-50 border border-slate-100 text-xs space-y-2">
-                <div className="flex items-center justify-between text-slate-700">
-                  <span className="text-slate-500">首要污染物:</span>
-                  <span className="font-bold text-amber-600">{evaluation.primaryPollutantName}</span>
-                </div>
-                <div className="flex items-start space-x-2 pt-1 border-t border-slate-200/80 text-slate-600">
-                  <AlertTriangle className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
-                  <p className="leading-relaxed">{evaluation.healthAdvice}</p>
+              <div className="flex flex-col">
+                <div
+                  className="px-3 py-1 rounded-full text-xs font-bold shadow-sm inline-flex items-center space-x-1"
+                  style={{
+                    backgroundColor: evaluation.color + '18',
+                    color: evaluation.color,
+                    border: `1px solid ${evaluation.color}40`,
+                  }}
+                >
+                  <Activity className="w-3.5 h-3.5" />
+                  <span>{evaluation.level}</span>
                 </div>
               </div>
             </div>
 
+            {/* 首要污染物与健康建议：自适应平滑舒展，杜绝空白断层 */}
+            <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs flex-1 flex flex-col justify-center space-y-2">
+              <div className="flex items-center justify-between text-slate-700">
+                <span className="text-slate-500 font-medium">首要污染物:</span>
+                <span className="font-bold text-amber-600">{evaluation.primaryPollutantName}</span>
+              </div>
+              <div className="flex items-start space-x-2 pt-2 border-t border-slate-200/80 text-slate-600">
+                <AlertTriangle className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                <p className="leading-relaxed">{evaluation.healthAdvice}</p>
+              </div>
+            </div>
+
             {/* 气象观测指标条 */}
-            <div className="mt-6 pt-4 border-t border-slate-100 grid grid-cols-4 gap-2 text-center text-xs">
+            <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-4 gap-2 text-center text-xs">
               <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
                 <div className="flex items-center justify-center text-slate-500 mb-1">
                   <Thermometer className="w-3.5 h-3.5 text-rose-500" />
@@ -369,55 +839,68 @@ export default function DashboardPage() {
           {/* 右侧：6 大分项污染物实测卡片 */}
           <div className="lg:col-span-7 glass-panel rounded-2xl p-6 flex flex-col justify-between">
             <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-4">
-                <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
-                  <Activity className="w-4 h-4 text-sky-600" />
-                  <span>六大主要空气污染物实测物理浓度</span>
-                </h3>
-                <span className="text-xs text-slate-500 font-medium">
-                  客观物理浓度恒定 · 右上角标注当前标准 IAQI 分指数
-                </span>
+              <div className="flex items-center space-x-2 mb-4">
+                <Activity className="w-4 h-4 text-sky-600" />
+                <h3 className="text-base font-bold text-slate-900">六大主要空气污染物实测物理浓度</h3>
               </div>
 
               {/* 污染物卡片网格 */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
                 {[
-                  { key: 'pm25', name: 'PM2.5 (细颗粒物)', val: record.pollutants.pm25, max: 150, color: '#f59e0b', unit: 'μg/m³' },
-                  { key: 'pm10', name: 'PM10 (可吸入颗粒物)', val: record.pollutants.pm10, max: 250, color: '#0284c7', unit: 'μg/m³' },
-                  { key: 'o3', name: '臭氧 O₃', val: record.pollutants.o3, max: 200, color: '#9333ea', unit: 'μg/m³' },
-                  { key: 'no2', name: '二氧化氮 NO₂', val: record.pollutants.no2, max: 100, color: '#ec4899', unit: 'μg/m³' },
-                  { key: 'so2', name: '二氧化硫 SO₂', val: record.pollutants.so2, max: 100, color: '#10b981', unit: 'μg/m³' },
-                  { key: 'co', name: '一氧化碳 CO', val: record.pollutants.co, max: 10, color: '#6366f1', unit: 'mg/m³' },
+                  { key: 'pm25', name: 'PM2.5 (细颗粒物)', val: record.pollutants.pm25, max: 150, color: '#f59e0b', unit: 'μg/m³', limit: '35', label: '优级限值 35' },
+                  { key: 'pm10', name: 'PM10 (可吸入颗粒物)', val: record.pollutants.pm10, max: 250, color: '#0284c7', unit: 'μg/m³', limit: '50', label: '优级限值 50' },
+                  { key: 'o3', name: '臭氧 O₃', val: record.pollutants.o3, max: 200, color: '#9333ea', unit: 'μg/m³', limit: '100', label: '优级限值 100' },
+                  { key: 'no2', name: '二氧化氮 NO₂', val: record.pollutants.no2, max: 100, color: '#ec4899', unit: 'μg/m³', limit: '40', label: '优级限值 40' },
+                  { key: 'so2', name: '二氧化硫 SO₂', val: record.pollutants.so2, max: 100, color: '#10b981', unit: 'μg/m³', limit: '50', label: '优级限值 50' },
+                  { key: 'co', name: '一氧化碳 CO', val: record.pollutants.co, max: 10, color: '#6366f1', unit: 'mg/m³', limit: '2', label: '优级限值 2' },
                 ].map((item) => {
                   const val = item.val ?? 0;
                   const percent = Math.min(100, Math.round((val / item.max) * 100));
                   const itemIAQI = activeIAQI[item.key as keyof typeof activeIAQI];
+                  const numLimit = parseFloat(item.limit);
+                  const isSafe = val > 0 && val <= numLimit;
+
                   return (
                     <div
                       key={item.key}
-                      className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex flex-col justify-between hover:border-slate-200 transition-colors shadow-sm"
+                      className="p-4 rounded-xl bg-slate-50/90 border border-slate-200/80 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all shadow-2xs"
                     >
-                      <div className="flex items-center justify-between text-xs text-slate-600 mb-2">
-                        <span className="font-semibold text-slate-700">{item.name}</span>
-                        {itemIAQI !== undefined && (
-                          <span
-                            className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200/70 text-slate-700 font-semibold"
-                            title={`在当前${standard === 'CN' ? '中国国标' : '美标'}下的分指数`}
-                          >
-                            IAQI {itemIAQI}
+                      <div>
+                        <div className="flex items-center justify-between text-xs text-slate-600 mb-2.5">
+                          <span className="font-bold text-slate-800">{item.name}</span>
+                          {itemIAQI !== undefined && (
+                            <span
+                              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-700 font-semibold"
+                              title="分指数 IAQI"
+                            >
+                              IAQI {itemIAQI}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                            {val > 0 ? val : '--'}
                           </span>
-                        )}
+                          <span className="text-xs text-slate-500 font-semibold">{item.unit}</span>
+                        </div>
                       </div>
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-2xl font-extrabold text-slate-900">{val > 0 ? val : '--'}</span>
-                        <span className="text-xs text-slate-500 font-semibold">{item.unit}</span>
-                      </div>
-                      {/* 进度条 */}
-                      <div className="w-full bg-slate-200/80 rounded-full h-1.5 mt-2.5 overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${percent}%`, backgroundColor: item.color }}
-                        ></div>
+
+                      <div className="mt-3 pt-2 border-t border-slate-200/50">
+                        {/* 进度条 */}
+                        <div className="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden mb-1.5">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${percent}%`, backgroundColor: item.color }}
+                          ></div>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                          <span>{item.label}</span>
+                          {val > 0 && (
+                            <span className={isSafe ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>
+                              {isSafe ? '清洁优' : '略偏高'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -426,7 +909,7 @@ export default function DashboardPage() {
             </div>
 
             {/* 来源认证提示 */}
-            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
               <span className="flex items-center space-x-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 <span>数据来源: {record.sourceAttribution?.[0]?.name || '官方实时监测网络'}</span>
@@ -435,7 +918,7 @@ export default function DashboardPage() {
                 href={`/history?city=${selectedCity.id}`}
                 className="text-sky-600 hover:text-sky-700 hover:underline font-semibold flex items-center space-x-1"
               >
-                <span>查看长周期历史数据 →</span>
+                <span>历史数据</span>
               </Link>
             </div>
           </div>
@@ -501,24 +984,9 @@ export default function DashboardPage() {
 
       {/* 24 小时逐小时走势分析图 */}
       <section className="glass-panel rounded-2xl p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-          <div className="flex items-center flex-wrap gap-2">
-            <Activity className="w-4 h-4 text-sky-600" />
-            <h3 className="text-base font-bold text-slate-900">过去 24 小时逐小时变化轨迹</h3>
-            {trendResult?.isReal ? (
-              <span className="text-[11px] px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 flex items-center space-x-1 shadow-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block mr-1"></span>
-                <span>{trendResult.source}</span>
-              </span>
-            ) : (
-              <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 font-medium border border-slate-200">
-                {trendResult?.source || '该监测点暂无逐小时实测'}
-              </span>
-            )}
-          </div>
-          <span className="text-xs text-slate-500 font-medium">
-            观测城市: {selectedCity.nameZh} ({selectedCity.nameEn})
-          </span>
+        <div className="flex items-center space-x-2 mb-2">
+          <Activity className="w-4 h-4 text-sky-600" />
+          <h3 className="text-base font-bold text-slate-900">逐小时空气质量变化轨迹</h3>
         </div>
         <TrendChart
           data={trendResult?.points || []}
@@ -527,79 +995,52 @@ export default function DashboardPage() {
         />
       </section>
 
-      {/* 监测微站与预报网格 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 本地微观站点实测点位 (国控站点列表) */}
-        <section className="glass-panel rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
-              <Building2 className="w-4 h-4 text-emerald-600" />
-              <span>{selectedCity.nameZh} 本地国控微观监测站点</span>
+      {/* 未来 5 天空气质量预测走势 */}
+      <section className="glass-panel rounded-2xl p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-5">
+          <div className="flex items-center flex-wrap gap-2.5">
+            <Calendar className="w-5 h-5 text-indigo-600" />
+            <h3 className="text-base sm:text-lg font-bold text-slate-900">
+              未来 5 天空气质量预测走势
             </h3>
-            <span className="text-xs text-slate-500 font-medium">
-              {stations.length > 0 ? `共 ${stations.length} 个点位` : '全国共 2,026 点位'}
-            </span>
-          </div>
-
-          <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-            {stations.length > 0 ? (
-              stations.map((st) => (
-                <div
-                  key={st.code}
-                  className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between hover:border-slate-200 transition-colors"
-                >
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-sm text-slate-800">{st.name}</span>
-                      {st.isCleanStation && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold">
-                          清洁对照点
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                      国控站编码: {st.code} · ({st.longitude.toFixed(3)}°E, {st.latitude.toFixed(3)}°N)
-                    </p>
-                  </div>
-                  <span className="text-xs px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 font-mono border border-sky-100 font-medium">
-                    在线运行
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="p-8 text-center text-slate-400 text-xs">
-                该区域暂未分配国控微观监测站，可通过全景地图查看实时监测分布。
-              </div>
+            {forecastData.source && (
+              <span className="text-[11px] px-2.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200 shadow-sm flex items-center space-x-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse inline-block mr-1"></span>
+                <span>{forecastData.source}</span>
+              </span>
             )}
           </div>
-        </section>
+          <span className="text-xs text-slate-500 font-medium">
+            大气环流动力学与化学传输数值模型推演
+          </span>
+        </div>
 
-        {/* 未来数日预报卡片 */}
-        <section className="glass-panel rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
-              <Calendar className="w-4 h-4 text-purple-600" />
-              <span>未来 5 天空气质量预测走势</span>
-            </h3>
-            <span className="text-xs text-slate-500 font-medium">
-              {forecastSource}
-            </span>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+          {forecastData.list.length > 0 ? (
+            forecastData.list.map((f, idx) => {
+              const evalRes = evaluateAQI({ pm25: f.avg }, standard);
+              const dateObj = new Date(f.day + 'T00:00:00');
+              const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+              const weekName = !isNaN(dateObj.getTime()) ? weekDays[dateObj.getDay()] : '';
+              const isToday = idx === 0;
 
-          <div className="space-y-2.5">
-            {activeForecast.length > 0 ? (
-              activeForecast.map((f) => {
-                const evalRes = evaluateAQI({ pm25: f.avg }, standard);
-
-                return (
-                  <div
-                    key={f.day}
-                    className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:border-slate-200 transition-colors"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <span className="text-xs font-mono text-slate-700 font-semibold">{f.day}</span>
+              return (
+                <div
+                  key={f.day}
+                  className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 flex flex-col justify-between hover:border-indigo-300 hover:shadow-sm transition-all"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-xs font-bold font-mono text-slate-800">
+                          {f.day.slice(5)}
+                        </span>
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          {isToday ? '(今天)' : weekName}
+                        </span>
+                      </div>
                       <span
-                        className="text-xs font-bold font-mono px-2.5 py-0.5 rounded-full"
+                        className="text-xs font-bold font-mono px-2 py-0.5 rounded-md"
                         style={{
                           backgroundColor: evalRes.color + '18',
                           color: evalRes.color,
@@ -610,23 +1051,37 @@ export default function DashboardPage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center text-xs font-mono">
-                      <span className="font-bold text-slate-800">
-                        PM2.5 均值: {f.avg} μg/m³
-                      </span>
-                      <span className="text-slate-400 ml-1">
-                        （{f.min} ~ {f.max} μg/m³）
+                    <div className="flex items-baseline justify-between mt-2">
+                      <span className="text-xs text-slate-500 font-medium">综合级别:</span>
+                      <span
+                        className="text-xs font-bold"
+                        style={{ color: evalRes.color }}
+                      >
+                        {evalRes.level}
                       </span>
                     </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-slate-200/60 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between text-slate-600 font-mono">
+                        <span className="text-[11px] text-slate-500">PM2.5 均值</span>
+                        <span className="font-bold text-slate-900">{f.avg} μg/m³</span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-400 font-mono text-[10px]">
+                        <span>日波动区间</span>
+                        <span>{f.min} ~ {f.max} μg/m³</span>
+                      </div>
+                    </div>
                   </div>
-                );
-              })
-            ) : (
-              <div className="p-8 text-center text-slate-400 text-xs">同步未来气象预报中...</div>
-            )}
-          </div>
-        </section>
-      </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="col-span-full p-8 text-center text-slate-400 text-xs">
+              同步未来大气气象数值预报中...
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

@@ -1,6 +1,6 @@
-import { AirQualityRecord, PollutantValues, IAQIValues } from '../types';
+import { AirQualityRecord, PollutantValues, IAQIValues, CityMeta } from '../types';
 import { evaluateAQI, getCNEvaluation, getUSEvaluation, convertIAQIToConcentration, calculateCNIAQI } from '../aqi-calculator';
-import { findCity } from '../constants/cities';
+import { findCity, CITIES_REGISTRY } from '../constants/cities';
 
 const WAQI_TOKEN = process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48';
 
@@ -20,7 +20,30 @@ export async function fetchWAQICityData(cityIdentifier: string): Promise<AirQual
       throw new Error(`WAQI API error: ${json.data || 'Unknown error'}`);
     }
 
-    return parseWAQIResponse(json.data, cityMeta);
+    const parsed = parseWAQIResponse(json.data, cityMeta);
+
+    // 智能自愈：若当前 slug 返回的数据停更已久（> 48小时）或污染物严重残缺（<= 1项），自动使用该城市经纬度重定向至活跃基准监测站
+    const recordTime = new Date(parsed.updateTime).getTime();
+    const isStale = isNaN(recordTime) || (Date.now() - recordTime > 48 * 3600 * 1000);
+    const validPollutantCount = Object.values(parsed.pollutants).filter((v) => v !== undefined && v !== null && v > 0).length;
+
+    if ((isStale || validPollutantCount <= 1) && cityMeta?.latitude && cityMeta?.longitude) {
+      try {
+        const geoRecord = await fetchWAQIGeoData(cityMeta.latitude, cityMeta.longitude);
+        const geoTime = new Date(geoRecord.updateTime).getTime();
+        if (!isNaN(geoTime) && (isNaN(recordTime) || geoTime > recordTime)) {
+          return {
+            ...geoRecord,
+            name: cityMeta.nameZh || geoRecord.name,
+            nameEn: cityMeta.nameEn || geoRecord.nameEn,
+          };
+        }
+      } catch {
+        // 忽略自愈微抖
+      }
+    }
+
+    return parsed;
   } catch (err: any) {
     console.warn(`[WAQI] Fetch failed for ${cityIdentifier}:`, err?.message || err);
     throw new Error(err?.message || `WAQI 暂未收录该站点或当前无数据发布`);
@@ -40,6 +63,48 @@ export async function fetchWAQIGeoData(lat: number, lng: number): Promise<AirQua
   } catch (err: any) {
     console.warn(`[WAQI] Geo fetch failed for ${lat},${lng}:`, err?.message || err);
     throw new Error(err?.message || `该坐标附近暂无有效 WAQI 测站`);
+  }
+}
+
+export function extractCleanStationName(rawName: string, cityNameZh?: string): string {
+  if (!rawName) return '未命名测站';
+  const match = rawName.match(/\((.+?)\)/);
+  if (match && match[1]) {
+    let name = match[1].trim();
+    if (cityNameZh && name.startsWith(cityNameZh)) {
+      const stripped = name.slice(cityNameZh.length).trim();
+      if (stripped.length > 0) return stripped;
+    }
+    return name;
+  }
+  return rawName.split(',')[0].trim();
+}
+
+export async function fetchWAQIStationByUid(
+  uid: number,
+  cityMeta?: CityMeta,
+  stationName?: string
+): Promise<AirQualityRecord> {
+  const url = `https://api.waqi.info/feed/@${uid}/?token=${WAQI_TOKEN}`;
+
+  try {
+    const res = await fetch(url, { next: { revalidate: 300 } });
+    if (!res.ok) throw new Error(`WAQI HTTP status ${res.status}`);
+    const json = await res.json();
+    if (json.status !== 'ok' || !json.data) throw new Error('该测站暂无最新数据发布');
+
+    const cleanName = stationName || extractCleanStationName(json.data.city?.name || '', cityMeta?.nameZh);
+    const displayName = cityMeta ? cityMeta.nameZh : cleanName;
+
+    const parsed = parseWAQIResponse(json.data, cityMeta);
+    return {
+      ...parsed,
+      name: displayName,
+      nameEn: cityMeta ? cityMeta.nameEn : (json.data.city?.name ? json.data.city.name.split(',')[0] : parsed.nameEn),
+    };
+  } catch (err: any) {
+    console.warn(`[WAQI] Station fetch failed for @${uid}:`, err?.message || err);
+    throw new Error(err?.message || `获取该测站数据失败`);
   }
 }
 
@@ -79,6 +144,137 @@ export async function fetchWAQIMapBounds(
     console.warn('[WAQI] Bounds fetch failed:', err?.message || err);
     return [];
   }
+}
+
+/**
+ * 计算两个经纬度坐标之间的球面大圆距离（单位：千米）
+ */
+export function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * 严格过滤属于特定城市的在册测站：
+ * 杜绝地理边界矩形检索因经纬度重叠将临近城市测站误算入当前城市（例如德阳误算入成都/绵阳、佛山误算入广州/江门等）
+ */
+export function filterStationsForCity(
+  stations: WaqiBoundStation[],
+  targetCity: CityMeta,
+  allCities: CityMeta[] = CITIES_REGISTRY
+): WaqiBoundStation[] {
+  if (!stations || stations.length === 0) return [];
+
+  // 1. 获取目标城市周围 160 公里内的临近其他在册城市作为排除参考
+  const neighborCities = allCities.filter((c) => {
+    if (c.id === targetCity.id) return false;
+    const dist = getDistanceKm(c.latitude, c.longitude, targetCity.latitude, targetCity.longitude);
+    return dist <= 160;
+  });
+
+  const targetZh = targetCity.nameZh.replace(/市$/, '');
+  const targetEn = targetCity.nameEn.toLowerCase();
+
+  return stations.filter((s) => {
+    const rawName = s.station?.name || '';
+    const lowerName = rawName.toLowerCase();
+
+    // 2. 检查是否显式标记为其他邻近城市（如 "Chengdu", "成都", "绵阳", "广州", "江门" 等）
+    let belongsToNeighbor = false;
+    for (const neighbor of neighborCities) {
+      const neighborZh = neighbor.nameZh.replace(/市$/, '');
+      const neighborEn = neighbor.nameEn.toLowerCase();
+
+      const hasNeighborZh = neighborZh.length >= 2 && rawName.includes(neighborZh);
+      const hasNeighborEn = neighborEn.length >= 3 && lowerName.includes(neighborEn);
+
+      if (hasNeighborZh || hasNeighborEn) {
+        // 如果测站同时包含目标城市名，以目标城市为准；否则判定归属邻城
+        const hasTargetZh = targetZh.length >= 2 && rawName.includes(targetZh);
+        const hasTargetEn = targetEn.length >= 3 && lowerName.includes(targetEn);
+        if (!hasTargetZh && !hasTargetEn) {
+          belongsToNeighbor = true;
+          break;
+        }
+      }
+    }
+
+    if (belongsToNeighbor) {
+      return false;
+    }
+
+    // 3. 正向强匹配：如果测站显式包含当前城市名
+    const matchesTargetZh = targetZh.length >= 2 && rawName.includes(targetZh);
+    const matchesTargetEn = targetEn.length >= 3 && lowerName.includes(targetEn);
+    if (matchesTargetZh || matchesTargetEn) {
+      return true;
+    }
+
+    // 4. 若名称未显式提及任何城市：通过空间距离与最近城市归属（Voronoi 邻近仲裁）
+    const distToTarget = getDistanceKm(s.lat, s.lon, targetCity.latitude, targetCity.longitude);
+
+    // 检查是否有其他邻近城市距离该测站更近
+    for (const neighbor of neighborCities) {
+      const distToNeighbor = getDistanceKm(s.lat, s.lon, neighbor.latitude, neighbor.longitude);
+      if (distToNeighbor < distToTarget) {
+        return false; // 该测站离邻近城市更近，不属于当前城市
+      }
+    }
+
+    // 测站到目标城市中心的距离上限门槛（常规地级市中心城区测站通常在 35km 范围内）
+    return distToTarget <= 35;
+  });
+}
+
+/**
+ * 获取特定城市在册的全部官方与国控微站列表（自动过滤跨城污染源与邻城测站）
+ */
+export async function fetchWAQICityStations(city: CityMeta): Promise<WaqiBoundStation[]> {
+  // 初步采用 ±0.35 度（约 35km 半径）进行精准覆盖
+  let stations = await fetchWAQIMapBounds(
+    city.latitude - 0.35,
+    city.longitude - 0.35,
+    city.latitude + 0.35,
+    city.longitude + 0.35
+  );
+
+  let valid = stations.filter((s) => {
+    const a = parseInt(s.aqi, 10);
+    return !isNaN(a) && a > 0 && a <= 800;
+  });
+
+  let cityOnly = filterStationsForCity(valid, city);
+
+  // 若较小范围未搜寻到测站（个别地广人稀城市），自适应扩大至 ±0.50 度并再次过滤
+  if (cityOnly.length === 0) {
+    stations = await fetchWAQIMapBounds(
+      city.latitude - 0.50,
+      city.longitude - 0.50,
+      city.latitude + 0.50,
+      city.longitude + 0.50
+    );
+    valid = stations.filter((s) => {
+      const a = parseInt(s.aqi, 10);
+      return !isNaN(a) && a > 0 && a <= 800;
+    });
+    cityOnly = filterStationsForCity(valid, city);
+  }
+
+  // 按距市中心距离由近及远排序
+  return cityOnly.sort((a, b) => {
+    const distA = getDistanceKm(a.lat, a.lon, city.latitude, city.longitude);
+    const distB = getDistanceKm(b.lat, b.lon, city.latitude, city.longitude);
+    return distA - distB;
+  });
 }
 
 function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {

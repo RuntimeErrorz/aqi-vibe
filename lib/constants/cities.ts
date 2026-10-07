@@ -594,7 +594,7 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.1291,
     "longitude": 113.2644,
     "isDomestic": true,
-    "waqiSlug": "guangzhou"
+    "waqiSlug": "@9845"
   },
   {
     "id": "cn-shenzhen",
@@ -9834,6 +9834,24 @@ const MAJOR_CITIES_ORDER: Record<string, string[]> = {
   RU: ['gl-moscow', 'gl-saint-petersburg'],
 };
 
+export const HOT_CITY_IDS: string[] = [
+  'cn-beijing',
+  'cn-shanghai',
+  'cn-guangzhou',
+  'cn-shenzhen',
+  'cn-chengdu',
+  'gl-tokyo',
+  'gl-newyork',
+  'gl-london',
+  'gl-paris',
+  'gl-delhi',
+];
+
+export function getHotCities(filterFn?: (c: CityMeta) => boolean): CityMeta[] {
+  const list = HOT_CITY_IDS.map((id) => findCity(id)).filter((c): c is CityMeta => Boolean(c));
+  return filterFn ? list.filter(filterFn) : list;
+}
+
 export function searchCities(
   query: string,
   limit = 8,
@@ -9842,7 +9860,13 @@ export function searchCities(
   const pool = filterFn ? CITIES_REGISTRY.filter(filterFn) : CITIES_REGISTRY;
   const q = query.trim().toLowerCase();
   if (!q) {
-    return pool.slice(0, limit);
+    const hot = getHotCities(filterFn);
+    if (hot.length >= limit) {
+      return hot.slice(0, limit);
+    }
+    const hotIds = new Set(hot.map((c) => c.id));
+    const rest = pool.filter((c) => !hotIds.has(c.id));
+    return [...hot, ...rest].slice(0, limit);
   }
 
   const targetCountryCode = COUNTRY_SYNONYMS[q] || null;
@@ -9900,6 +9924,10 @@ export function searchCities(
     }
 
     if (score > 0) {
+      // 若属于重点热门城市，在同级匹配中给予额外加权优先展示
+      if (HOT_CITY_IDS.includes(c.id)) {
+        score += 50;
+      }
       scored.push({ score, city: c });
     }
   }

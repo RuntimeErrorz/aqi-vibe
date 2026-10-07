@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { CityMeta } from '@/lib/types';
-import { searchCities } from '@/lib/constants/cities';
+import { searchCities, HOT_CITY_IDS } from '@/lib/constants/cities';
 import { getCountryInfo } from '@/lib/constants/countries';
 import { Search, MapPin, Globe, X, ChevronRight } from 'lucide-react';
 
@@ -31,7 +31,8 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
 
   // 随着 query 变化即时检索 (Algolia 风格响应)
   useEffect(() => {
-    const list = searchCities(query, 8, filterCity);
+    const limit = query.trim() ? 8 : 10;
+    const list = searchCities(query, limit, filterCity);
     setResults(list);
     setActiveIndex(0);
   }, [query, filterCity]);
@@ -119,7 +120,11 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
       {isOpen && (
         <div className="absolute left-0 right-0 w-full min-w-full sm:min-w-[460px] max-w-[92vw] top-full mt-2 z-[100] bg-white rounded-2xl border border-slate-200/90 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="p-2 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-400 px-3">
-            <span>支持直接输入国家、省份或城市 (如: 美国 / 日本 / 英国 / 成都)</span>
+            <span>
+              {query.trim()
+                ? '支持直接输入国家、省份或城市 (如: 美国 / 日本 / 英国 / 成都)'
+                : '热门代表城市 (点击直接切换，或键入搜索任意城市)'}
+            </span>
             <span>按 ↑↓ 选择，Enter 确认</span>
           </div>
 
@@ -128,6 +133,7 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
               results.map((c, idx) => {
                 const isSelected = activeIndex === idx;
                 const countryInfo = getCountryInfo(c.country);
+                const isHot = HOT_CITY_IDS.includes(c.id);
 
                 return (
                   <div
@@ -157,6 +163,11 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
                         <div className="flex items-center space-x-2">
                           <span className="font-bold text-sm text-slate-900">{c.nameZh}</span>
                           <span className="text-xs text-slate-500 font-mono">{c.nameEn}</span>
+                          {isHot && (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200/80">
+                              热门
+                            </span>
+                          )}
                         </div>
                         <p className="text-[11px] text-slate-500 flex items-center space-x-1.5 mt-0.5">
                           <span className="px-1 py-0.2 rounded bg-slate-100 text-slate-500 font-mono text-[9px] font-bold border border-slate-200 uppercase">
