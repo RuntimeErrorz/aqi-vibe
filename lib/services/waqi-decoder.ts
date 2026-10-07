@@ -86,54 +86,78 @@ export function build24HourPointsFromWaqiObs(
     // WAQI 解码出来的数值是原生美标 IAQI 分指数
     const usIaqiPm25 = Math.round(pt.value);
     const usIaqiO3 = Math.round(o3Map.get(pt.timestamp) ?? 0);
-    const usIaqiPm10 = Math.round(pm10Map.get(pt.timestamp) ?? 0);
-    const usIaqiNo2 = Math.round(no2Map.get(pt.timestamp) ?? 0);
-    const usIaqiSo2 = Math.round(so2Map.get(pt.timestamp) ?? 0);
-    const usIaqiCo = Math.round(coMap.get(pt.timestamp) ?? 0);
+    const rawPm10 = pm10Map.get(pt.timestamp);
+    const rawNo2 = no2Map.get(pt.timestamp);
+    const rawSo2 = so2Map.get(pt.timestamp);
+    const rawCo = coMap.get(pt.timestamp);
+
+    const usIaqiPm10 = rawPm10 !== undefined && rawPm10 > 0 ? Math.round(rawPm10) : undefined;
+    const usIaqiNo2 = rawNo2 !== undefined && rawNo2 > 0 ? Math.round(rawNo2) : undefined;
+    const usIaqiSo2 = rawSo2 !== undefined && rawSo2 > 0 ? Math.round(rawSo2) : undefined;
+    const usIaqiCo = rawCo !== undefined && rawCo > 0 ? Math.round(rawCo) : undefined;
+
+    // 将美标 IAQI 逆运算还原为客观物理质量浓度 (PM2.5/PM10/O3/NO2/SO2 为 μg/m³，CO 为 mg/m³)
+    const concPm25 = convertIAQIToConcentration('pm25', usIaqiPm25, 'US');
+    const concO3 = convertIAQIToConcentration('o3', usIaqiO3, 'US');
+    const concPm10 = usIaqiPm10 !== undefined ? convertIAQIToConcentration('pm10', usIaqiPm10, 'US') : undefined;
+    const concNo2 = usIaqiNo2 !== undefined ? convertIAQIToConcentration('no2', usIaqiNo2, 'US') : undefined;
+    const concSo2 = usIaqiSo2 !== undefined ? convertIAQIToConcentration('so2', usIaqiSo2, 'US') : undefined;
+    const concCo = usIaqiCo !== undefined ? convertIAQIToConcentration('co', usIaqiCo, 'US') : undefined;
 
     let aqiVal: number;
-    let pm25Val: number;
-    let o3Val: number;
+    let iaqiResult: { pm25?: number; pm10?: number; o3?: number; no2?: number; so2?: number; co?: number };
 
     if (standard === 'US') {
       // 1. 美标体系 (WAQI 官方原生):
       // 总 AQI 等于各项美标分指数的最大值：AQI = max(IAQI_pm25, IAQI_o3, ...)
-      // 当 PM2.5 为 72，且为首要污染物时，AQI 精准等于 72！
-      aqiVal = Math.max(usIaqiPm25, usIaqiO3, usIaqiPm10, usIaqiNo2, usIaqiSo2, usIaqiCo);
-      pm25Val = usIaqiPm25;
-      o3Val = usIaqiO3;
+      const iaqiList = [usIaqiPm25, usIaqiO3, usIaqiPm10, usIaqiNo2, usIaqiSo2, usIaqiCo].filter(
+        (v): v is number => typeof v === 'number' && !isNaN(v)
+      );
+      aqiVal = Math.max(...iaqiList);
+      iaqiResult = {
+        pm25: usIaqiPm25,
+        pm10: usIaqiPm10,
+        o3: usIaqiO3,
+        no2: usIaqiNo2,
+        so2: usIaqiSo2,
+        co: usIaqiCo,
+      };
     } else {
       // 2. 中国国标体系 (HJ 633-2012):
-      // 先将美标 IAQI 逆运算还原为客观物理质量浓度 (μg/m³)，再计算国标 AQI
-      const concPm25 = convertIAQIToConcentration('pm25', usIaqiPm25, 'US');
-      const concO3 = convertIAQIToConcentration('o3', usIaqiO3, 'US');
-      const concPm10 = usIaqiPm10 > 0 ? convertIAQIToConcentration('pm10', usIaqiPm10, 'US') : undefined;
-      const concNo2 = usIaqiNo2 > 0 ? convertIAQIToConcentration('no2', usIaqiNo2, 'US') : undefined;
-      const concSo2 = usIaqiSo2 > 0 ? convertIAQIToConcentration('so2', usIaqiSo2, 'US') : undefined;
-      const concCo = usIaqiCo > 0 ? convertIAQIToConcentration('co', usIaqiCo, 'US') : undefined;
-
+      // 基于客观物理质量浓度严格计算国标分指数与总 AQI
       const evalCN = evaluateAQI(
         {
           pm25: concPm25 > 0 ? concPm25 : undefined,
-          pm10: concPm10,
+          pm10: concPm10 && concPm10 > 0 ? concPm10 : undefined,
           o3: concO3 > 0 ? concO3 : undefined,
-          no2: concNo2,
-          so2: concSo2,
-          co: concCo,
+          no2: concNo2 && concNo2 > 0 ? concNo2 : undefined,
+          so2: concSo2 && concSo2 > 0 ? concSo2 : undefined,
+          co: concCo && concCo > 0 ? concCo : undefined,
         },
         'CN'
       );
       aqiVal = evalCN.aqi;
-      const cnIaqi = calculateCNIAQI({ pm25: concPm25, o3: concO3 });
-      pm25Val = cnIaqi.pm25 !== undefined ? cnIaqi.pm25 : Math.round(concPm25);
-      o3Val = cnIaqi.o3 !== undefined ? cnIaqi.o3 : Math.round(concO3);
+      iaqiResult = calculateCNIAQI({
+        pm25: concPm25,
+        pm10: concPm10,
+        o3: concO3,
+        no2: concNo2,
+        so2: concSo2,
+        co: concCo,
+      });
     }
 
     return {
       hour: hourLabel,
       aqi: aqiVal,
-      pm25: pm25Val,
-      o3: o3Val,
+      // 客观物理质量浓度（微克 μg/m³，CO 为 mg/m³）
+      pm25: concPm25,
+      pm10: concPm10,
+      o3: concO3,
+      no2: concNo2,
+      so2: concSo2,
+      co: concCo,
+      iaqi: iaqiResult,
       isReal: true,
     };
   });

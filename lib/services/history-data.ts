@@ -202,8 +202,20 @@ export function get365CalendarHeatmap(
 export interface HourlyTrendPoint {
   hour: string;
   aqi: number;
-  pm25: number;
-  o3: number;
+  pm25: number;   // μg/m³
+  pm10?: number;  // μg/m³
+  o3: number;     // μg/m³
+  no2?: number;   // μg/m³
+  so2?: number;   // μg/m³
+  co?: number;    // mg/m³
+  iaqi?: {
+    pm25?: number;
+    pm10?: number;
+    o3?: number;
+    no2?: number;
+    so2?: number;
+    co?: number;
+  };
   isReal?: boolean;
 }
 
