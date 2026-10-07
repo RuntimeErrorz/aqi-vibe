@@ -11,8 +11,8 @@ export const Navbar: React.FC = () => {
   const { standard, toggleStandard, mounted } = useStandard();
 
   const navLinks = [
-    { href: '/', label: '实时总览', icon: Wind },
-    { href: '/map', label: '全景地图', icon: Map },
+    { href: '/', label: '城市实况', icon: Wind },
+    { href: '/map', label: '实时全景', icon: Map },
     { href: '/history', label: '历史数据', icon: History },
     { href: '/compare', label: '全球对比', icon: BarChart3 },
   ];
@@ -32,28 +32,34 @@ export const Navbar: React.FC = () => {
                 AQI Vibe
               </span>
             </div>
-            <p className="text-[10px] text-slate-500 hidden sm:block">空气质量监测与历史统计</p>
           </div>
         </Link>
 
         {/* 菜单项 */}
-        <nav className="flex items-center space-x-1 sm:space-x-2">
-          {navLinks.map((link) => {
+        <nav className="flex items-center space-x-1 sm:space-x-1.5">
+          {navLinks.map((link, idx) => {
             const Icon = link.icon;
             const isActive = pathname === link.href;
             return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-sky-50 text-sky-600 border border-sky-200 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{link.label}</span>
-              </Link>
+              <React.Fragment key={link.href}>
+                {idx === 2 && (
+                  <div
+                    className="h-4 w-px bg-slate-200 mx-1 sm:mx-1.5 self-center"
+                    aria-hidden="true"
+                  />
+                )}
+                <Link
+                  href={link.href}
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    isActive
+                      ? 'bg-sky-50 text-sky-600 border border-sky-200 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{link.label}</span>
+                </Link>
+              </React.Fragment>
             );
           })}
         </nav>

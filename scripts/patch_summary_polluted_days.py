@@ -26,6 +26,8 @@ US_BP = {
     'o3':   [0, 108, 140, 170, 210, 400, 800],
 }
 
+import math
+
 def calc_iaqi(val, bp_conc, bp_iaqi):
     if val is None or val <= 0:
         return 0
@@ -39,7 +41,7 @@ def calc_iaqi(val, bp_conc, bp_iaqi):
         i_high = bp_iaqi[i + 1]
         if c_low <= val <= c_high:
             iaqi = ((i_high - i_low) / (c_high - c_low)) * (val - c_low) + i_low
-            return round(iaqi)
+            return int(math.floor(iaqi + 0.5))
     return 0
 
 def evaluate_day_aqi(rec, standard='CN'):

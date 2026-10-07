@@ -201,6 +201,7 @@ export function get365CalendarHeatmap(
 
 export interface HourlyTrendPoint {
   hour: string;
+  fullTime?: string;
   aqi: number;
   pm25: number;   // μg/m³
   pm10?: number;  // μg/m³
@@ -245,11 +246,11 @@ export async function fetch24HourHourlyTrend(
     // 优先 1：直连 WAQI 官方底层双步鉴权与差分解码协议（本地开发与前端直连 100% 秒通）
     try {
       const directPoints = await fetchWaqiHourlyDirect(stationIdx, standard);
-      if (directPoints && directPoints.length >= 12) {
+      if (directPoints && directPoints.length >= 3) {
         return {
           points: directPoints,
           isReal: true,
-          source: 'WAQI 官方测站实时逐小时实测 (反编译差分解码)',
+          source: '官方测站逐小时实测',
         };
       }
     } catch {
@@ -267,11 +268,11 @@ export async function fetch24HourHourlyTrend(
           const obs = waqiJson?.rxs?.obs?.[0]?.msg?.obs;
           if (obs && obs.pm25) {
             const edgePoints = build24HourPointsFromWaqiObs(obs, standard);
-            if (edgePoints.length >= 12) {
+            if (edgePoints.length >= 3) {
               return {
                 points: edgePoints,
                 isReal: true,
-                source: 'WAQI 官方测站实时逐小时实测 (反编译差分解码)',
+                source: '官方测站逐小时实测',
               };
             }
           }
@@ -289,6 +290,45 @@ export async function fetch24HourHourlyTrend(
     source: '该站点暂无 WAQI 逐小时实测发布',
   };
 }
+
+/**
+ * 获取未来 5 天基于 ECMWF / CAMS（欧洲中期天气预报中心数值扩散模型）的真实大气质量预测
+ */
+export async function fetch5DayForecast(lat: number, lng: number): Promise<ForecastDay[]> {
+  try {
+    const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}&hourly=pm2_5&forecast_days=6&timezone=auto`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(4500) });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const times: string[] = data?.hourly?.time || [];
+    const pm25Arr: (number | null)[] = data?.hourly?.pm2_5 || [];
+
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${y}-${m}-${d}`;
+
+    const forecastMap: Record<string, number[]> = {};
+    for (let i = 0; i < times.length; i++) {
+      const dayStr = times[i].slice(0, 10);
+      if (dayStr >= todayStr && pm25Arr[i] != null && !isNaN(pm25Arr[i]!)) {
+        if (!forecastMap[dayStr]) forecastMap[dayStr] = [];
+        forecastMap[dayStr].push(pm25Arr[i]!);
+      }
+    }
+
+    return Object.entries(forecastMap).slice(0, 5).map(([day, vals]) => {
+      const min = Math.round(Math.min(...vals));
+      const max = Math.round(Math.max(...vals));
+      const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+      return { day, min, max, avg };
+    });
+  } catch {
+    return [];
+  }
+}
+
 
 
 

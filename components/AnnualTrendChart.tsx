@@ -27,9 +27,9 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
   const pollutedDays = data.map((d) => d.pollutedDays ?? d.heavyPollutionDays);
   const heavyDays = data.map((d) => d.heavyPollutionDays);
 
-  const ratioLabel = standard === 'CN' ? '国标优良天数比例 (%)' : '美标达标天数比例 (%)';
-  const pollutedLabel = standard === 'CN' ? '国标超标污染天数 (AQI>100, 天)' : '美标不健康天数 (AQI>100, 天)';
-  const aqiLabel = standard === 'CN' ? '年均国标 AQI' : '年均美标 AQI';
+  const ratioLabel = '优良天数比例 (%)';
+  const pollutedLabel = '超标污染天数 (AQI>100, 天)';
+  const aqiLabel = '年均 AQI';
   const aqiAvgs = data.map((d) => d.aqiAvg ?? Math.round(d.pm25Avg * 1.2));
 
   const option = {
@@ -53,9 +53,7 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
           </div>`;
         });
         if (cur.heavyPollutionDays !== undefined) {
-          const subInfo = standard === 'CN'
-            ? `其中重度及以上污染 (AQI>200): ${cur.heavyPollutionDays} 天`
-            : `其中严重不健康 (AQI>150): ${cur.heavyPollutionDays} 天`;
+          const subInfo = `其中重度污染: ${cur.heavyPollutionDays} 天`;
           html += `<div class="text-[11px] text-slate-500 mt-1.5 pt-1.5 border-t border-slate-100">${subInfo}</div>`;
         }
         return html;

@@ -16,6 +16,7 @@ Daily incremental synchronization pipeline for Chinese historical air quality da
 import argparse
 import datetime
 import json
+import math
 import os
 import re
 import sys
@@ -70,7 +71,7 @@ def calc_iaqi(val, bp_conc, bp_iaqi):
         i_high = bp_iaqi[i + 1]
         if c_low <= val <= c_high:
             iaqi = ((i_high - i_low) / (c_high - c_low)) * (val - c_low) + i_low
-            return round(iaqi)
+            return int(math.floor(iaqi + 0.5))
     return 0
 
 def evaluate_day_aqi(rec, standard='CN'):

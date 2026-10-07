@@ -69,8 +69,8 @@ export function build24HourPointsFromWaqiObs(
 
   if (pm25Series.length === 0) return [];
 
-  // 截取过去 24 个小时
-  const last24 = pm25Series.slice(-24);
+  // 提取过去最多 72 个小时（3天）的实测点位，支持前端 24h / 48h / 72h 灵活回溯
+  const seriesToProcess = pm25Series.slice(-72);
 
   // 构建时间戳映射表
   const o3Map = new Map(o3Series.map((s) => [s.timestamp, s.value]));
@@ -79,9 +79,11 @@ export function build24HourPointsFromWaqiObs(
   const so2Map = new Map(so2Series.map((s) => [s.timestamp, s.value]));
   const coMap = new Map(coSeries.map((s) => [s.timestamp, s.value]));
 
-  return last24.map((pt) => {
+  return seriesToProcess.map((pt) => {
     const d = new Date(pt.timestamp);
     const hourLabel = String(d.getHours()).padStart(2, '0') + ':00';
+    const dayLabel = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const fullTimeLabel = `${dayLabel} ${hourLabel}`;
     
     // WAQI 解码出来的数值是原生美标 IAQI 分指数
     const usIaqiPm25 = Math.round(pt.value);
@@ -149,6 +151,7 @@ export function build24HourPointsFromWaqiObs(
 
     return {
       hour: hourLabel,
+      fullTime: fullTimeLabel,
       aqi: aqiVal,
       // 客观物理质量浓度（微克 μg/m³，CO 为 mg/m³）
       pm25: concPm25,
@@ -206,7 +209,7 @@ export async function fetchWaqiHourlyDirect(
     if (!obs || !obs.pm25) return null;
 
     const points = build24HourPointsFromWaqiObs(obs, standard);
-    return points.length >= 12 ? points : null;
+    return points.length >= 3 ? points : (points.length > 0 ? points : null);
   } catch (err) {
     console.warn('Failed to fetch/decode WAQI hourly directly:', err);
     return null;

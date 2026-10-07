@@ -1,19 +1,16 @@
 import React from 'react';
-import { Wind, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
     <footer className="w-full border-t border-slate-200/80 bg-white/60 backdrop-blur-md mt-10 py-4 text-xs text-slate-500">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-3">
-        {/* 左侧：Logo + 品牌 + 极简定位与版权 */}
+        {/* 左侧：品牌 + 极简定位与版权 */}
         <div className="flex items-center flex-wrap justify-center md:justify-start gap-2">
-          <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-sky-500 to-emerald-400 flex items-center justify-center text-white shadow-sm shrink-0">
-            <Wind className="w-3 h-3 stroke-[2.5]" />
-          </div>
           <span className="font-bold text-slate-800 tracking-tight">AQI Vibe</span>
           <span className="text-slate-300">·</span>
           <span className="text-slate-500 text-[11px]">
-            全球与国内空气质量监测及历史统计平台 (HJ 633 / US EPA)
+            空气质量监测与历史统计平台 (US EPA / HJ 633)
           </span>
           <span className="text-slate-300 hidden sm:inline">·</span>
           <span className="text-slate-400 text-[11px] hidden sm:inline">© 2026</span>

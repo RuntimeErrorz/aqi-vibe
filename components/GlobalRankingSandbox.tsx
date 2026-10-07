@@ -45,6 +45,70 @@ type SortOrder = 'asc' | 'desc';
 
 const AVAILABLE_YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019];
 
+interface PageJumperProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (p: number) => void;
+}
+
+const PageJumper: React.FC<PageJumperProps> = ({ currentPage, totalPages, onPageChange }) => {
+  const [inputVal, setInputVal] = useState(String(currentPage));
+
+  useEffect(() => {
+    setInputVal(String(currentPage));
+  }, [currentPage]);
+
+  const handleCommit = () => {
+    const val = parseInt(inputVal, 10);
+    if (!isNaN(val) && val >= 1 && val <= totalPages) {
+      onPageChange(val);
+    } else {
+      setInputVal(String(currentPage));
+    }
+  };
+
+  return (
+    <div className="flex items-center space-x-1.5 text-xs text-slate-600">
+      <button
+        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+        disabled={currentPage <= 1}
+        className="flex items-center space-x-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors shadow-2xs cursor-pointer"
+        title="上一页"
+      >
+        <ChevronLeft className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline">上一页</span>
+      </button>
+
+      <div className="flex items-center space-x-1 px-1">
+        <span className="text-slate-400">第</span>
+        <input
+          type="number"
+          min={1}
+          max={Math.max(1, totalPages)}
+          value={inputVal}
+          onChange={(e) => setInputVal(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleCommit();
+          }}
+          onBlur={handleCommit}
+          className="w-12 px-1 py-0.5 text-center text-xs bg-white border border-slate-200 rounded-md font-bold text-slate-800 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 shadow-2xs"
+        />
+        <span className="text-slate-400">/ {totalPages} 页</span>
+      </div>
+
+      <button
+        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+        disabled={currentPage >= totalPages}
+        className="flex items-center space-x-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors shadow-2xs cursor-pointer"
+        title="下一页"
+      >
+        <span className="hidden sm:inline">下一页</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+};
+
 export function GlobalRankingSandbox({
   selectedCityIds,
   onToggleCity,
@@ -341,9 +405,6 @@ export function GlobalRankingSandbox({
             <h2 className="text-lg font-bold text-slate-900">
               全球与多国空气质量多维全景排行榜
             </h2>
-            <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-sky-100 text-sky-700 border border-sky-200">
-              {standard === 'CN' ? 'HJ 633 国标' : 'US EPA 美标'}
-            </span>
           </div>
         </div>
 
@@ -696,7 +757,7 @@ export function GlobalRankingSandbox({
               <tr>
                 <th className="py-3 px-3 w-16 text-center">排名</th>
                 <th className="py-3 px-3">城市 / 国家</th>
-                <th className="py-3 px-3">综合 AQI ({standard === 'CN' ? '国标' : '美标'})</th>
+                <th className="py-3 px-3">综合 AQI</th>
                 <th className="py-3 px-3">PM2.5 年均 (μg/m³)</th>
                 <th className="py-3 px-3">PM10 年均 (μg/m³)</th>
                 <th className="py-3 px-3">优良达标率</th>
@@ -875,7 +936,7 @@ export function GlobalRankingSandbox({
                 <th className="py-3 px-3 w-16 text-center">排名</th>
                 <th className="py-3 px-3">国家 / 地区</th>
                 <th className="py-3 px-3">纳入监测城市数</th>
-                <th className="py-3 px-3">全国平均 AQI ({standard === 'CN' ? '国标' : '美标'})</th>
+                <th className="py-3 px-3">全国平均 AQI</th>
                 <th className="py-3 px-3">PM2.5 全国均值 (μg/m³)</th>
                 <th className="py-3 px-3">平均优良达标率</th>
                 <th className="py-3 px-3">最清洁代表城市</th>
@@ -1014,10 +1075,6 @@ export function GlobalRankingSandbox({
             共 <span className="font-bold text-slate-800">{totalItems}</span> {activeTab === 'cities' ? '城' : '国'}
           </span>
           <span className="text-slate-300">·</span>
-          <span>
-            第 <span className="font-bold text-slate-800">{currentPage}</span> / {totalPages} 页
-          </span>
-          <span className="text-slate-300">·</span>
           <div className="flex items-center space-x-1">
             <span>每页:</span>
             <select
@@ -1036,26 +1093,11 @@ export function GlobalRankingSandbox({
           </div>
         </div>
 
-        {totalPages > 1 && (
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage <= 1}
-              className="flex items-center space-x-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 transition-colors shadow-sm cursor-pointer"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-              <span>上一页</span>
-            </button>
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage >= totalPages}
-              className="flex items-center space-x-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 transition-colors shadow-sm cursor-pointer"
-            >
-              <span>下一页</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
+        <PageJumper
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
     </div>
   );
