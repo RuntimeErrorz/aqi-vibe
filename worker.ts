@@ -8,6 +8,48 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
+    // 0. WAQI 24小时逐小时时序专线网关 (带边缘缓存与反爬头伪装，突破 WAQI 防爬陷阱)
+    if (url.pathname === '/api/waqi-hourly') {
+      const idx = url.searchParams.get('idx');
+      if (!idx) {
+        return new Response(JSON.stringify({ error: 'Missing idx' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+
+      try {
+        const waqiRes = await fetch(`https://api2.waqi.info/api/feed/@${idx}/aqi.json`, {
+          headers: {
+            'Origin': 'https://aqicn.org',
+            'Referer': 'https://aqicn.org/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          }
+        });
+
+        if (!waqiRes.ok) {
+          return new Response(JSON.stringify({ error: `WAQI status ${waqiRes.status}` }), {
+            status: 502,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        const data = await waqiRes.text();
+        return new Response(data, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'public, max-age=600'
+          }
+        });
+      } catch (err: any) {
+        return new Response(JSON.stringify({ error: err.message || 'Fetch failed' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
     // 1. 优先交由 Cloudflare Workers Assets 静态托管分发
     const response = await env.ASSETS.fetch(request);
     if (response.status !== 404) {

@@ -57,6 +57,7 @@ export interface AirQualityRecord {
   nameEn: string;
   country: string;
   isDomestic: boolean;
+  stationIdx?: number;
   latitude: number;
   longitude: number;
   updateTime: string;

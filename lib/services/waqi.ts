@@ -127,6 +127,7 @@ function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
     nameEn: cityMeta?.nameEn || data.city?.name || 'Unknown Location',
     country: cityMeta?.country || (isDomestic ? 'CN' : 'GLOBAL'),
     isDomestic,
+    stationIdx: typeof data.idx === 'number' ? data.idx : undefined,
     latitude: geo[0] || 0,
     longitude: geo[1] || 0,
     updateTime: data.time?.s || new Date().toLocaleString(),

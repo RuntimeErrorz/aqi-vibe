@@ -1,5 +1,6 @@
 import { AnnualTrend, StandardType, ForecastDay, CalendarHeatmapDay } from '../types';
 import { evaluateAQI } from '../aqi-calculator';
+import { build24HourPointsFromWaqiObs } from './waqi-decoder';
 import historySummary from '@/data/processed/history_summary.json';
 import { CITIES_REGISTRY } from '@/lib/constants/cities';
 import { getCountryInfo } from '@/lib/constants/countries';
@@ -224,8 +225,38 @@ export async function fetch24HourHourlyTrend(
   currentAQI = 65,
   currentPM25 = 32,
   currentO3 = 40,
-  updateTime?: string
+  updateTime?: string,
+  stationIdx?: number
 ): Promise<HourlyTrendResult> {
+  // 1. 优先尝试从 WAQI 官方底层折线图时序流（反编译解码）获取纯真 24 小时实测
+  if (stationIdx) {
+    try {
+      // 优先通过 Cloudflare Worker 专线网关拉取 (或直接拉取)，注入反爬头与边缘缓存
+      const waqiUrl = typeof window !== 'undefined' && window.location.origin
+        ? `${window.location.origin}/api/waqi-hourly?idx=${stationIdx}`
+        : `https://api2.waqi.info/api/feed/@${stationIdx}/aqi.json`;
+
+      const waqiRes = await fetch(waqiUrl, { signal: AbortSignal.timeout(3500) });
+      if (waqiRes.ok) {
+        const waqiJson = await waqiRes.json();
+        const obs = waqiJson?.rxs?.obs?.[0]?.msg?.obs;
+        if (obs && obs.pm25) {
+          const waqiPoints = build24HourPointsFromWaqiObs(obs, standard);
+          if (waqiPoints.length >= 12) {
+            return {
+              points: waqiPoints,
+              isReal: true,
+              source: 'WAQI 官方测站实时逐小时实测 (反编译差分解码)',
+            };
+          }
+        }
+      }
+    } catch {
+      // 忽略超时或阻断，平滑降级至 CAMS 真实物理时序
+    }
+  }
+
+  // 2. 降级方案：欧洲中期天气预报中心 (ECMWF / CAMS) 真实逐小时大气时序
   try {
     const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}&hourly=pm2_5,pm10,ozone,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,us_aqi&past_days=1&forecast_days=7&timezone=auto`;
     const res = await fetch(url, { signal: AbortSignal.timeout(6000) });

@@ -60,7 +60,7 @@ export default function DashboardPage() {
       const activePM25 = data.pollutants.pm25 ?? 25;
       const activeO3 = data.pollutants.o3 ?? 35;
       
-      // 优先从真实大气时序接口 (Open-Meteo CAMS) 异步拉取过去 24 小时真实逐小时实测流水
+      // 优先从 WAQI 官方底层折线图时序流（反编译差分解码）获取纯真 24 小时实测
       const trend = await fetch24HourHourlyTrend(
         city.latitude,
         city.longitude,
@@ -68,7 +68,8 @@ export default function DashboardPage() {
         activeAQI,
         activePM25,
         activeO3,
-        data.updateTime
+        data.updateTime,
+        data.stationIdx
       );
       setTrendResult(trend);
       setStations(getStationsByCity(city.nameZh));
@@ -98,7 +99,8 @@ export default function DashboardPage() {
         activeAQI,
         activePM25,
         activeO3,
-        record.updateTime
+        record.updateTime,
+        record.stationIdx
       ).then(setTrendResult);
     }
   }, [standard]);
@@ -127,7 +129,8 @@ export default function DashboardPage() {
             activeAQI,
             activePM25,
             activeO3,
-            data.updateTime
+            data.updateTime,
+            data.stationIdx
           );
           setTrendResult(trend);
         } catch (err) {
