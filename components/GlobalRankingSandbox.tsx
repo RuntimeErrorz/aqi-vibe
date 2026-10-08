@@ -68,19 +68,20 @@ const PageJumper: React.FC<PageJumperProps> = ({ currentPage, totalPages, onPage
   };
 
   return (
-    <div className="flex items-center space-x-1.5 text-xs text-slate-600">
+    <div className="inline-flex items-center space-x-1.5 text-xs text-slate-600 select-none">
       <button
+        type="button"
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage <= 1}
-        className="flex items-center space-x-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors shadow-2xs cursor-pointer"
+        className="h-7 flex items-center space-x-1 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors shadow-2xs cursor-pointer shrink-0"
         title="上一页"
       >
         <ChevronLeft className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">上一页</span>
+        <span className="hidden sm:inline text-xs leading-none">上一页</span>
       </button>
 
-      <div className="flex items-center space-x-1 px-1">
-        <span className="text-slate-400">第</span>
+      <div className="inline-flex items-center space-x-1 px-1">
+        <span className="text-slate-400 text-xs leading-none flex items-center">第</span>
         <input
           type="number"
           min={1}
@@ -91,18 +92,19 @@ const PageJumper: React.FC<PageJumperProps> = ({ currentPage, totalPages, onPage
             if (e.key === 'Enter') handleCommit();
           }}
           onBlur={handleCommit}
-          className="w-12 px-1 py-0.5 text-center text-xs bg-white border border-slate-200 rounded-md font-bold text-slate-800 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 shadow-2xs"
+          className="h-7 w-12 px-1 text-center text-xs leading-none bg-white border border-slate-200 rounded-lg font-bold text-slate-800 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 shadow-2xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none tabular-nums"
         />
-        <span className="text-slate-400">/ {totalPages} 页</span>
+        <span className="text-slate-400 text-xs leading-none flex items-center">/ {totalPages} 页</span>
       </div>
 
       <button
+        type="button"
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage >= totalPages}
-        className="flex items-center space-x-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors shadow-2xs cursor-pointer"
+        className="h-7 flex items-center space-x-1 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors shadow-2xs cursor-pointer shrink-0"
         title="下一页"
       >
-        <span className="hidden sm:inline">下一页</span>
+        <span className="hidden sm:inline text-xs leading-none">下一页</span>
         <ChevronRight className="w-3.5 h-3.5" />
       </button>
     </div>

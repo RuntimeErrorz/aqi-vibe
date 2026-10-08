@@ -2,7 +2,16 @@
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { Calendar, RotateCcw, Loader2 } from 'lucide-react';
+import {
+  Calendar,
+  RotateCcw,
+  Loader2,
+  Sparkles,
+  Leaf,
+  Flame,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { StandardType, CalendarHeatmapDay } from '@/lib/types';
 
 interface CalendarHeatmapProps {
@@ -12,6 +21,138 @@ interface CalendarHeatmapProps {
   cityName?: string;
   loadingDaily?: boolean;
   availableYears?: number[];
+}
+
+interface PageJumperProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (p: number) => void;
+  labelPrefix?: string;
+}
+
+const PageJumper: React.FC<PageJumperProps> = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+  labelPrefix = '',
+}) => {
+  const [inputVal, setInputVal] = useState(String(currentPage));
+
+  useEffect(() => {
+    setInputVal(String(currentPage));
+  }, [currentPage]);
+
+  const handleCommit = () => {
+    const val = parseInt(inputVal, 10);
+    if (!isNaN(val) && val >= 1 && val <= totalPages) {
+      onPageChange(val);
+    } else {
+      setInputVal(String(currentPage));
+    }
+  };
+
+  return (
+    <div className="inline-flex items-center space-x-1.5 text-xs text-slate-500 select-none">
+      <button
+        type="button"
+        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+        disabled={currentPage <= 1}
+        className="h-6 w-6 flex items-center justify-center p-0 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 transition-colors shadow-2xs cursor-pointer shrink-0"
+        title="上一页"
+      >
+        <ChevronLeft className="w-3.5 h-3.5" />
+      </button>
+
+      <span className="text-slate-400 text-[11px] leading-none flex items-center">{labelPrefix}第</span>
+      <input
+        type="number"
+        min={1}
+        max={Math.max(1, totalPages)}
+        value={inputVal}
+        onChange={(e) => setInputVal(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleCommit();
+        }}
+        onBlur={handleCommit}
+        className="h-6 w-10 px-1 text-center text-xs leading-none bg-white border border-slate-200 rounded-lg font-bold text-slate-800 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 shadow-2xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none tabular-nums"
+      />
+      <span className="text-slate-400 text-[11px] leading-none flex items-center">/ {totalPages} 页</span>
+
+      <button
+        type="button"
+        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+        disabled={currentPage >= totalPages}
+        className="h-6 w-6 flex items-center justify-center p-0 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 transition-colors shadow-2xs cursor-pointer shrink-0"
+        title="下一页"
+      >
+        <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+};
+
+function formatDateMeta(dateStr: string) {
+  const parts = dateStr.split('-');
+  const monthStr = parts[1] || '01';
+  const dayStr = parts[2] || '01';
+  const dateObj = new Date(dateStr + 'T00:00:00');
+  const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  const weekDay = !isNaN(dateObj.getTime()) ? weekDays[dateObj.getDay()] : '';
+  const monthNum = parseInt(monthStr, 10);
+  let season = '春季';
+  if (monthNum >= 3 && monthNum <= 5) season = '春季';
+  else if (monthNum >= 6 && monthNum <= 8) season = '夏季';
+  else if (monthNum >= 9 && monthNum <= 11) season = '秋季';
+  else season = '冬季';
+
+  return {
+    monthDay: `${monthStr}月${dayStr}日`,
+    weekDay,
+    season,
+  };
+}
+
+function renderRankBadge(rankNum: number, isClean: boolean) {
+  if (rankNum === 1) {
+    return (
+      <span
+        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shadow-2xs shrink-0 ${
+          isClean
+            ? 'bg-emerald-500 text-white ring-2 ring-emerald-300/60'
+            : 'bg-rose-600 text-white ring-2 ring-rose-300/60'
+        }`}
+      >
+        1
+      </span>
+    );
+  }
+  if (rankNum === 2) {
+    return (
+      <span
+        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shadow-2xs shrink-0 ${
+          isClean ? 'bg-emerald-400 text-white' : 'bg-rose-500 text-white'
+        }`}
+      >
+        2
+      </span>
+    );
+  }
+  if (rankNum === 3) {
+    return (
+      <span
+        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shadow-2xs shrink-0 ${
+          isClean ? 'bg-emerald-300 text-emerald-950 font-bold' : 'bg-rose-400 text-white'
+        }`}
+      >
+        3
+      </span>
+    );
+  }
+  return (
+    <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-slate-500 bg-slate-100 shrink-0 tabular-nums">
+      {rankNum}
+    </span>
+  );
 }
 
 export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
@@ -26,9 +167,19 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
   const [filterRange, setFilterRange] = useState<[number, number]>([0, 300]);
   const echartsRef = useRef<ReactECharts>(null);
 
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [bestPage, setBestPage] = useState<number>(1);
+  const [worstPage, setWorstPage] = useState<number>(1);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 当年份、城市、页面大小变化时，重置分页到第 1 页
+  useEffect(() => {
+    setBestPage(1);
+    setWorstPage(1);
+  }, [year, cityName, pageSize]);
 
   // 当年份、城市、标准切换时，重置上下限为 [0, 300] 并重置 ECharts visualMap
   useEffect(() => {
@@ -102,6 +253,41 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
     }
     return `AQI ${min} ~ ${max}`;
   }, [filterRange]);
+
+  // 过滤有效数据并排序极值天气
+  const validDays = useMemo(() => {
+    return data.filter((d) => d && typeof d.aqi === 'number' && !isNaN(d.aqi) && d.aqi > 0);
+  }, [data]);
+
+  // 天气最好 (最清新) 排序：AQI 升序，相同按 PM2.5 升序
+  const bestDays = useMemo(() => {
+    return [...validDays].sort((a, b) => {
+      if (a.aqi !== b.aqi) return a.aqi - b.aqi;
+      return (a.pm25 ?? 0) - (b.pm25 ?? 0);
+    });
+  }, [validDays]);
+
+  // 天气最差 (污染最重) 排序：AQI 降序，相同按 PM2.5 降序
+  const worstDays = useMemo(() => {
+    return [...validDays].sort((a, b) => {
+      if (a.aqi !== b.aqi) return b.aqi - a.aqi;
+      return (b.pm25 ?? 0) - (a.pm25 ?? 0);
+    });
+  }, [validDays]);
+
+  // 分页数据切片
+  const bestTotalPages = Math.max(1, Math.ceil(bestDays.length / pageSize));
+  const worstTotalPages = Math.max(1, Math.ceil(worstDays.length / pageSize));
+
+  const paginatedBest = useMemo(() => {
+    const start = (bestPage - 1) * pageSize;
+    return bestDays.slice(start, start + pageSize);
+  }, [bestDays, bestPage, pageSize]);
+
+  const paginatedWorst = useMemo(() => {
+    const start = (worstPage - 1) * pageSize;
+    return worstDays.slice(start, start + pageSize);
+  }, [worstDays, worstPage, pageSize]);
 
   // 捕获 ECharts visualMap 上下限拖拽变动事件
   const handleRangeChange = useCallback((params: any) => {
@@ -288,10 +474,93 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
     };
   }, [dataMap, seriesData, year]);
 
-  const titleText = cityName ? `${cityName} ${year} 年逐日日历热力全景谱系` : `${year} 年逐日日历热力全景谱系`;
+  // 按用户要求规范命名：{城市名} {年份} 年 空气质量详情
+  const titleText = cityName ? `${cityName} ${year} 年 空气质量详情` : `${year} 年 空气质量详情`;
+
+  const renderDayRow = (
+    item: CalendarHeatmapDay,
+    index: number,
+    isClean: boolean,
+    currentPage: number
+  ) => {
+    const actualRank = (currentPage - 1) * pageSize + index + 1;
+    const meta = formatDateMeta(item.date);
+
+    return (
+      <div
+        key={item.date}
+        className={`p-3 rounded-xl border transition-all flex items-center justify-between gap-3 group shadow-2xs ${
+          isClean
+            ? 'bg-emerald-50/20 border-emerald-100/90 hover:border-emerald-300 hover:bg-emerald-50/50'
+            : 'bg-rose-50/20 border-rose-100/90 hover:border-rose-300 hover:bg-rose-50/50'
+        }`}
+      >
+        {/* 左侧：排名徽标 + 日期 + 星期/季节 */}
+        <div className="flex items-center space-x-2.5 min-w-0">
+          {renderRankBadge(actualRank, isClean)}
+          <div className="min-w-0">
+            <div className="flex items-center space-x-1.5 flex-wrap">
+              <span className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-sky-600 transition-colors">
+                {meta.monthDay}
+              </span>
+              <span className="text-[11px] font-medium text-slate-500">
+                {meta.weekDay}
+              </span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-medium">
+                {meta.season}
+              </span>
+            </div>
+            <div className="text-[11px] text-slate-400 flex items-center space-x-2 mt-0.5 flex-wrap">
+              <span>
+                PM2.5: <b className="text-slate-600 font-semibold">{item.pm25 ?? '--'}</b>
+              </span>
+              {item.pm10 !== undefined && (
+                <span>
+                  · PM10: <b className="text-slate-600 font-semibold">{item.pm10}</b>
+                </span>
+              )}
+              {item.o3 !== undefined && (
+                <span>
+                  · O₃: <b className="text-slate-600 font-semibold">{item.o3}</b>
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 右侧：AQI 大字 + 等级胶囊 + 首要污染物 */}
+        <div className="flex items-center space-x-2 shrink-0 text-right">
+          <div>
+            <div className="flex items-baseline justify-end space-x-1">
+              <span className="text-sm sm:text-base font-black text-slate-900">
+                {item.aqi}
+              </span>
+              <span className="text-[10px] text-slate-400 font-semibold">AQI</span>
+            </div>
+            {item.primaryPollutantName && item.aqi > 50 && (
+              <div className="text-[10px] text-slate-400 truncate max-w-[110px]">
+                首要: {item.primaryPollutantName}
+              </div>
+            )}
+          </div>
+          <span
+            className="text-[10px] sm:text-xs px-2 py-0.5 rounded-md font-bold whitespace-nowrap"
+            style={{
+              backgroundColor: `${item.color}15`,
+              color: item.color,
+              border: `1px solid ${item.color}35`,
+            }}
+          >
+            {item.level}
+          </span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div>
+      {/* 1. 顶部标题与日历区间筛选控制 */}
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
           <Calendar className="w-4 h-4 text-sky-600" />
@@ -319,7 +588,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
                   type="button"
                   onClick={handleResetRange}
                   title="重置区间为全量 0 ~ 300"
-                  className="ml-1 text-slate-400 hover:text-sky-600 transition-colors flex items-center"
+                  className="ml-1 text-slate-400 hover:text-sky-600 transition-colors flex items-center cursor-pointer"
                 >
                   <RotateCcw className="w-3 h-3" />
                 </button>
@@ -333,6 +602,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
         </div>
       </div>
 
+      {/* 2. 365 天日历矩阵热力全景图 */}
       {!mounted ? (
         <div className="h-60 flex items-center justify-center text-slate-400 text-sm">
           <Loader2 className="w-4 h-4 animate-spin mr-2 text-sky-600" />
@@ -361,7 +631,116 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
           )}
         </div>
       )}
+
+      {/* 3. 年度空气质量极值天气排行：最好与最差天数并列对比与翻页控制 */}
+      {totalDays > 0 && (
+        <div className="mt-7 pt-5 border-t border-slate-200/80 space-y-4">
+          {/* 排行模块控制头部：标题与每页条数选择 */}
+          <div className="flex items-center justify-between gap-3 pb-1">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+              <h4 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+                年度空气质量极值天气排行
+              </h4>
+            </div>
+
+            {/* 每页条数下拉 */}
+            <div className="flex items-center space-x-2 text-xs">
+              <span className="text-slate-400 font-medium text-[11px]">展示规格:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:border-sky-500 shadow-2xs cursor-pointer hover:bg-slate-100 transition-colors"
+              >
+                <option value={5}>每页 5 天</option>
+                <option value={10}>每页 10 天</option>
+                <option value={20}>每页 20 天</option>
+              </select>
+            </div>
+          </div>
+
+          {/* 并列对比视图 (左右两栏) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4.5">
+            {/* 左栏：空气最优天气榜 */}
+            <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50/70 border border-emerald-100">
+              <div className="flex items-center justify-between pb-2 border-b border-emerald-100">
+                <div className="flex items-center space-x-1.5 min-w-0">
+                  <Leaf className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="font-bold text-xs sm:text-sm text-emerald-950 truncate">
+                    空气最清新天气榜 (最好)
+                  </span>
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/80 px-1.5 py-0.2 rounded shrink-0">
+                    最低 AQI {bestDays[0]?.aqi ?? '--'}
+                  </span>
+                </div>
+                <PageJumper
+                  currentPage={bestPage}
+                  totalPages={bestTotalPages}
+                  onPageChange={setBestPage}
+                />
+              </div>
+
+              <div className="space-y-2">
+                {paginatedBest.map((item, idx) =>
+                  renderDayRow(item, idx, true, bestPage)
+                )}
+              </div>
+
+              <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400">
+                <span>
+                  第 {(bestPage - 1) * pageSize + 1} ~{' '}
+                  {Math.min(bestPage * pageSize, bestDays.length)} 天 / 共{' '}
+                  {bestDays.length} 天
+                </span>
+                <PageJumper
+                  currentPage={bestPage}
+                  totalPages={bestTotalPages}
+                  onPageChange={setBestPage}
+                />
+              </div>
+            </div>
+
+            {/* 右栏：污染最严重天气榜 */}
+            <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50/70 border border-rose-100">
+              <div className="flex items-center justify-between pb-2 border-b border-rose-100">
+                <div className="flex items-center space-x-1.5 min-w-0">
+                  <Flame className="w-4 h-4 text-rose-500 shrink-0" />
+                  <span className="font-bold text-xs sm:text-sm text-rose-950 truncate">
+                    污染最严重天气榜 (最差)
+                  </span>
+                  <span className="text-[10px] text-rose-700 font-bold bg-rose-100/80 px-1.5 py-0.2 rounded shrink-0">
+                    最高 AQI {worstDays[0]?.aqi ?? '--'}
+                  </span>
+                </div>
+                <PageJumper
+                  currentPage={worstPage}
+                  totalPages={worstTotalPages}
+                  onPageChange={setWorstPage}
+                />
+              </div>
+
+              <div className="space-y-2">
+                {paginatedWorst.map((item, idx) =>
+                  renderDayRow(item, idx, false, worstPage)
+                )}
+              </div>
+
+              <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400">
+                <span>
+                  第 {(worstPage - 1) * pageSize + 1} ~{' '}
+                  {Math.min(worstPage * pageSize, worstDays.length)} 天 / 共{' '}
+                  {worstDays.length} 天
+                </span>
+                <PageJumper
+                  currentPage={worstPage}
+                  totalPages={worstTotalPages}
+                  onPageChange={setWorstPage}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-

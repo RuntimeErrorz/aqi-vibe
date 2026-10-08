@@ -15,6 +15,7 @@ import {
   ChevronRight,
   X,
 } from 'lucide-react';
+import { getRealtimeRanking } from '@/lib/services/realtime-ranking';
 
 export interface RankedCityItem {
   id: string;
@@ -88,17 +89,18 @@ const PageJumper: React.FC<{
   };
 
   return (
-    <div className="flex items-center space-x-1.5 text-xs text-slate-500">
+    <div className="inline-flex items-center space-x-1.5 text-xs text-slate-500 select-none">
       <button
+        type="button"
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage <= 1}
-        className="p-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 transition-colors shadow-2xs cursor-pointer"
+        className="h-6 w-6 flex items-center justify-center p-0 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 transition-colors shadow-2xs cursor-pointer shrink-0"
         title="上一页"
       >
         <ChevronLeft className="w-3.5 h-3.5" />
       </button>
 
-      <span className="text-slate-400">{labelPrefix}第</span>
+      <span className="text-slate-400 text-[11px] leading-none flex items-center">{labelPrefix}第</span>
       <input
         type="number"
         min={1}
@@ -109,14 +111,15 @@ const PageJumper: React.FC<{
           if (e.key === 'Enter') handleCommit();
         }}
         onBlur={handleCommit}
-        className="w-11 px-1 py-0.5 text-center text-xs bg-white border border-slate-200 rounded-md font-bold text-slate-800 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 shadow-2xs"
+        className="h-6 w-10 px-1 text-center text-xs leading-none bg-white border border-slate-200 rounded-lg font-bold text-slate-800 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 shadow-2xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none tabular-nums"
       />
-      <span className="text-slate-400">/ {totalPages} 页</span>
+      <span className="text-slate-400 text-[11px] leading-none flex items-center">/ {totalPages} 页</span>
 
       <button
+        type="button"
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage >= totalPages}
-        className="p-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 transition-colors shadow-2xs cursor-pointer"
+        className="h-6 w-6 flex items-center justify-center p-0 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 transition-colors shadow-2xs cursor-pointer shrink-0"
         title="下一页"
       >
         <ChevronRight className="w-3.5 h-3.5" />
@@ -142,20 +145,20 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
   const [pollutedPage, setPollutedPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(10);
 
-  const fetchRankings = async () => {
+  const fetchRankings = async (isManual?: boolean | unknown) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/ranking/realtime');
-      if (!res.ok) throw new Error('同步实时排行失败');
-      const json: RankingData = await res.json();
-      if (json.success) {
-        setData(json);
-      } else {
-        throw new Error('获取实时数据异常');
+      // 在浏览器客户端直接并发拉取 WAQI 并进行 16ms 本地空间聚类计算 (随刷随新)
+      const clientResult = await getRealtimeRanking(isManual === true);
+      if (clientResult && clientResult.success && clientResult.totalCities > 0) {
+        setData(clientResult);
+        return;
       }
-    } catch (e: any) {
-      setError(e.message || '网络连接超时');
+      throw new Error('未获取到有效排行数据');
+    } catch (clientErr: any) {
+      console.error('实时排行拉取或计算失败:', clientErr);
+      setError(clientErr?.message || '获取实时排行失败，请检查网络后重试');
     } finally {
       setLoading(false);
     }
@@ -465,7 +468,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
 
           {/* 刷新按钮 */}
           <button
-            onClick={fetchRankings}
+            onClick={() => fetchRankings(true)}
             disabled={loading}
             className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
             title="手动刷新实时榜单"
@@ -491,7 +494,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
         <div className="p-8 text-center space-y-2 text-slate-500 text-xs">
           <p className="text-rose-500 font-semibold">{error}</p>
           <button
-            onClick={fetchRankings}
+            onClick={() => fetchRankings(true)}
             className="px-3.5 py-1.5 rounded-lg bg-sky-50 text-sky-600 font-bold hover:bg-sky-100 transition-colors"
           >
             重新尝试拉取
