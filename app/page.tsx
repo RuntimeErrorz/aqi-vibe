@@ -480,7 +480,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* 搜索与快速选择栏 */}
       <section className="glass-panel rounded-2xl p-4 sm:p-5">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <CitySearchAutocomplete
             selectedCity={selectedCity}
             onSelectCity={setSelectedCity}
@@ -531,20 +531,22 @@ export default function DashboardPage() {
 
       {/* 核心指标看板 Hero Section */}
       {record && evaluation ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
           {/* 左侧：主 AQI 指数卡片 */}
-          <div className="lg:col-span-5 glass-panel rounded-2xl p-6 relative overflow-hidden flex flex-col">
-            {/* 背景氛围晕光 */}
-            <div
-              className="absolute -right-16 -top-16 w-56 h-56 rounded-full blur-3xl opacity-15 pointer-events-none"
-              style={{ backgroundColor: evaluation.color }}
-            ></div>
+          <div className="lg:col-span-5 glass-panel rounded-2xl p-4 sm:p-6 relative flex flex-col">
+            {/* 背景氛围晕光 (限制于独立圆角容器内，杜绝主卡片全局 overflow-hidden 截断测站下拉弹窗) */}
+            <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+              <div
+                className="absolute -right-16 -top-16 w-56 h-56 rounded-full blur-3xl opacity-15"
+                style={{ backgroundColor: evaluation.color }}
+              />
+            </div>
 
             {/* 头部城市名与更新时间 */}
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center space-x-3 flex-wrap gap-y-2">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center space-x-2.5 sm:space-x-3 flex-wrap gap-y-2">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight truncate">
                     {selectedCity.nameZh}
                   </h1>
 
@@ -554,7 +556,7 @@ export default function DashboardPage() {
                       type="button"
                       onClick={() => setIsStationDropdownOpen(!isStationDropdownOpen)}
                       disabled={stationLoading}
-                      className={`group inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl text-xs font-bold border transition-all duration-150 shadow-2xs cursor-pointer select-none ${
+                      className={`group inline-flex items-center space-x-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold border transition-all duration-150 shadow-2xs cursor-pointer select-none max-w-full ${
                         selectedStationMode === 'composite'
                           ? 'bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 border-emerald-200'
                           : selectedStationMode !== 'default'
@@ -572,7 +574,7 @@ export default function DashboardPage() {
                         <Building2 className="w-3.5 h-3.5 text-sky-600 shrink-0" />
                       )}
 
-                      <span className="truncate max-w-[140px] sm:max-w-[180px]">
+                      <span className="truncate max-w-[120px] xs:max-w-[150px] sm:max-w-[180px]">
                         {selectedStationMode === 'composite'
                           ? `全城加权 (${cityStations.length}站)`
                           : selectedStationMode !== 'default'
@@ -592,9 +594,15 @@ export default function DashboardPage() {
                       />
                     </button>
 
-                    {/* 浮动下拉弹出层 */}
+                    {/* 浮动下拉弹出层 (移动端居中弹窗带半透明遮罩，平板与桌面吸附于按钮下方) */}
                     {isStationDropdownOpen && (
-                      <div className="absolute left-0 top-full mt-1.5 z-50 w-72 sm:w-80 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl border border-slate-200/90 p-2 text-xs transition-all">
+                      <>
+                        <div
+                          className="fixed inset-0 bg-slate-900/25 backdrop-blur-2xs z-40 sm:hidden"
+                          onClick={() => setIsStationDropdownOpen(false)}
+                          aria-hidden="true"
+                        />
+                        <div className="fixed inset-x-4 top-28 sm:absolute sm:inset-x-auto sm:left-0 sm:top-full mt-1.5 z-50 w-auto sm:w-80 max-w-sm rounded-2xl bg-white/98 backdrop-blur-xl shadow-2xl border border-slate-200/90 p-2 text-xs transition-all animate-in fade-in slide-in-from-top-1 duration-150">
                         {/* 城市数据口径 */}
                         <div className="px-2 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                           城市数据统计口径
@@ -650,7 +658,7 @@ export default function DashboardPage() {
                               <div className="min-w-0">
                                 <div className="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
                                   <span>全城多站加权均值</span>
-                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-semibold">
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
                                     {cityStations.length}站聚合
                                   </span>
                                 </div>
@@ -724,6 +732,7 @@ export default function DashboardPage() {
                           </div>
                         )}
                       </div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -804,48 +813,48 @@ export default function DashboardPage() {
             </div>
 
             {/* 气象观测指标条 */}
-            <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-4 gap-2 text-center text-xs">
+            <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
               <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
                 <div className="flex items-center justify-center text-slate-500 mb-1">
                   <Thermometer className="w-3.5 h-3.5 text-rose-500" />
                 </div>
-                <span className="font-bold text-slate-800">{record.weather?.temp ?? 22}°C</span>
+                <span translate="no" className="font-bold text-slate-800">{record.weather?.temp ?? 22}°C</span>
                 <p className="text-[10px] text-slate-400">气温</p>
               </div>
               <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
                 <div className="flex items-center justify-center text-slate-500 mb-1">
                   <Droplets className="w-3.5 h-3.5 text-sky-500" />
                 </div>
-                <span className="font-bold text-slate-800">{record.weather?.humidity ?? 45}%</span>
+                <span translate="no" className="font-bold text-slate-800">{record.weather?.humidity ?? 45}%</span>
                 <p className="text-[10px] text-slate-400">湿度</p>
               </div>
               <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
                 <div className="flex items-center justify-center text-slate-500 mb-1">
                   <Wind className="w-3.5 h-3.5 text-teal-500" />
                 </div>
-                <span className="font-bold text-slate-800">{record.weather?.windSpeed ?? 2.1} m/s</span>
+                <span translate="no" className="font-bold text-slate-800">{record.weather?.windSpeed ?? 2.1} m/s</span>
                 <p className="text-[10px] text-slate-400">风速</p>
               </div>
               <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
                 <div className="flex items-center justify-center text-slate-500 mb-1">
                   <Gauge className="w-3.5 h-3.5 text-indigo-500" />
                 </div>
-                <span className="font-bold text-slate-800">{record.weather?.pressure ?? 1013} hPa</span>
+                <span translate="no" className="font-bold text-slate-800">{record.weather?.pressure ?? 1013} hPa</span>
                 <p className="text-[10px] text-slate-400">气压</p>
               </div>
             </div>
           </div>
 
           {/* 右侧：6 大分项污染物实测卡片 */}
-          <div className="lg:col-span-7 glass-panel rounded-2xl p-6 flex flex-col justify-between">
+          <div className="lg:col-span-7 glass-panel rounded-2xl p-4 sm:p-6 flex flex-col justify-between">
             <div>
-              <div className="flex items-center space-x-2 mb-4">
+              <div className="flex items-center space-x-2 mb-3.5 sm:mb-4">
                 <Activity className="w-4 h-4 text-sky-600" />
-                <h3 className="text-base font-bold text-slate-900">六大主要空气污染物实测物理浓度</h3>
+                <h3 className="text-sm sm:text-base font-bold text-slate-900">六大主要空气污染物实测物理浓度</h3>
               </div>
 
               {/* 污染物卡片网格 */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3.5">
                 {[
                   { key: 'pm25', name: 'PM2.5 (细颗粒物)', val: record.pollutants.pm25, max: 150, color: '#f59e0b', unit: 'μg/m³', limit: '35', label: '优级限值 35' },
                   { key: 'pm10', name: 'PM10 (可吸入颗粒物)', val: record.pollutants.pm10, max: 250, color: '#0284c7', unit: 'μg/m³', limit: '50', label: '优级限值 50' },
@@ -863,37 +872,38 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={item.key}
-                      className="p-4 rounded-xl bg-slate-50/90 border border-slate-200/80 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all shadow-2xs"
+                      className="p-3 sm:p-4 rounded-xl bg-slate-50/90 border border-slate-200/80 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all shadow-2xs"
                     >
                       <div>
-                        <div className="flex items-center justify-between text-xs text-slate-600 mb-2.5">
-                          <span className="font-bold text-slate-800">{item.name}</span>
+                        <div className="flex items-center justify-between text-xs text-slate-600 mb-2 sm:mb-2.5">
+                          <span className="font-bold text-slate-800 text-[11px] sm:text-xs truncate">{item.name}</span>
                           {itemIAQI !== undefined && (
                             <span
-                              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-700 font-semibold"
-                              title="分指数 IAQI"
+                              translate="no"
+                              className="text-[9px] sm:text-[10px] font-mono px-1 sm:px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-700 font-semibold shrink-0 ml-1"
+                              title="单项空气质量分指数"
                             >
-                              IAQI {itemIAQI}
+                              分指数 {itemIAQI}
                             </span>
                           )}
                         </div>
                         <div className="flex items-baseline justify-between">
-                          <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                          <span className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
                             {val > 0 ? val : '--'}
                           </span>
-                          <span className="text-xs text-slate-500 font-semibold">{item.unit}</span>
+                          <span translate="no" className="text-[11px] sm:text-xs text-slate-500 font-semibold">{item.unit}</span>
                         </div>
                       </div>
 
-                      <div className="mt-3 pt-2 border-t border-slate-200/50">
+                      <div className="mt-2.5 sm:mt-3 pt-2 border-t border-slate-200/50">
                         {/* 进度条 */}
-                        <div className="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden mb-1.5">
+                        <div className="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden mb-1 sm:mb-1.5">
                           <div
                             className="h-full rounded-full transition-all duration-500"
                             style={{ width: `${percent}%`, backgroundColor: item.color }}
                           ></div>
                         </div>
-                        <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                        <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-slate-400 font-mono">
                           <span>{item.label}</span>
                           {val > 0 && (
                             <span className={isSafe ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>
@@ -925,9 +935,9 @@ export default function DashboardPage() {
         </div>
       ) : !loadError ? (
         /* 首屏加载/刷新骨架屏：杜绝卡片消失塌陷，1:1 稳固结构 */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
           {/* 左侧主 AQI 卡片骨架 */}
-          <div className="lg:col-span-5 glass-panel rounded-2xl p-6 min-h-[380px] flex flex-col justify-between animate-pulse">
+          <div className="lg:col-span-5 glass-panel rounded-2xl p-4 sm:p-6 min-h-[380px] flex flex-col justify-between animate-pulse">
             <div>
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
@@ -955,15 +965,15 @@ export default function DashboardPage() {
           </div>
 
           {/* 右侧六大污染物卡片骨架 */}
-          <div className="lg:col-span-7 glass-panel rounded-2xl p-6 flex flex-col justify-between min-h-[380px] animate-pulse">
+          <div className="lg:col-span-7 glass-panel rounded-2xl p-4 sm:p-6 flex flex-col justify-between min-h-[380px] animate-pulse">
             <div>
               <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
                 <div className="h-5 w-40 bg-slate-200 rounded" />
                 <div className="h-4 w-32 bg-slate-100 rounded" />
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 mt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3.5 mt-4">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-3">
+                  <div key={i} className="p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-3">
                     <div className="flex justify-between items-center">
                       <div className="h-3.5 w-14 bg-slate-200 rounded" />
                       <div className="h-3 w-10 bg-slate-100 rounded" />
@@ -983,10 +993,10 @@ export default function DashboardPage() {
       ) : null}
 
       {/* 24 小时逐小时走势分析图 */}
-      <section className="glass-panel rounded-2xl p-5">
+      <section className="glass-panel rounded-2xl p-4 sm:p-5">
         <div className="flex items-center space-x-2 mb-2">
           <Activity className="w-4 h-4 text-sky-600" />
-          <h3 className="text-base font-bold text-slate-900">逐小时空气质量变化轨迹</h3>
+          <h3 className="text-sm sm:text-base font-bold text-slate-900">逐小时空气质量变化轨迹</h3>
         </div>
         <TrendChart
           data={trendResult?.points || []}
@@ -996,26 +1006,26 @@ export default function DashboardPage() {
       </section>
 
       {/* 未来 5 天空气质量预测走势 */}
-      <section className="glass-panel rounded-2xl p-5 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-5">
-          <div className="flex items-center flex-wrap gap-2.5">
-            <Calendar className="w-5 h-5 text-indigo-600" />
+      <section className="glass-panel rounded-2xl p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4 sm:mb-5">
+          <div className="flex items-center flex-wrap gap-2">
+            <Calendar className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-indigo-600" />
             <h3 className="text-base sm:text-lg font-bold text-slate-900">
               未来 5 天空气质量预测走势
             </h3>
             {forecastData.source && (
-              <span className="text-[11px] px-2.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200 shadow-sm flex items-center space-x-1">
+              <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200 shadow-sm flex items-center space-x-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse inline-block mr-1"></span>
                 <span>{forecastData.source}</span>
               </span>
             )}
           </div>
-          <span className="text-xs text-slate-500 font-medium">
+          <span className="text-[11px] sm:text-xs text-slate-500 font-medium">
             大气环流动力学与化学传输数值模型推演
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
           {forecastData.list.length > 0 ? (
             forecastData.list.map((f, idx) => {
               const evalRes = evaluateAQI({ pm25: f.avg }, standard);
@@ -1027,7 +1037,7 @@ export default function DashboardPage() {
               return (
                 <div
                   key={f.day}
-                  className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 flex flex-col justify-between hover:border-indigo-300 hover:shadow-sm transition-all"
+                  className="p-3.5 sm:p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 flex flex-col justify-between hover:border-indigo-300 hover:shadow-sm transition-all"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">

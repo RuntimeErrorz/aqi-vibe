@@ -236,4 +236,13 @@ body {
   }
 }
 
+/* 移动端全景地图 Leaflet 版权信息上移，避免与底部浮动 AQI 等级图例重合 */
+@media (max-width: 640px) {
+  .leaflet-bottom.leaflet-right {
+    margin-bottom: 2.2rem !important;
+    font-size: 9px !important;
+    opacity: 0.8;
+  }
+}
+
 

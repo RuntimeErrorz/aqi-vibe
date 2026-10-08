@@ -52,26 +52,30 @@ export const CompareLineChart: React.FC<CompareLineChartProps> = ({ cities }) =>
       textStyle: { color: '#0f172a', fontSize: 12 },
     },
     legend: {
+      type: 'scroll',
       data: cities.map((c) => c.name),
       top: 0,
-      textStyle: { color: '#475569', fontSize: 12 },
+      textStyle: { color: '#475569', fontSize: 11 },
+      pageIconColor: '#0284c7',
+      pageTextStyle: { color: '#64748b', fontSize: 10 },
     },
     grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '5%',
-      top: '18%',
+      left: 6,
+      right: 8,
+      bottom: 6,
+      top: 38,
       containLabel: true,
     },
     xAxis: {
       type: 'category',
       data: years,
       axisLine: { lineStyle: { color: '#cbd5e1' } },
-      axisLabel: { color: '#64748b', fontSize: 11 },
+      axisLabel: { color: '#64748b', fontSize: 10, interval: 'auto' },
     },
     yAxis: {
       type: 'value',
       name: '年均 PM2.5 (μg/m³)',
+      nameTextStyle: { fontSize: 10, color: '#94a3b8' },
       splitLine: { lineStyle: { color: '#f1f5f9' } },
       axisLabel: { color: '#64748b', fontSize: 10 },
     },
@@ -79,7 +83,7 @@ export const CompareLineChart: React.FC<CompareLineChartProps> = ({ cities }) =>
   };
 
   return (
-    <div className="w-full h-80">
+    <div className="w-full h-72 sm:h-80">
       <ReactECharts option={option} style={{ height: '100%', width: '100%' }} notMerge={true} />
     </div>
   );

@@ -229,16 +229,19 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = tru
       },
     },
     legend: {
+      type: 'scroll',
       data: legendData,
       selected: selectedMap,
       top: 0,
       textStyle: { color: '#475569', fontSize: 11 },
+      pageIconColor: '#0284c7',
+      pageTextStyle: { color: '#64748b', fontSize: 10 },
     },
     grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '5%',
-      top: '18%',
+      left: 6,
+      right: 12,
+      bottom: 6,
+      top: 38,
       containLabel: true,
     },
     xAxis: {
@@ -246,7 +249,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = tru
       boundaryGap: false,
       data: hours,
       axisLine: { lineStyle: { color: '#cbd5e1' } },
-      axisLabel: { color: '#64748b', fontSize: 11 },
+      axisLabel: { color: '#64748b', fontSize: 10, interval: 'auto' },
     },
     yAxis: {
       type: 'value',
@@ -289,7 +292,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = tru
         </div>
       </div>
 
-      <div className="w-full h-72">
+      <div className="w-full h-64 sm:h-72">
         <ReactECharts
           option={option}
           onEvents={onEvents}

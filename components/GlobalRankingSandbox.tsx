@@ -411,28 +411,28 @@ export function GlobalRankingSandbox({
         </div>
 
         {/* 城市榜 vs 国家榜 切换器 */}
-        <div className="flex items-center bg-slate-100/80 p-1 rounded-xl self-start md:self-auto border border-slate-200/60">
+        <div className="w-full sm:w-auto grid grid-cols-2 sm:flex sm:items-center bg-slate-100/80 p-1 rounded-xl border border-slate-200/60">
           <button
             onClick={() => handleTabSwitch('cities')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`flex items-center justify-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
               activeTab === 'cities'
                 ? 'bg-white text-sky-700 shadow-sm shadow-slate-200'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Building2 className="w-3.5 h-3.5" />
-            <span>城市精细榜 (928城)</span>
+            <Building2 className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">城市精细榜 (928城)</span>
           </button>
           <button
             onClick={() => handleTabSwitch('countries')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`flex items-center justify-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
               activeTab === 'countries'
                 ? 'bg-white text-sky-700 shadow-sm shadow-slate-200'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Globe className="w-3.5 h-3.5" />
-            <span>国家/地区综合榜 (93国)</span>
+            <Globe className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">国家/地区综合榜 (93国)</span>
           </button>
         </div>
       </div>
@@ -443,7 +443,7 @@ export function GlobalRankingSandbox({
         <div className="flex flex-wrap items-center gap-2.5 text-xs">
           {/* 地理范围单选（仅城市榜有效） */}
           {activeTab === 'cities' && (
-            <div className="flex items-center bg-white rounded-lg p-0.5 border border-slate-200">
+            <div className="flex items-center bg-white rounded-lg p-0.5 border border-slate-200 max-w-full overflow-x-auto">
               <button
                 onClick={() => {
                   setGeoScope('all');
@@ -583,7 +583,7 @@ export function GlobalRankingSandbox({
           </div>
 
           {/* 即时搜索框与预览悬浮下拉面板 */}
-          <div ref={searchContainerRef} className="relative flex-1 min-w-[260px] max-w-sm">
+          <div ref={searchContainerRef} className="relative w-full sm:w-auto flex-1 min-w-0 sm:min-w-[240px] max-w-sm">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
@@ -627,7 +627,7 @@ export function GlobalRankingSandbox({
 
             {/* 即时搜索智能预览卡片面板 */}
             {isSearchPreviewOpen && searchQuery.trim() && (
-              <div className="absolute left-0 right-0 sm:right-auto sm:w-[420px] top-full mt-1.5 z-50 bg-white rounded-xl border border-slate-200/90 shadow-2xl overflow-hidden animate-in fade-in duration-100">
+              <div className="absolute left-0 right-0 sm:right-auto sm:w-[420px] max-w-[calc(100vw-2rem)] top-full mt-1.5 z-50 bg-white rounded-xl border border-slate-200/90 shadow-2xl overflow-hidden animate-in fade-in duration-100">
                 <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                   <span>
                     找到 <b className="text-slate-900">{totalItems}</b> 个符合条件的{activeTab === 'cities' ? '城市' : '国家/地区'}
@@ -753,8 +753,8 @@ export function GlobalRankingSandbox({
 
       {/* 榜单表格展示 */}
       {activeTab === 'cities' ? (
-        <div className="overflow-x-auto rounded-xl border border-slate-200/80 shadow-sm bg-white">
-          <table className="w-full text-left text-xs text-slate-700">
+        <div className="overflow-x-auto rounded-xl border border-slate-200/80 shadow-sm bg-white custom-scrollbar">
+          <table className="w-full min-w-[760px] text-left text-xs text-slate-700">
             <thead className="bg-slate-50/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
               <tr>
                 <th className="py-3 px-3 w-16 text-center">排名</th>
@@ -931,8 +931,8 @@ export function GlobalRankingSandbox({
         </div>
       ) : (
         /* 国家聚合榜单 */
-        <div className="overflow-x-auto rounded-xl border border-slate-200/80 shadow-sm bg-white">
-          <table className="w-full text-left text-xs text-slate-700">
+        <div className="overflow-x-auto rounded-xl border border-slate-200/80 shadow-sm bg-white custom-scrollbar">
+          <table className="w-full min-w-[720px] text-left text-xs text-slate-700">
             <thead className="bg-slate-50/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
               <tr>
                 <th className="py-3 px-3 w-16 text-center">排名</th>

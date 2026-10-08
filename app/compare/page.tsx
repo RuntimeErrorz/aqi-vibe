@@ -279,21 +279,21 @@ export default function ComparePage() {
       </div>
 
       {/* 对比图表 1: 近 10 年 PM2.5 年均下降曲线对比 */}
-      <section className="glass-panel rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+      <section className="glass-panel rounded-2xl p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 mb-2">
+          <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center space-x-2">
             <BarChart3 className="w-4 h-4 text-sky-600" />
             <span>2014 ~ 2025 年际 PM2.5 浓度改善轨迹横向对比</span>
           </h3>
-          <span className="text-xs text-slate-500 font-medium">单位: μg/m³ (年均综合实测值)</span>
+          <span className="text-[11px] sm:text-xs text-slate-500 font-medium">单位: μg/m³ (年均综合实测值)</span>
         </div>
         <CompareLineChart cities={activeCities} />
       </section>
 
       {/* 对比图表 2: 六大污染物雷达构成分析 */}
-      <section className="glass-panel rounded-2xl p-5">
+      <section className="glass-panel rounded-2xl p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-2">
-          <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+          <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center space-x-2">
             <BarChart3 className="w-4 h-4 text-purple-600" />
             <span>多城主要空气污染物构成雷达对比</span>
           </h3>

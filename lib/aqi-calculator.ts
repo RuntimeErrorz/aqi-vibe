@@ -227,38 +227,38 @@ export function getUSEvaluation(aqi: number, primaryPollutant = 'pm25'): AQIEval
   let levelEn = 'Good';
   let color = '#10b981';
   let textColor = '#ffffff';
-  let healthAdvice = 'Air quality is satisfactory, and poses little or no risk.';
+  let healthAdvice = '空气质量优良，无污染风险，极适宜正常户外活动。';
 
   if (aqi <= 50) {
     level = '优 (Good)';
     levelEn = 'Good';
     color = '#10b981';
-    healthAdvice = 'Air quality is considered satisfactory, and air pollution poses little or no risk.';
+    healthAdvice = '空气质量优良，无污染风险，极适宜各类户外运动与开窗通风。';
   } else if (aqi <= 100) {
     level = '良 (Moderate)';
     levelEn = 'Moderate';
     color = '#eab308';
-    healthAdvice = 'Air quality is acceptable. Very sensitive individuals should limit prolonged outdoor exertion.';
+    healthAdvice = '空气质量可接受，极少数对空气异常敏感的人群应减少长时间户外剧烈活动。';
   } else if (aqi <= 150) {
     level = '对敏感人群不健康 (USG)';
     levelEn = 'Unhealthy for Sensitive Groups';
     color = '#f97316';
-    healthAdvice = 'Members of sensitive groups may experience health effects. General public not likely affected.';
+    healthAdvice = '易感人群（儿童、老人及心肺疾病患者）应减少长时间高强度户外运动；普通公众暂不受明显影响。';
   } else if (aqi <= 200) {
     level = '不健康 (Unhealthy)';
     levelEn = 'Unhealthy';
     color = '#ef4444';
-    healthAdvice = 'Everyone may begin to experience health effects; sensitive groups may experience serious effects.';
+    healthAdvice = '空气达到不健康水平，所有人群均可能受到不良健康影响，敏感人群应避免户外活动并佩戴防护口罩。';
   } else if (aqi <= 300) {
     level = '非常不健康 (Very Unhealthy)';
     levelEn = 'Very Unhealthy';
     color = '#8b5cf6';
-    healthAdvice = 'Health alert: The risk of health effects is increased for everyone.';
+    healthAdvice = '触发严重健康警报，全体人群受健康损害风险显著升高，所有人均应尽量避免户外活动。';
   } else {
     level = '严重危害 (Hazardous)';
     levelEn = 'Hazardous';
     color = '#7f1d1d';
-    healthAdvice = 'Health warning of emergency conditions: everyone is more likely to be affected.';
+    healthAdvice = '达到紧急健康警报状态，全体人群均极易受到严重呼吸道健康损伤，所有人应留在室内并关闭门窗。';
   }
 
   return {

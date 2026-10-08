@@ -11,7 +11,7 @@ interface StandardContextProps {
 }
 
 const StandardContext = createContext<StandardContextProps>({
-  standard: 'US',
+  standard: 'CN',
   setStandard: () => {},
   toggleStandard: () => {},
   mounted: false,
@@ -25,7 +25,7 @@ export const StandardProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (saved === 'CN' || saved === 'US') return saved;
       } catch (e) {}
     }
-    return 'US';
+    return 'CN';
   });
   const [mounted, setMounted] = useState<boolean>(false);
 

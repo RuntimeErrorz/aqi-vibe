@@ -118,14 +118,14 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
 
       {/* Algolia 风格即时预览悬浮下拉面板 */}
       {isOpen && (
-        <div className="absolute left-0 right-0 w-full min-w-full sm:min-w-[460px] max-w-[92vw] top-full mt-2 z-[100] bg-white rounded-2xl border border-slate-200/90 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="p-2 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-400 px-3">
-            <span>
+        <div className="absolute left-0 right-0 w-full min-w-0 sm:min-w-[460px] max-w-[calc(100vw-2rem)] top-full mt-2 z-[100] bg-white rounded-2xl border border-slate-200/90 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="p-2 border-b border-slate-100 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400 px-3">
+            <span className="truncate mr-2">
               {query.trim()
                 ? '支持直接输入国家、省份或城市 (如: 美国 / 日本 / 英国 / 成都)'
                 : '热门代表城市 (点击直接切换，或键入搜索任意城市)'}
             </span>
-            <span>按 ↑↓ 选择，Enter 确认</span>
+            <span className="hidden sm:inline shrink-0">按 ↑↓ 选择，Enter 确认</span>
           </div>
 
           <div className="max-h-72 overflow-y-auto py-1">
@@ -140,11 +140,11 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
                     key={c.id}
                     onMouseEnter={() => setActiveIndex(idx)}
                     onClick={() => handleSelect(c)}
-                    className={`px-3.5 py-2.5 flex items-center justify-between cursor-pointer transition-colors ${
+                    className={`px-3 sm:px-3.5 py-2 sm:py-2.5 flex items-center justify-between cursor-pointer transition-colors ${
                       isSelected ? 'bg-sky-50/80 text-sky-900' : 'hover:bg-slate-50 text-slate-800'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 pr-2">
                       <div
                         className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
                           c.isDomestic
@@ -159,29 +159,29 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
                         )}
                       </div>
 
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-bold text-sm text-slate-900">{c.nameZh}</span>
-                          <span className="text-xs text-slate-500 font-mono">{c.nameEn}</span>
+                      <div className="min-w-0">
+                        <div className="flex items-center space-x-1.5 flex-wrap">
+                          <span className="font-bold text-sm text-slate-900 truncate">{c.nameZh}</span>
+                          <span className="text-xs text-slate-500 font-mono truncate">{c.nameEn}</span>
                           {isHot && (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200/80">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200/80 shrink-0">
                               热门
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-slate-500 flex items-center space-x-1.5 mt-0.5">
-                          <span className="px-1 py-0.2 rounded bg-slate-100 text-slate-500 font-mono text-[9px] font-bold border border-slate-200 uppercase">
+                        <p className="text-[11px] text-slate-500 flex items-center space-x-1.5 mt-0.5 truncate">
+                          <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-500 font-mono text-[9px] font-bold border border-slate-200 uppercase shrink-0">
                             {c.country}
                           </span>
-                          <span className="font-medium text-slate-600">{countryInfo.nameZh}</span>
-                          {c.province && <span>· {c.province}</span>}
+                          <span className="font-medium text-slate-600 truncate">{countryInfo.nameZh}</span>
+                          {c.province && <span className="truncate">· {c.province}</span>}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2 shrink-0">
+                    <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border hidden xs:inline-block ${
                           c.isDomestic
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : 'bg-purple-50 text-purple-700 border-purple-200'

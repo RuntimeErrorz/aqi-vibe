@@ -83,13 +83,16 @@ export const CompareRadarChart: React.FC<CompareRadarChartProps> = ({ cities }) 
       },
     },
     legend: {
+      type: 'scroll',
       data: cities.map((c) => c.name),
-      top: 6,
-      textStyle: { color: '#475569', fontSize: 12 },
+      top: 4,
+      textStyle: { color: '#475569', fontSize: 11 },
+      pageIconColor: '#7c3aed',
+      pageTextStyle: { color: '#64748b', fontSize: 10 },
     },
     radar: {
-      center: ['50%', '58%'], // 下移雷达中心，避免与上方图例标签重叠
-      radius: '62%',
+      center: ['50%', '57%'],
+      radius: '50%',
       indicator: [
         { name: 'PM2.5 (细颗粒物)', max: maxPM25 },
         { name: 'PM10 (可吸入颗粒)', max: maxPM10 },
@@ -102,9 +105,9 @@ export const CompareRadarChart: React.FC<CompareRadarChartProps> = ({ cities }) 
       splitNumber: 4,
       axisName: {
         color: '#475569',
-        fontSize: 11,
+        fontSize: 10.5,
         fontWeight: 'bold',
-        padding: [3, 5],
+        padding: [2, 3],
       },
       splitLine: {
         lineStyle: {
@@ -133,7 +136,7 @@ export const CompareRadarChart: React.FC<CompareRadarChartProps> = ({ cities }) 
   };
 
   return (
-    <div className="w-full h-96 sm:h-[420px]">
+    <div className="w-full h-80 sm:h-96 md:h-[420px]">
       <ReactECharts option={option} style={{ height: '100%', width: '100%' }} notMerge={true} />
     </div>
   );

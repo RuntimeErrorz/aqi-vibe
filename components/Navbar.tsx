@@ -1,14 +1,53 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useStandard } from './StandardContext';
-import { Wind, Map, History, BarChart3, Sparkles, HelpCircle } from 'lucide-react';
+import {
+  Wind,
+  Map,
+  History,
+  BarChart3,
+  Sparkles,
+  HelpCircle,
+  Menu,
+  X,
+  ChevronRight,
+} from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
   const { standard, toggleStandard, mounted } = useStandard();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // 路由跳转时自动关闭移动端菜单
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
+  // 当移动端抽屉打开时，锁定 body 滚动防止穿透
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileMenuOpen]);
+
+  // 按 Escape 键自动关闭移动端菜单
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const navLinks = [
     { href: '/', label: '城市实况', icon: Wind },
@@ -22,21 +61,23 @@ export const Navbar: React.FC = () => {
       {/* 主导航条 */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center space-x-3 group">
-          <div className="w-10 h-10 rounded-xl bg-sky-600 flex items-center justify-center shadow-md shadow-sky-600/20 group-hover:scale-105 transition-transform">
+        <Link
+          href="/"
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="flex items-center space-x-2.5 sm:space-x-3 group shrink-0"
+        >
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-sky-600 flex items-center justify-center shadow-md shadow-sky-600/20 group-hover:scale-105 transition-transform shrink-0">
             <Wind className="w-5 h-5 text-white stroke-[2.5]" />
           </div>
           <div>
-            <div className="flex items-center space-x-2">
-              <span className="font-bold text-lg tracking-tight text-slate-900 group-hover:text-sky-600 transition-colors">
-                AQI Vibe
-              </span>
-            </div>
+            <span className="font-bold text-base sm:text-lg tracking-tight text-slate-900 group-hover:text-sky-600 transition-colors">
+              AQI Vibe
+            </span>
           </div>
         </Link>
 
-        {/* 菜单项 */}
-        <nav className="flex items-center space-x-1 sm:space-x-1.5">
+        {/* 桌面端菜单项 (中大屏展示) */}
+        <nav className="hidden md:flex items-center space-x-1 lg:space-x-1.5">
           {navLinks.map((link, idx) => {
             const Icon = link.icon;
             const isActive = pathname === link.href;
@@ -64,9 +105,9 @@ export const Navbar: React.FC = () => {
           })}
         </nav>
 
-        {/* 标准切换开关与独立悬停 Tip（固定宽度锁定，杜绝切换标准时宽度跳动影响左侧布局） */}
-        <div className="w-[186px] shrink-0 flex items-center justify-between rounded-xl border border-slate-200 bg-white shadow-sm hover:border-slate-300 transition-colors">
-          {/* 左侧主体：点击切换标准，悬停不弹出大卡片 */}
+        {/* 桌面端标准切换开关与独立悬停 Tip (仅 md 及以上展示) */}
+        <div className="hidden md:flex w-[186px] shrink-0 items-center justify-between rounded-xl border border-slate-200 bg-white shadow-sm hover:border-slate-300 transition-colors">
+          {/* 左侧主体：点击切换标准 */}
           <button
             onClick={toggleStandard}
             className="flex-1 flex items-center space-x-1.5 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50 rounded-l-xl cursor-pointer select-none"
@@ -88,7 +129,7 @@ export const Navbar: React.FC = () => {
           {/* 分隔细线 */}
           <div className="h-4 w-px bg-slate-200 shrink-0" />
 
-          {/* 右侧独立 Tip 图标：仅在此图标悬停时才出现说明卡片 */}
+          {/* 右侧独立 Tip 图标 */}
           <div className="relative group/tip shrink-0">
             <button
               type="button"
@@ -111,7 +152,7 @@ export const Navbar: React.FC = () => {
                   </span>
                 </div>
 
-                {/* 美标模式卡片（排在最上面） */}
+                {/* 美标模式卡片 */}
                 <div
                   className={`p-2.5 rounded-xl transition-all border ${
                     standard === 'US'
@@ -122,7 +163,7 @@ export const Navbar: React.FC = () => {
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-bold text-slate-900">美国标准 (US EPA NowCast)</span>
                     {standard === 'US' && (
-                      <span className="text-[10px] bg-amber-600 text-white px-1.5 py-0.2 rounded font-bold">
+                      <span className="text-[10px] bg-amber-600 text-white px-1.5 py-0.5 rounded font-bold">
                         当前生效
                       </span>
                     )}
@@ -132,7 +173,7 @@ export const Navbar: React.FC = () => {
                   </p>
                 </div>
 
-                {/* 国标模式卡片（排在美标下面） */}
+                {/* 国标模式卡片 */}
                 <div
                   className={`p-2.5 rounded-xl transition-all border ${
                     standard === 'CN'
@@ -143,7 +184,7 @@ export const Navbar: React.FC = () => {
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-bold text-slate-900">中国国标 (HJ 633-2012)</span>
                     {standard === 'CN' && (
-                      <span className="text-[10px] bg-sky-600 text-white px-1.5 py-0.2 rounded font-bold">
+                      <span className="text-[10px] bg-sky-600 text-white px-1.5 py-0.5 rounded font-bold">
                         当前生效
                       </span>
                     )}
@@ -160,7 +201,114 @@ export const Navbar: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* 移动端顶栏右侧快捷区域：紧凑标准切换键 + 汉堡按钮 */}
+        <div className="flex md:hidden items-center space-x-2">
+          {/* 移动端 1 键快速切换胶囊 */}
+          <button
+            onClick={toggleStandard}
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 shadow-xs text-xs font-bold transition-all cursor-pointer select-none"
+            title="点击快速切换标准"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span className="text-slate-800">
+              {!mounted ? (
+                <span className="inline-block w-6 h-3 bg-slate-200 rounded animate-pulse" />
+              ) : standard === 'US' ? (
+                '美标'
+              ) : (
+                '国标'
+              )}
+            </span>
+          </button>
+
+          {/* 移动端汉堡菜单折叠按钮 */}
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-xs transition-colors cursor-pointer"
+            aria-label={isMobileMenuOpen ? '关闭菜单' : '打开菜单'}
+          >
+            {isMobileMenuOpen ? (
+              <X className="w-5 h-5 text-slate-900" />
+            ) : (
+              <Menu className="w-5 h-5 text-slate-700" />
+            )}
+          </button>
+        </div>
       </div>
+
+      {/* 移动端背景半透明遮罩 (点击可直接关闭抽屉) */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 top-16 bg-slate-900/30 backdrop-blur-xs z-40 md:hidden animate-in fade-in duration-200"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* 移动端折叠抽屉面板 (Mobile Navigation Drawer) */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden relative z-50 border-t border-slate-200/90 bg-white shadow-2xl animate-in slide-in-from-top-2 duration-200 max-h-[calc(100vh-4rem)] overflow-y-auto">
+          <div className="px-4 py-4 space-y-4">
+            {/* 移动端导航主链接 */}
+            <div className="space-y-1">
+              {navLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center justify-between p-3 rounded-xl text-sm font-semibold transition-all ${
+                      isActive
+                        ? 'bg-sky-50 text-sky-600 border border-sky-200/80 shadow-xs'
+                        : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          isActive
+                            ? 'bg-sky-600 text-white shadow-xs'
+                            : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <span>{link.label}</span>
+                    </div>
+                    <ChevronRight
+                      className={`w-4 h-4 ${
+                        isActive ? 'text-sky-600' : 'text-slate-300'
+                      }`}
+                    />
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* 移动端标准切换 */}
+            <div className="pt-2 border-t border-slate-100">
+              <button
+                onClick={toggleStandard}
+                className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-xs font-semibold select-none cursor-pointer"
+                title="点击切换 AQI 计算标准 (美国 EPA / 中国国标)"
+              >
+                <div className="flex items-center space-x-2">
+                  <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span className="text-slate-500">计算标准:</span>
+                  <span className="font-bold text-slate-900">
+                    {!mounted ? '...' : standard === 'US' ? '美国标准 (US EPA)' : '中国国标 (HJ 633)'}
+                  </span>
+                </div>
+                <span className="text-[11px] text-sky-600 font-medium">点击切换</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

@@ -197,9 +197,9 @@ function HistoryPageContent() {
 
       {/* 年度总体成就 Scorecard: 4 卡片现代化权威看板 */}
       {!mounted ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-pulse">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="glass-panel rounded-2xl p-5 flex items-center justify-between min-h-[110px]">
+            <div key={i} className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between min-h-[100px] sm:min-h-[110px]">
               <div className="flex-1 min-w-0 pr-3 space-y-2.5">
                 <div className="h-3.5 w-24 bg-slate-200 rounded" />
                 <div className="flex items-baseline space-x-2 mt-1">
@@ -213,108 +213,108 @@ function HistoryPageContent() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* 卡片 1: 年度综合等效 AQI (独立大字显眼看板) */}
-          <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
+          <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between">
             <div className="flex-1 min-w-0 pr-3">
               <p className="text-xs text-slate-500 font-medium">年度综合等效 AQI</p>
-              <div className="flex items-baseline space-x-2.5 mt-1.5">
-                <span className="text-3xl font-black" style={{ color: avgEvaluation.color }}>
+              <div className="flex items-baseline space-x-2 mt-1 sm:mt-1.5">
+                <span className="text-2xl sm:text-3xl font-black" style={{ color: avgEvaluation.color }}>
                   {avgAQI}
                 </span>
                 <span
-                  className="text-[11px] px-2 py-0.5 rounded-md font-bold shrink-0"
+                  className="text-[10px] sm:text-[11px] px-1.5 sm:px-2 py-0.5 rounded-md font-bold shrink-0"
                   style={{ backgroundColor: `${avgEvaluation.color}18`, color: avgEvaluation.color }}
                 >
                   {avgEvaluation.level}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">全年在册实测均值</p>
+              <p className="text-[11px] sm:text-xs text-slate-400 mt-1">全年在册实测均值</p>
             </div>
-            <Gauge className="w-8 h-8 shrink-0" style={{ color: `${avgEvaluation.color}50` }} />
+            <Gauge className="w-7 h-7 sm:w-8 sm:h-8 shrink-0" style={{ color: `${avgEvaluation.color}50` }} />
           </div>
 
           {/* 卡片 2: 优良/达标天数比例 */}
-          <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
+          <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between">
             <div className="flex-1 min-w-0 pr-3">
               <p className="text-xs text-slate-500 font-medium">优良天数比例</p>
-              <div className="flex items-baseline space-x-2 mt-1.5">
-                <span className="text-3xl font-black text-emerald-600">{compliantRatio}%</span>
+              <div className="flex items-baseline space-x-2 mt-1 sm:mt-1.5">
+                <span className="text-2xl sm:text-3xl font-black text-emerald-600">{compliantRatio}%</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-1">
                 共 {compliantDaysCount} 天达标 / 实测 {validTotalDays} 天
               </p>
             </div>
-            <CheckCircle2 className="w-8 h-8 text-emerald-500/20 shrink-0" />
+            <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-500/20 shrink-0" />
           </div>
 
           {/* 卡片 3: 超标污染天数 */}
-          <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
+          <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between">
             <div className="flex-1 min-w-0 pr-3">
               <p className="text-xs text-slate-500 font-medium">超标污染天数</p>
-              <div className="flex items-baseline space-x-2 mt-1.5">
-                <span className="text-3xl font-black text-rose-600">{pollutedDaysCount} 天</span>
+              <div className="flex items-baseline space-x-2 mt-1 sm:mt-1.5">
+                <span className="text-2xl sm:text-3xl font-black text-rose-600">{pollutedDaysCount} 天</span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-1">
                 超标占比 {validTotalDays > 0 ? ((pollutedDaysCount / validTotalDays) * 100).toFixed(1) : 0}%
               </p>
             </div>
-            <AlertCircle className="w-8 h-8 text-rose-500/20 shrink-0" />
+            <AlertCircle className="w-7 h-7 sm:w-8 sm:h-8 text-rose-500/20 shrink-0" />
           </div>
 
-        {/* 卡片 4: 治理改善成效 (随选中年份动态联动) */}
-        <div className="glass-panel rounded-2xl p-5 flex items-center justify-between">
-          <div className="flex-1 min-w-0 pr-3">
-            <p className="text-xs text-slate-500 font-medium">
-              {isBaselineYear
-                ? '治理监测基准'
-                : `治理改善成效 ${firstYearObj ? `(较 ${firstYearObj.year})` : ''}`}
-            </p>
-            <div className="flex items-baseline space-x-2 mt-1.5">
-              {isBaselineYear ? (
-                <span className="text-2xl sm:text-3xl font-black text-slate-700">基准首年</span>
-              ) : baselineRate !== null ? (
-                <span
-                  className={`text-3xl font-black ${
-                    Number(baselineRate) <= 0 ? 'text-sky-600' : 'text-rose-600'
-                  }`}
-                >
-                  {Number(baselineRate) > 0 ? `+${baselineRate}%` : `${baselineRate}%`}
-                </span>
-              ) : (
-                <span className="text-3xl font-black text-slate-400">--</span>
-              )}
+          {/* 卡片 4: 治理改善成效 (随选中年份动态联动) */}
+          <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between">
+            <div className="flex-1 min-w-0 pr-3">
+              <p className="text-xs text-slate-500 font-medium">
+                {isBaselineYear
+                  ? '治理监测基准'
+                  : `治理改善成效 ${firstYearObj ? `(较 ${firstYearObj.year})` : ''}`}
+              </p>
+              <div className="flex items-baseline space-x-2 mt-1 sm:mt-1.5">
+                {isBaselineYear ? (
+                  <span className="text-xl sm:text-2xl md:text-3xl font-black text-slate-700">基准首年</span>
+                ) : baselineRate !== null ? (
+                  <span
+                    className={`text-2xl sm:text-3xl font-black ${
+                      Number(baselineRate) <= 0 ? 'text-sky-600' : 'text-rose-600'
+                    }`}
+                  >
+                    {Number(baselineRate) > 0 ? `+${baselineRate}%` : `${baselineRate}%`}
+                  </span>
+                ) : (
+                  <span className="text-2xl sm:text-3xl font-black text-slate-400">--</span>
+                )}
+              </div>
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-1 truncate">
+                {isBaselineYear ? (
+                  `起始首年 PM2.5: ${firstYearPM25} μg/m³`
+                ) : firstYearObj && currentYearPM25 > 0 ? (
+                  <span>
+                    {firstYearPM25} → {currentYearPM25} μg/m³
+                    {yoyRate !== null && (
+                      <span className="ml-1 text-slate-400 font-normal">
+                        (环比{Number(yoyRate) > 0 ? `+${yoyRate}` : yoyRate}%)
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  'PM2.5 真实演进轨迹'
+                )}
+              </p>
             </div>
-            <p className="text-xs text-slate-500 mt-1 truncate">
-              {isBaselineYear ? (
-                `起始首年 PM2.5: ${firstYearPM25} μg/m³`
-              ) : firstYearObj && currentYearPM25 > 0 ? (
-                <span>
-                  {firstYearPM25} → {currentYearPM25} μg/m³
-                  {yoyRate !== null && (
-                    <span className="ml-1 text-slate-400 font-normal">
-                      (环比{Number(yoyRate) > 0 ? `+${yoyRate}` : yoyRate}%)
-                    </span>
-                  )}
-                </span>
-              ) : (
-                'PM2.5 真实演进轨迹'
-              )}
-            </p>
+            {isBaselineYear ? (
+              <Gauge className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400/20 shrink-0" />
+            ) : Number(baselineRate ?? 0) <= 0 ? (
+              <TrendingDown className="w-7 h-7 sm:w-8 sm:h-8 text-sky-500/20 shrink-0" />
+            ) : (
+              <TrendingUp className="w-7 h-7 sm:w-8 sm:h-8 text-rose-500/20 shrink-0" />
+            )}
           </div>
-          {isBaselineYear ? (
-            <Gauge className="w-8 h-8 text-slate-400/20 shrink-0" />
-          ) : Number(baselineRate ?? 0) <= 0 ? (
-            <TrendingDown className="w-8 h-8 text-sky-500/20 shrink-0" />
-          ) : (
-            <TrendingUp className="w-8 h-8 text-rose-500/20 shrink-0" />
-          )}
         </div>
-      </div>
       )}
 
       {/* 核心图表 1: 365 天时间机器日历热力图 */}
-      <section className="glass-panel rounded-2xl p-5">
+      <section className="glass-panel rounded-2xl p-4 sm:p-5">
         <CalendarHeatmap
           data={calendarData}
           year={selectedYear}
@@ -326,9 +326,9 @@ function HistoryPageContent() {
       </section>
 
       {/* 核心图表 2: 长期治理改善折线与优良率柱状图 */}
-      <section className="glass-panel rounded-2xl p-5">
+      <section className="glass-panel rounded-2xl p-4 sm:p-5">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
+          <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center space-x-2">
             <TrendingDown className="w-4 h-4 text-emerald-600" />
             <span>
               {annualTrends.length > 0 ? `${annualTrends[0].year} ~ ${annualTrends[annualTrends.length - 1].year}` : ''} 年际长期治理成效与蓝天保卫战成果
