@@ -11,29 +11,30 @@ interface StandardContextProps {
 }
 
 const StandardContext = createContext<StandardContextProps>({
-  standard: 'CN',
+  standard: 'US',
   setStandard: () => {},
   toggleStandard: () => {},
   mounted: false,
 });
 
-export const StandardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [standard, setStandardState] = useState<StandardType>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = (localStorage.getItem('aqi_standard_v2') || localStorage.getItem('aqi_standard')) as StandardType;
-        if (saved === 'CN' || saved === 'US') return saved;
-      } catch (e) {}
-    }
-    return 'CN';
-  });
+export const StandardProvider: React.FC<{
+  children: React.ReactNode;
+  initialStandard?: StandardType;
+}> = ({ children, initialStandard = 'US' }) => {
+  const [standard, setStandardState] = useState<StandardType>(initialStandard);
   const [mounted, setMounted] = useState<boolean>(false);
 
   useEffect(() => {
     try {
       const saved = (localStorage.getItem('aqi_standard_v2') || localStorage.getItem('aqi_standard')) as StandardType;
       if (saved === 'CN' || saved === 'US') {
-        setStandardState(saved);
+        if (saved !== standard) {
+          setStandardState(saved);
+        }
+        document.cookie = `aqi_standard=${saved}; path=/; max-age=31536000; SameSite=Lax`;
+      } else {
+        localStorage.setItem('aqi_standard_v2', initialStandard);
+        document.cookie = `aqi_standard=${initialStandard}; path=/; max-age=31536000; SameSite=Lax`;
       }
     } catch (e) {}
     setMounted(true);
@@ -44,11 +45,13 @@ export const StandardProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       localStorage.setItem('aqi_standard_v2', std);
       localStorage.setItem('aqi_standard', std);
+      document.cookie = `aqi_standard=${std}; path=/; max-age=31536000; SameSite=Lax`;
     } catch (e) {}
   };
 
   const toggleStandard = () => {
-    setStandard(standard === 'US' ? 'CN' : 'US');
+    const next = standard === 'US' ? 'CN' : 'US';
+    setStandard(next);
   };
 
   return (

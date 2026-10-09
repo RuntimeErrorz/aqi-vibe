@@ -249,7 +249,7 @@ export async function fetchWAQICityStations(city: CityMeta): Promise<WaqiBoundSt
 
   let valid = stations.filter((s) => {
     const a = parseInt(s.aqi, 10);
-    return !isNaN(a) && a > 0 && a <= 800;
+    return !isNaN(a) && a > 0 && a <= 500;
   });
 
   let cityOnly = filterStationsForCity(valid, city);
@@ -264,7 +264,7 @@ export async function fetchWAQICityStations(city: CityMeta): Promise<WaqiBoundSt
     );
     valid = stations.filter((s) => {
       const a = parseInt(s.aqi, 10);
-      return !isNaN(a) && a > 0 && a <= 800;
+      return !isNaN(a) && a > 0 && a <= 500;
     });
     cityOnly = filterStationsForCity(valid, city);
   }

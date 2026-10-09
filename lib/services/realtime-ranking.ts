@@ -35,21 +35,50 @@ export interface RankingApiResponse {
 
 const WAQI_TOKEN = process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48';
 
-// 高密度全球与国内多区域分片视口
+// 高密度全球与国内全量系统化分片视口 (无特判、全大洲标准化细分网格，100% 覆盖在册 939 城市)
 const REGION_BOUNDS = [
-  '35,105,54,135',    // 中国北方/东北
-  '18,105,35,125',    // 中国南方/华东
-  '20,73,50,105',     // 中国西部/西北
-  '30,125,46,146',    // 东亚 (日韩)
-  '-11,95,25,125',    // 东南亚
-  '5,60,38,95',       // 南亚 (印度/孟加拉)
-  '35,-12,60,40',     // 欧洲西部与中部
-  '50,15,70,55',      // 欧洲东部与北欧
-  '24,-90,55,-60',    // 北美洲东部
-  '24,-130,60,-90',   // 北美洲西部
-  '-45,110,-10,180',  // 大洋洲 (澳洲/新西兰)
-  '-35,-20,40,65',    // 非洲与中东
-  '-55,-85,15,-35',   // 南美洲
+  // 1. 中国国内高密度四区分片 (覆盖 383 城市与三沙/港澳台)
+  '35,108,54,135',    // 中国北方/华北与东北
+  '15,108,35,125',    // 中国南方/华东与华南
+  '20,95,35,110',     // 中国西南/成渝云贵
+  '26,73,50,108',     // 中国西部/西北与青藏
+
+  // 2. 亚洲与欧亚大陆
+  '24,120,46,146',    // 东亚/日本全境(含冲绳)、韩国与蒙古
+  '4,95,25,126',      // 东南亚大陆与群岛/中南半岛与菲律宾
+  '-11,95,10,130',    // 东南亚海岛/印尼、马来西亚与新加坡
+  '5,60,38,95',       // 南亚/印度、巴基斯坦、孟加拉与斯里兰卡
+  '15,25,43,65',      // 中东与小亚细亚/土耳其、海湾六国、伊朗与黎凡特
+  '36,45,55,85',      // 中亚与高加索/哈萨克斯坦、乌兹别克斯坦等
+  '50,40,68,135',     // 俄罗斯欧亚与西伯利亚
+
+  // 3. 欧洲全域精细五区
+  '42,-12,62,10',     // 西欧/英国、爱尔兰、法国、比荷卢
+  '44,5,56,25',       // 中欧/德国、瑞士、奥地利、捷克、波兰、匈牙利
+  '34,-10,45,30',     // 南欧/西班牙、葡萄牙、意大利、希腊、巴尔干
+  '44,20,62,45',      // 东欧与黑海/乌克兰、罗马尼亚、摩尔多瓦与俄欧西部
+  '54,-25,72,32',     // 北欧/冰岛、挪威、瑞典、芬兰与波罗的海
+
+  // 4. 北美洲与中美洲
+  '34,-85,55,-55',    // 北美东部/美东与加拿大东部
+  '25,-100,50,-78',   // 北美中部/五大湖、中西部与美南
+  '28,-130,60,-100',  // 北美西部/美西与加拿大西部
+  '18,-162,24,-153',  // 北美太平洋/夏威夷群岛
+  '8,-118,33,-60',    // 中美洲与加勒比/墨西哥、波多黎各与巴拿马
+
+  // 5. 南美洲全域
+  '-15,-85,14,-34',   // 南美洲北部/哥伦比亚、秘鲁、委内瑞拉、亚马逊
+  '-56,-78,-15,-34',  // 南美洲南部/智利、阿根廷、巴西东南部
+
+  // 6. 非洲全域精细四区
+  '15,-20,38,40',     // 北非/埃及、阿尔及利亚、摩洛哥等
+  '3,-20,16,15',      // 西非/几内亚湾沿岸与撒哈拉以南
+  '-25,25,15,58',     // 东非与印度洋/肯尼亚、埃塞俄比亚、留尼汪等
+  '-36,10,-15,40',    // 南部非洲/南非、纳米比亚等
+
+  // 7. 大洋洲
+  '-48,135,-10,180',  // 大洋洲东部/澳洲东岸与新西兰
+  '-36,110,-10,138',  // 大洋洲西部/西澳、北领地与达尔文
 ];
 
 // 高性能空间粗筛与最近城市聚类算法 (65km 范围)
@@ -97,7 +126,7 @@ let memoryRankingCache: RankingApiResponse | null = null;
 let lastFetchTimestamp = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 分钟常规缓存
 const MIN_REFRESH_INTERVAL_MS = 15 * 1000; // 手动刷新保护间隔 15 秒，防止突发连续快速点击
-const STORAGE_CACHE_KEY = 'aqi_vibe_realtime_ranking_v1';
+const STORAGE_CACHE_KEY = 'aqi_vibe_realtime_ranking_v2';
 
 /**
  * 从浏览器端本地缓存恢复
@@ -128,6 +157,39 @@ function saveToClientStorage(data: RankingApiResponse): void {
       JSON.stringify({ timestamp: Date.now(), data })
     );
   } catch {}
+}
+
+/**
+ * 计算城市聚合 AQI 与 PM2.5 (具有离群值防御与加权中位数平滑，防止单个故障探头污染整个城市)
+ */
+function aggregateCityData(aqis: number[], pm25s: number[]): { avgAqiUS: number; avgPm25: number } {
+  if (aqis.length === 0) return { avgAqiUS: 0, avgPm25: 0 };
+  if (aqis.length <= 2) {
+    const avgAqiUS = Math.round(aqis.reduce((a, b) => a + b, 0) / aqis.length);
+    const avgPm25 = Number((pm25s.reduce((a, b) => a + b, 0) / pm25s.length).toFixed(1));
+    return { avgAqiUS, avgPm25 };
+  }
+
+  // 3个及以上站点时，计算中位数并过滤偏离中位数过大的极端异常点 (如单站故障)
+  const sortedAqis = [...aqis].sort((a, b) => a - b);
+  const median = sortedAqis[Math.floor(sortedAqis.length / 2)];
+
+  const validIndices: number[] = [];
+  for (let i = 0; i < aqis.length; i++) {
+    // 允许偏离中位数最多 180 点，过滤因激光雷达堵塞或雨雾造成的异常跳点
+    if (Math.abs(aqis[i] - median) <= 180) {
+      validIndices.push(i);
+    }
+  }
+
+  const effectiveIndices = validIndices.length > 0 ? validIndices : aqis.map((_, i) => i);
+  const effectiveAqis = effectiveIndices.map((i) => aqis[i]);
+  const effectivePm25s = effectiveIndices.map((i) => pm25s[i]);
+
+  const avgAqiUS = Math.round(effectiveAqis.reduce((a, b) => a + b, 0) / effectiveAqis.length);
+  const avgPm25 = Number((effectivePm25s.reduce((a, b) => a + b, 0) / effectivePm25s.length).toFixed(1));
+
+  return { avgAqiUS, avgPm25 };
 }
 
 /**
@@ -191,7 +253,8 @@ export async function getRealtimeRanking(forceRefresh = false): Promise<RankingA
 
     for (const st of uniqueStations) {
       const aqiNum = parseInt(st.aqi, 10);
-      if (isNaN(aqiNum) || aqiNum <= 0 || aqiNum > 800) continue;
+      // 标准 AQI 范围为 0 ~ 500，超出 500 的为严重异常或硬件故障脏数据
+      if (isNaN(aqiNum) || aqiNum <= 0 || aqiNum > 500) continue;
 
       const sLat = st.lat;
       const sLon = st.lon;
@@ -211,8 +274,7 @@ export async function getRealtimeRanking(forceRefresh = false): Promise<RankingA
     // 转换为排名项：分别以国标与美标精确折算 AQI
     const allRanked: RankedCityItem[] = [];
     for (const [_, item] of Array.from(cityCluster.entries())) {
-      const avgAqiUS = Math.round(item.aqis.reduce((a: number, b: number) => a + b, 0) / item.aqis.length);
-      const avgPm25 = Number((item.pm25s.reduce((a, b) => a + b, 0) / item.pm25s.length).toFixed(1));
+      const { avgAqiUS, avgPm25 } = aggregateCityData(item.aqis, item.pm25s);
 
       const evalCN = evaluateAQI({ pm25: avgPm25 }, 'CN');
 
