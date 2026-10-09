@@ -254,10 +254,10 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
     if (rankNum === 1) {
       return (
         <span
-          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shadow-xs shrink-0 ${
+          className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shadow-xs shrink-0 ${
             isClean
-              ? 'bg-amber-400 text-amber-950 ring-2 ring-amber-300/60'
-              : 'bg-rose-500 text-white ring-2 ring-rose-300/60'
+              ? 'bg-amber-400 text-amber-950 ring-1 ring-amber-300/80'
+              : 'bg-rose-500 text-white ring-1 ring-rose-400/80'
           }`}
         >
           1
@@ -267,8 +267,8 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
     if (rankNum === 2) {
       return (
         <span
-          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shadow-xs shrink-0 ${
-            isClean ? 'bg-slate-300 text-slate-800' : 'bg-rose-400 text-white'
+          className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+            isClean ? 'bg-slate-200 text-slate-800' : 'bg-rose-400 text-white'
           }`}
         >
           2
@@ -278,8 +278,8 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
     if (rankNum === 3) {
       return (
         <span
-          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shadow-xs shrink-0 ${
-            isClean ? 'bg-amber-600/30 text-amber-900' : 'bg-rose-300 text-rose-900'
+          className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+            isClean ? 'bg-amber-600/20 text-amber-900' : 'bg-rose-200 text-rose-900'
           }`}
         >
           3
@@ -287,40 +287,32 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
       );
     }
     return (
-      <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-slate-500 bg-slate-100 shrink-0">
+      <span className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold text-slate-500 bg-white/90 border border-slate-200/80 shrink-0">
         {rankNum}
       </span>
     );
   };
 
   return (
-    <div id="realtime-ranking-section" className="glass-panel rounded-2xl p-5 sm:p-6 space-y-5">
-      {/* 头部控制栏：标题、更新时间、范围 Tab、视图切换、搜索带预览、每页数量、刷新 */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-        <div className="space-y-1">
-          <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-            <Trophy className="w-5 h-5 text-amber-500" />
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-              实时空气质量榜
-            </h2>
-          </div>
-          <p className="text-xs text-slate-500 flex items-center space-x-1.5 flex-wrap">
-            <span>
-              已聚合全球 {data?.totalStations ? `${data.totalStations}+` : '5,500+'} 个实测站 · 覆盖{' '}
-              {scope === 'global' ? `${allCitiesWithRank.length} 座国际都会` : `${allCitiesWithRank.length} 座国内城市`}
+    <div id="realtime-ranking-section" className="glass-panel rounded-2xl p-4 sm:p-4.5 lg:p-5 space-y-3.5">
+      {/* 头部控制栏：标题、更新时间、搜索带预览、范围 Tab、每页数量、刷新 */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 pb-3.5 border-b border-slate-100">
+        <div className="flex items-center space-x-2 min-w-0">
+          <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight whitespace-nowrap">
+            实时空气质量榜
+          </h2>
+          {data?.updatedAt && (
+            <span className="text-xs text-slate-400 font-normal hidden sm:inline whitespace-nowrap">
+              · 更新于 {new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
-            {data?.updatedAt && (
-              <span className="text-slate-400">
-                · 更新于 {new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            )}
-          </p>
+          )}
         </div>
 
-        {/* 右侧工具栏：即时搜索带预览 + 范围Tab + 视图切换 + 每页条数 + 刷新 */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
+        {/* 右侧工具栏：即时搜索带预览 + 范围Tab + 每页条数 + 刷新 */}
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-between lg:justify-end shrink-0">
           {/* 即时搜索框与智能下拉预览面板 */}
-          <div ref={searchContainerRef} className="relative w-full sm:w-auto flex-1 sm:flex-initial min-w-0 sm:min-w-[220px]">
+          <div ref={searchContainerRef} className="relative w-full sm:w-44 md:w-52 lg:w-56 shrink-0">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             <input
               type="text"
@@ -345,7 +337,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                   setSearchQuery('');
                   setIsPreviewOpen(false);
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer"
                 title="清空搜索"
               >
                 <X className="w-3.5 h-3.5" />
@@ -354,7 +346,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
 
             {/* 即时搜索下拉预览卡片：保留真实排位 + 实时指数 + 一键直达 */}
             {isPreviewOpen && searchQuery.trim() && (
-              <div className="absolute left-0 right-0 sm:right-auto sm:w-[380px] max-w-[calc(100vw-2rem)] top-full mt-1.5 z-50 bg-white rounded-2xl border border-slate-200/95 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="absolute left-0 right-0 sm:right-auto sm:w-[360px] max-w-[calc(100vw-2rem)] top-full mt-1.5 z-50 bg-white rounded-2xl border border-slate-200/95 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
                 <div className="px-3.5 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                   <span>
                     匹配到 <b className="text-slate-900">{searchMatchedCities.length}</b> 座城市
@@ -378,14 +370,13 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                           className="px-3 py-2 flex items-center justify-between hover:bg-sky-50/80 cursor-pointer transition-colors group"
                         >
                           <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-                            {/* 保留真实排名徽标 */}
                             <span
                               className="px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 border tabular-nums bg-slate-100 text-slate-700 border-slate-200"
                               title={`在当前榜单中排名第 ${c.cleanRank}`}
                             >
                               #{c.cleanRank}
                             </span>
-                            <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-500 font-mono text-[9px] font-bold border border-slate-200 uppercase shrink-0">
+                            <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[9px] font-extrabold border border-slate-200 uppercase shrink-0">
                               {c.country}
                             </span>
                             <div className="min-w-0">
@@ -393,12 +384,12 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                                 <span className="font-bold text-xs text-slate-900 group-hover:text-sky-600 transition-colors truncate">
                                   {c.nameZh}
                                 </span>
-                                <span className="text-[10px] text-slate-400 font-mono truncate">
+                                <span className="text-[10px] text-slate-400 font-mono truncate hidden sm:inline">
                                   ({c.nameEn})
                                 </span>
                               </div>
                               <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                                {c.province ? `${c.province} · ` : ''}聚合 {c.stationsCount} 个测站
+                                {c.province ? `${c.province} · ` : ''}{c.stationsCount} 站
                                 {c.pm25 !== undefined ? ` · PM2.5: ${c.pm25} μg/m³` : ''}
                               </p>
                             </div>
@@ -410,7 +401,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                               <span className="text-[9px] text-slate-400 ml-0.5">AQI</span>
                             </div>
                             <span
-                              className="text-[10px] px-1.5 py-0.5 rounded font-bold"
+                              className="text-[10px] px-1.5 py-0.5 rounded font-bold whitespace-nowrap"
                               style={{
                                 backgroundColor: `${evaluation.color}15`,
                                 color: evaluation.color,
@@ -430,28 +421,30 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
             )}
           </div>
 
-          {/* 范围 Tab */}
-          <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200/80 text-xs font-semibold">
+          {/* 范围 Tab (全球 / 国内) */}
+          <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200/80 text-xs font-semibold shrink-0">
             <button
+              type="button"
               onClick={() => setScope('global')}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1 ${
+              className={`px-2.5 py-1.5 rounded-lg transition-all flex items-center space-x-1 cursor-pointer ${
                 scope === 'global'
                   ? 'bg-white text-sky-700 shadow-2xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Globe className="w-3.5 h-3.5" />
-              <span>全球都会</span>
+              <span>全球</span>
             </button>
             <button
+              type="button"
               onClick={() => setScope('domestic')}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1 ${
+              className={`px-2.5 py-1.5 rounded-lg transition-all flex items-center space-x-1 cursor-pointer ${
                 scope === 'domestic'
                   ? 'bg-white text-sky-700 shadow-2xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>中国 375 城</span>
+              <span>国内</span>
             </button>
           </div>
 
@@ -459,18 +452,19 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
           <select
             value={pageSize}
             onChange={(e) => setPageSize(Number(e.target.value))}
-            className="px-2 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:border-sky-500 shadow-2xs cursor-pointer"
+            className="px-2 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:border-sky-500 shadow-2xs cursor-pointer shrink-0"
           >
-            <option value={10}>每页 10 条</option>
-            <option value={20}>每页 20 条</option>
-            <option value={50}>每页 50 条</option>
+            <option value={10}>10条/页</option>
+            <option value={20}>20条/页</option>
+            <option value={50}>50条/页</option>
           </select>
 
           {/* 刷新按钮 */}
           <button
+            type="button"
             onClick={() => fetchRankings(true)}
             disabled={loading}
-            className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
+            className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer shrink-0"
             title="手动刷新实时榜单"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-sky-600' : ''}`} />
@@ -480,12 +474,12 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
 
       {/* 内容区域 */}
       {loading && !data ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 py-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 divide-y xl:divide-y-0 xl:divide-x divide-slate-100 py-4">
           {[1, 2].map((i) => (
-            <div key={i} className="space-y-3 animate-pulse">
-              <div className="h-4 w-36 bg-slate-200 rounded" />
+            <div key={i} className={`space-y-2.5 ${i === 1 ? 'xl:pr-4 pb-4 xl:pb-0' : 'xl:pl-4 pt-4 xl:pt-0'}`}>
+              <div className="h-4 w-36 bg-slate-200 rounded animate-pulse" />
               {[...Array(pageSize)].map((_, idx) => (
-                <div key={idx} className="h-12 bg-slate-100 rounded-xl" />
+                <div key={idx} className="h-10 bg-slate-100 rounded-xl animate-pulse" />
               ))}
             </div>
           ))}
@@ -495,31 +489,33 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
           <p className="text-rose-500 font-semibold">{error}</p>
           <button
             onClick={() => fetchRankings(true)}
-            className="px-3.5 py-1.5 rounded-lg bg-sky-50 text-sky-600 font-bold hover:bg-sky-100 transition-colors"
+            className="px-3.5 py-1.5 rounded-lg bg-sky-50 text-sky-600 font-bold hover:bg-sky-100 transition-colors cursor-pointer"
           >
             重新尝试拉取
           </button>
         </div>
       ) : (
-        /* ========= 双榜并列（各自独立可输页码分页） ========= */
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* 左栏：最清新榜 */}
-          <div className="flex flex-col justify-between rounded-2xl bg-gradient-to-b from-emerald-50/50 to-white/90 p-4 sm:p-5 border border-emerald-100/90 shadow-2xs space-y-3">
+        /* ========= 优雅微渐变双榜并列 ========= */
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5 sm:gap-3">
+          {/* 左半区：空气最清新榜 */}
+          <div className="flex flex-col justify-between rounded-2xl bg-gradient-to-b from-emerald-50/60 via-emerald-50/20 to-white/95 p-2.5 sm:p-3 border border-emerald-100/90 shadow-2xs space-y-2">
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-emerald-100 flex-wrap gap-2">
-                <div className="flex items-center space-x-1.5 sm:space-x-2 flex-wrap gap-y-1">
+              {/* 子标题条 */}
+              <div className="flex items-center justify-between pb-2 border-b border-emerald-100/80 px-1 flex-wrap gap-2">
+                <div className="flex items-center space-x-1.5">
                   <Leaf className="w-4 h-4 text-emerald-600 shrink-0" />
                   <h3 className="text-sm font-bold text-slate-900">
                     {scope === 'global' ? '全球空气最清新' : '全国空气最清新'}
                   </h3>
-                  <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-700 bg-emerald-100/80 px-1.5 sm:px-2 py-0.5 rounded-md">
+                  <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded-md">
                     第 {(cleanPage - 1) * pageSize + 1} - {Math.min(cleanPage * pageSize, filteredCleanest.length)} 名
                   </span>
                 </div>
                 <span className="text-xs text-slate-400">共 {filteredCleanest.length} 城</span>
               </div>
 
-              <div className="space-y-1.5 mt-3">
+              {/* 列表行 */}
+              <div className="space-y-1 mt-1.5">
                 {currentCleanList.length === 0 ? (
                   <div className="py-8 text-center text-xs text-slate-400">未找到匹配的城市</div>
                 ) : (
@@ -530,36 +526,33 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                       <div
                         key={c.id}
                         onClick={() => handleSelectAndFly(c)}
-                        className="group flex items-center justify-between p-2 sm:p-2.5 rounded-xl hover:bg-white hover:shadow-sm border border-transparent hover:border-emerald-200 transition-all cursor-pointer"
+                        className="group flex items-center justify-between py-1.5 px-1 sm:px-1.5 rounded-xl hover:bg-white hover:shadow-xs border border-transparent hover:border-emerald-200/80 transition-all cursor-pointer"
                       >
-                        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 pr-1.5 sm:pr-2">
+                        <div className="flex items-center space-x-2 flex-1 min-w-0 pr-2.5">
                           {renderRankBadge(c.cleanRank, true)}
-                          <div className="min-w-0">
-                            <div className="flex items-center space-x-1 sm:space-x-1.5">
-                              <span className="font-bold text-sm text-slate-900 group-hover:text-sky-600 transition-colors truncate">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-1.5">
+                              <span className="font-semibold text-xs sm:text-[13.5px] text-slate-800 group-hover:text-emerald-700 transition-colors truncate">
                                 {c.nameZh}
                               </span>
-                              <span className="text-xs text-slate-400 font-mono hidden sm:inline truncate">
-                                ({c.nameEn})
-                              </span>
-                              <span className="text-[9px] px-1 py-0.5 rounded bg-slate-100 text-slate-500 font-bold border border-slate-200 uppercase shrink-0">
+                              <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[9px] font-extrabold border border-slate-200 uppercase shrink-0">
                                 {c.country}
                               </span>
                             </div>
-                            <p className="text-[10px] text-slate-400 mt-0.5 truncate">
-                              {c.province ? `${c.province} · ` : ''}聚合 {c.stationsCount} 个测站
+                            <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                              {c.province ? `${c.province} · ` : ''}{c.stationsCount} 站
                               {c.pm25 !== undefined ? ` · PM2.5: ${c.pm25} μg/m³` : ''}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+                        <div className="flex items-center space-x-1.5 shrink-0">
                           <div className="text-right">
-                            <span className="text-sm font-black text-emerald-700">{currentAqi}</span>
-                            <span className="text-[9px] sm:text-[10px] text-slate-400 ml-0.5">AQI</span>
+                            <span className="text-sm sm:text-base font-bold text-emerald-700">{currentAqi}</span>
+                            <span className="text-[9px] text-slate-400 ml-0.5">AQI</span>
                           </div>
                           <span
-                            className="text-[10px] px-1.5 sm:px-2 py-0.5 rounded-md font-bold shrink-0"
+                            className="text-[11px] px-1.5 py-0.5 rounded-md font-bold shrink-0 whitespace-nowrap"
                             style={{
                               backgroundColor: `${evaluation.color}15`,
                               color: evaluation.color,
@@ -568,7 +561,6 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                           >
                             {evaluation.level}
                           </span>
-                          <Navigation className="w-3.5 h-3.5 text-slate-300 group-hover:text-sky-600 group-hover:translate-x-0.5 transition-all" />
                         </div>
                       </div>
                     );
@@ -577,9 +569,9 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
               </div>
             </div>
 
-            {/* 左栏底部分页器 (可直接输入页数) */}
+            {/* 左栏底部分页器 */}
             {cleanTotalPages > 1 && (
-              <div className="flex items-center justify-between pt-3 border-t border-emerald-100 text-xs flex-wrap gap-2">
+              <div className="flex items-center justify-between pt-2 border-t border-emerald-100/80 text-xs px-1 flex-wrap gap-2">
                 <span className="text-slate-400">
                   共 {filteredCleanest.length} 项
                 </span>
@@ -592,23 +584,25 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
             )}
           </div>
 
-          {/* 右栏：最严峻榜 */}
-          <div className="flex flex-col justify-between rounded-2xl bg-gradient-to-b from-rose-50/50 to-white/90 p-4 sm:p-5 border border-rose-100/90 shadow-2xs space-y-3">
+          {/* 右半区：污染最严峻榜 */}
+          <div className="flex flex-col justify-between rounded-2xl bg-gradient-to-b from-rose-50/60 via-rose-50/20 to-white/95 p-2.5 sm:p-3 border border-rose-100/90 shadow-2xs space-y-2">
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-rose-100 flex-wrap gap-2">
-                <div className="flex items-center space-x-1.5 sm:space-x-2 flex-wrap gap-y-1">
+              {/* 子标题条 */}
+              <div className="flex items-center justify-between pb-2 border-b border-rose-100/80 px-1 flex-wrap gap-2">
+                <div className="flex items-center space-x-1.5">
                   <Flame className="w-4 h-4 text-rose-600 shrink-0" />
                   <h3 className="text-sm font-bold text-slate-900">
                     {scope === 'global' ? '全球污染最严峻' : '全国污染最严峻'}
                   </h3>
-                  <span className="text-[10px] sm:text-[11px] font-semibold text-rose-700 bg-rose-100/80 px-1.5 sm:px-2 py-0.5 rounded-md">
+                  <span className="text-[10px] sm:text-[11px] font-semibold text-rose-700 bg-rose-100/80 px-1.5 py-0.5 rounded-md">
                     第 {(pollutedPage - 1) * pageSize + 1} - {Math.min(pollutedPage * pageSize, filteredPolluted.length)} 名
                   </span>
                 </div>
                 <span className="text-xs text-slate-400">共 {filteredPolluted.length} 城</span>
               </div>
 
-              <div className="space-y-1.5 mt-3">
+              {/* 列表行 */}
+              <div className="space-y-1 mt-1.5">
                 {currentPollutedList.length === 0 ? (
                   <div className="py-8 text-center text-xs text-slate-400">未找到匹配的城市</div>
                 ) : (
@@ -619,36 +613,33 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                       <div
                         key={c.id}
                         onClick={() => handleSelectAndFly(c)}
-                        className="group flex items-center justify-between p-2 sm:p-2.5 rounded-xl hover:bg-white hover:shadow-sm border border-transparent hover:border-rose-200 transition-all cursor-pointer"
+                        className="group flex items-center justify-between py-1.5 px-1 sm:px-1.5 rounded-xl hover:bg-white hover:shadow-xs border border-transparent hover:border-rose-200/80 transition-all cursor-pointer"
                       >
-                        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 pr-1.5 sm:pr-2">
+                        <div className="flex items-center space-x-2 flex-1 min-w-0 pr-2.5">
                           {renderRankBadge(c.pollutedRank, false)}
-                          <div className="min-w-0">
-                            <div className="flex items-center space-x-1 sm:space-x-1.5">
-                              <span className="font-bold text-sm text-slate-900 group-hover:text-rose-600 transition-colors truncate">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-1.5">
+                              <span className="font-semibold text-xs sm:text-[13.5px] text-slate-800 group-hover:text-rose-700 transition-colors truncate">
                                 {c.nameZh}
                               </span>
-                              <span className="text-xs text-slate-400 font-mono hidden sm:inline truncate">
-                                ({c.nameEn})
-                              </span>
-                              <span className="text-[9px] px-1 py-0.5 rounded bg-slate-100 text-slate-500 font-bold border border-slate-200 uppercase shrink-0">
+                              <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[9px] font-extrabold border border-slate-200 uppercase shrink-0">
                                 {c.country}
                               </span>
                             </div>
-                            <p className="text-[10px] text-slate-400 mt-0.5 truncate">
-                              {c.province ? `${c.province} · ` : ''}聚合 {c.stationsCount} 个测站
+                            <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                              {c.province ? `${c.province} · ` : ''}{c.stationsCount} 站
                               {c.pm25 !== undefined ? ` · PM2.5: ${c.pm25} μg/m³` : ''}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+                        <div className="flex items-center space-x-1.5 shrink-0">
                           <div className="text-right">
-                            <span className="text-sm font-black text-rose-700">{currentAqi}</span>
-                            <span className="text-[9px] sm:text-[10px] text-slate-400 ml-0.5">AQI</span>
+                            <span className="text-sm sm:text-base font-bold text-rose-700">{currentAqi}</span>
+                            <span className="text-[9px] text-slate-400 ml-0.5">AQI</span>
                           </div>
                           <span
-                            className="text-[10px] px-1.5 sm:px-2 py-0.5 rounded-md font-bold shrink-0"
+                            className="text-[11px] px-1.5 py-0.5 rounded-md font-bold shrink-0 whitespace-nowrap"
                             style={{
                               backgroundColor: `${evaluation.color}15`,
                               color: evaluation.color,
@@ -657,7 +648,6 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                           >
                             {evaluation.level}
                           </span>
-                          <Navigation className="w-3.5 h-3.5 text-slate-300 group-hover:text-rose-600 group-hover:translate-x-0.5 transition-all" />
                         </div>
                       </div>
                     );
@@ -666,9 +656,9 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
               </div>
             </div>
 
-            {/* 右栏底部分页器 (可直接输入页数) */}
+            {/* 右栏底部分页器 */}
             {pollutedTotalPages > 1 && (
-              <div className="flex items-center justify-between pt-3 border-t border-rose-100 text-xs flex-wrap gap-2">
+              <div className="flex items-center justify-between pt-2 border-t border-rose-100/80 text-xs px-1 flex-wrap gap-2">
                 <span className="text-slate-400">
                   共 {filteredPolluted.length} 项
                 </span>

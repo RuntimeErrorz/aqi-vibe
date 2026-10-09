@@ -28,7 +28,7 @@ function getStationPinEvaluation(rawAqi: number, standard: StandardType) {
     return {
       displayAqi: '-',
       boxClass: 'aqi-pin-good',
-      levelText: standard === 'CN' ? '优 (一级)' : '优 (Good)',
+      levelText: '优',
       colorHex: '#25a77b',
       pm25: undefined as number | undefined,
     };
@@ -280,6 +280,8 @@ export default function AirMap({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
+    let resizeObserver: ResizeObserver | null = null;
+
     if (!mapInstanceRef.current) {
       // 1. 初始化 Leaflet 地图 (开启整数缩放锁定，杜绝次像素双线性插值模糊)
       const map = L.map(mapContainerRef.current, {
@@ -378,10 +380,21 @@ export default function AirMap({
       // 初次挂载加载可视区域站点
       syncStationsInViewport();
 
+      // 5. 监听容器尺寸自适应变化 (与右侧榜单卡片高度联动，零间隙自适应)
+      if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
+        resizeObserver = new ResizeObserver(() => {
+          map.invalidateSize();
+        });
+        resizeObserver.observe(mapContainerRef.current);
+      }
+
       mapInstanceRef.current = map;
     }
 
     return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (fetchTimeoutRef.current) {
         clearTimeout(fetchTimeoutRef.current);
       }
