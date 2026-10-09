@@ -170,7 +170,7 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
                           )}
                         </div>
                         <p className="text-[11px] text-slate-500 flex items-center space-x-1.5 mt-0.5 truncate">
-                          <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-500 font-mono text-[9px] font-bold border border-slate-200 uppercase shrink-0">
+                          <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[9px] font-extrabold border border-slate-200 uppercase shrink-0">
                             {c.country}
                           </span>
                           <span className="font-medium text-slate-600 truncate">{countryInfo.nameZh}</span>

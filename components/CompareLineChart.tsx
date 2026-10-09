@@ -74,8 +74,6 @@ export const CompareLineChart: React.FC<CompareLineChartProps> = ({ cities }) =>
     },
     yAxis: {
       type: 'value',
-      name: '年均 PM2.5 (μg/m³)',
-      nameTextStyle: { fontSize: 10, color: '#94a3b8' },
       splitLine: { lineStyle: { color: '#f1f5f9' } },
       axisLabel: { color: '#64748b', fontSize: 10 },
     },

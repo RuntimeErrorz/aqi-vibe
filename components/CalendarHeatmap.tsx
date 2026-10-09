@@ -167,7 +167,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
   const [filterRange, setFilterRange] = useState<[number, number]>([0, 300]);
   const echartsRef = useRef<ReactECharts>(null);
 
-  const [pageSize, setPageSize] = useState<number>(10);
+  const [pageSize, setPageSize] = useState<number>(5);
   const [bestPage, setBestPage] = useState<number>(1);
   const [worstPage, setWorstPage] = useState<number>(1);
 
@@ -489,38 +489,41 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
     return (
       <div
         key={item.date}
-        className={`p-3 rounded-xl border transition-all flex items-center justify-between gap-3 group shadow-2xs ${
+        className={`p-3 rounded-xl border transition-all flex items-center justify-between gap-2.5 sm:gap-3 group shadow-2xs ${
           isClean
             ? 'bg-emerald-50/20 border-emerald-100/90 hover:border-emerald-300 hover:bg-emerald-50/50'
             : 'bg-rose-50/20 border-rose-100/90 hover:border-rose-300 hover:bg-rose-50/50'
         }`}
       >
-        {/* 左侧：排名徽标 + 日期 + 星期/季节 */}
-        <div className="flex items-center space-x-2.5 min-w-0">
+        {/* 左侧：排名徽标 + 日期 + 星期/季节 + 污染物指标 */}
+        <div className="flex items-center space-x-2.5 min-w-0 flex-1">
           {renderRankBadge(actualRank, isClean)}
-          <div className="min-w-0">
-            <div className="flex items-center space-x-1.5 flex-wrap">
-              <span className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-sky-600 transition-colors">
+          <div className="min-w-0 flex-1">
+            {/* 日期栏：强制单行不换行，杜绝字词垂直折叠 */}
+            <div className="flex items-center space-x-1.5 whitespace-nowrap shrink-0">
+              <span className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-sky-600 transition-colors whitespace-nowrap shrink-0">
                 {meta.monthDay}
               </span>
-              <span className="text-[11px] font-medium text-slate-500">
+              <span className="text-[11px] font-medium text-slate-500 whitespace-nowrap shrink-0">
                 {meta.weekDay}
               </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium whitespace-nowrap shrink-0">
                 {meta.season}
               </span>
             </div>
-            <div className="text-[11px] text-slate-400 flex items-center space-x-2 mt-0.5 flex-wrap">
-              <span>
+
+            {/* 污染物浓度明细 */}
+            <div className="text-[11px] text-slate-400 flex items-center space-x-1.5 sm:space-x-2 mt-0.5 flex-wrap">
+              <span className="whitespace-nowrap">
                 PM2.5: <b className="text-slate-600 font-semibold">{item.pm25 ?? '--'}</b>
               </span>
               {item.pm10 !== undefined && (
-                <span>
+                <span className="whitespace-nowrap">
                   · PM10: <b className="text-slate-600 font-semibold">{item.pm10}</b>
                 </span>
               )}
               {item.o3 !== undefined && (
-                <span>
+                <span className="whitespace-nowrap">
                   · O₃: <b className="text-slate-600 font-semibold">{item.o3}</b>
                 </span>
               )}
@@ -529,8 +532,8 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
         </div>
 
         {/* 右侧：AQI 大字 + 等级胶囊 + 首要污染物 */}
-        <div className="flex items-center space-x-2 shrink-0 text-right">
-          <div>
+        <div className="flex items-center space-x-2 shrink-0 text-right pl-1">
+          <div className="shrink-0">
             <div className="flex items-baseline justify-end space-x-1">
               <span className="text-sm sm:text-base font-black text-slate-900">
                 {item.aqi}
@@ -538,13 +541,13 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
               <span className="text-[10px] text-slate-400 font-semibold">AQI</span>
             </div>
             {item.primaryPollutantName && item.aqi > 50 && (
-              <div className="text-[10px] text-slate-400 truncate max-w-[110px]">
+              <div className="text-[10px] text-slate-400 truncate max-w-[80px] sm:max-w-[120px] whitespace-nowrap">
                 首要: {item.primaryPollutantName}
               </div>
             )}
           </div>
           <span
-            className="text-[10px] sm:text-xs px-2 py-0.5 rounded-md font-bold whitespace-nowrap"
+            className="text-[10px] sm:text-xs px-2 py-0.5 rounded-md font-bold whitespace-nowrap shrink-0"
             style={{
               backgroundColor: `${item.color}15`,
               color: item.color,
@@ -661,26 +664,19 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
             </div>
           </div>
 
-          {/* 并列对比视图 (左右两栏) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4.5">
+          {/* 并列对比视图 (左右两栏，拉开间距增强独立视觉区分) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-7 lg:gap-8">
             {/* 左栏：空气最优天气榜 */}
-            <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50/70 border border-emerald-100">
-              <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 pb-2 border-b border-emerald-100">
+            <div className="space-y-3 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-b from-emerald-50/50 via-slate-50/60 to-white/95 border border-emerald-100/90 shadow-2xs">
+              <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-emerald-100/80">
                 <div className="flex items-center space-x-1.5 min-w-0">
                   <Leaf className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="font-bold text-xs sm:text-sm text-emerald-950 truncate">
+                  <span className="font-bold text-xs sm:text-sm text-slate-900 truncate">
                     空气最清新天气榜 (最好)
                   </span>
                   <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/80 px-1.5 py-0.5 rounded shrink-0">
                     最低 AQI {bestDays[0]?.aqi ?? '--'}
                   </span>
-                </div>
-                <div className="self-end xs:self-auto">
-                  <PageJumper
-                    currentPage={bestPage}
-                    totalPages={bestTotalPages}
-                    onPageChange={setBestPage}
-                  />
                 </div>
               </div>
 
@@ -690,7 +686,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
                 )}
               </div>
 
-              <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400 flex-wrap gap-2">
+              <div className="flex items-center justify-between pt-2 border-t border-emerald-100/60 text-[11px] text-slate-400 flex-wrap gap-2">
                 <span>
                   第 {(bestPage - 1) * pageSize + 1} ~{' '}
                   {Math.min(bestPage * pageSize, bestDays.length)} 天 / 共{' '}
@@ -705,23 +701,16 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
             </div>
 
             {/* 右栏：污染最严重天气榜 */}
-            <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50/70 border border-rose-100">
-              <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 pb-2 border-b border-rose-100">
+            <div className="space-y-3 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-b from-rose-50/50 via-slate-50/60 to-white/95 border border-rose-100/90 shadow-2xs">
+              <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-rose-100/80">
                 <div className="flex items-center space-x-1.5 min-w-0">
                   <Flame className="w-4 h-4 text-rose-500 shrink-0" />
-                  <span className="font-bold text-xs sm:text-sm text-rose-950 truncate">
+                  <span className="font-bold text-xs sm:text-sm text-slate-900 truncate">
                     污染最严重天气榜 (最差)
                   </span>
                   <span className="text-[10px] text-rose-700 font-bold bg-rose-100/80 px-1.5 py-0.5 rounded shrink-0">
                     最高 AQI {worstDays[0]?.aqi ?? '--'}
                   </span>
-                </div>
-                <div className="self-end xs:self-auto">
-                  <PageJumper
-                    currentPage={worstPage}
-                    totalPages={worstTotalPages}
-                    onPageChange={setWorstPage}
-                  />
                 </div>
               </div>
 
@@ -731,7 +720,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
                 )}
               </div>
 
-              <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400 flex-wrap gap-2">
+              <div className="flex items-center justify-between pt-2 border-t border-rose-100/60 text-[11px] text-slate-400 flex-wrap gap-2">
                 <span>
                   第 {(worstPage - 1) * pageSize + 1} ~{' '}
                   {Math.min(worstPage * pageSize, worstDays.length)} 天 / 共{' '}

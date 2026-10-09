@@ -4,7 +4,7 @@ import { ExternalLink } from 'lucide-react';
 export const Footer: React.FC = () => {
   return (
     <footer className="w-full border-t border-slate-200/80 bg-white/60 backdrop-blur-md mt-10 py-4 text-xs text-slate-500">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-3">
         {/* 左侧：品牌 + 极简定位与版权 */}
         <div className="flex items-center flex-wrap justify-center md:justify-start gap-2">
           <span className="font-bold text-slate-800 tracking-tight">AQI Vibe</span>

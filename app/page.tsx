@@ -800,15 +800,15 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* 首要污染物与健康建议：自适应平滑舒展，杜绝空白断层 */}
-            <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs flex-1 flex flex-col justify-center space-y-2">
+            {/* 首要污染物与健康建议：自适应平滑舒展，大字号清晰可读 */}
+            <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-100 flex-1 flex flex-col justify-center space-y-2.5">
               <div className="flex items-center justify-between text-slate-700">
-                <span className="text-slate-500 font-medium">首要污染物:</span>
-                <span className="font-bold text-amber-600">{evaluation.primaryPollutantName}</span>
+                <span className="text-slate-500 font-semibold text-xs sm:text-sm">首要污染物:</span>
+                <span className="font-bold text-amber-600 text-xs sm:text-sm">{evaluation.primaryPollutantName}</span>
               </div>
-              <div className="flex items-start space-x-2 pt-2 border-t border-slate-200/80 text-slate-600">
-                <AlertTriangle className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
-                <p className="leading-relaxed">{evaluation.healthAdvice}</p>
+              <div className="flex items-start space-x-2 pt-2.5 border-t border-slate-200/80 text-slate-700">
+                <AlertTriangle className="w-4.5 h-4.5 text-sky-600 shrink-0 mt-0.5" />
+                <p className="leading-relaxed text-xs sm:text-[13.5px] font-medium">{evaluation.healthAdvice}</p>
               </div>
             </div>
 
@@ -876,14 +876,14 @@ export default function DashboardPage() {
                     >
                       <div>
                         <div className="flex items-center justify-between text-xs text-slate-600 mb-2 sm:mb-2.5">
-                          <span className="font-bold text-slate-800 text-[11px] sm:text-xs truncate">{item.name}</span>
+                          <span className="font-bold text-slate-800 text-xs sm:text-[13px] truncate">{item.name}</span>
                           {itemIAQI !== undefined && (
                             <span
                               translate="no"
-                              className="text-[9px] sm:text-[10px] font-mono px-1 sm:px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-700 font-semibold shrink-0 ml-1"
-                              title="单项空气质量分指数"
+                              className="text-[10px] sm:text-[11px] font-mono px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-700 font-bold shrink-0 ml-1"
+                              title="单项空气质量分指数 (IAQI)"
                             >
-                              分指数 {itemIAQI}
+                              IAQI {itemIAQI}
                             </span>
                           )}
                         </div>
@@ -891,7 +891,7 @@ export default function DashboardPage() {
                           <span className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
                             {val > 0 ? val : '--'}
                           </span>
-                          <span translate="no" className="text-[11px] sm:text-xs text-slate-500 font-semibold">{item.unit}</span>
+                          <span translate="no" className="text-xs sm:text-sm text-slate-500 font-semibold">{item.unit}</span>
                         </div>
                       </div>
 
@@ -903,10 +903,16 @@ export default function DashboardPage() {
                             style={{ width: `${percent}%`, backgroundColor: item.color }}
                           ></div>
                         </div>
-                        <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-slate-400 font-mono">
-                          <span>{item.label}</span>
+                        <div className="flex items-center justify-between text-[11px] sm:text-xs text-slate-500 font-mono">
+                          <span className="font-medium text-slate-600">{item.label}</span>
                           {val > 0 && (
-                            <span className={isSafe ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>
+                            <span
+                              className={`text-xs sm:text-[13px] font-bold px-1.5 py-0.5 rounded ${
+                                isSafe
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
+                                  : 'bg-amber-50 text-amber-700 border border-amber-200/80'
+                              }`}
+                            >
                               {isSafe ? '清洁优' : '略偏高'}
                             </span>
                           )}

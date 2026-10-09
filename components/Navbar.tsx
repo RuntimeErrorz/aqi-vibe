@@ -59,7 +59,7 @@ export const Navbar: React.FC = () => {
   return (
     <header className="sticky top-0 z-[9999] w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
       {/* 主导航条 */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link
           href="/"
@@ -169,7 +169,7 @@ export const Navbar: React.FC = () => {
                     )}
                   </div>
                   <p className="text-[11px] leading-relaxed">
-                    标准限值更严苛，<b>Good (优)</b> 仅对应 PM2.5 ≤ 12 μg/m³，<b>Moderate (良)</b> 对应 PM2.5 ≤ 35.4 μg/m³，超过 35.4 即进入不健康超标区间。
+                    标准限值更严苛，<b>一级优</b> 仅对应 PM2.5 ≤ 12 μg/m³，<b>二级良</b> 对应 PM2.5 ≤ 35.4 μg/m³，超过 35.4 即进入不健康超标区间。
                   </p>
                 </div>
 

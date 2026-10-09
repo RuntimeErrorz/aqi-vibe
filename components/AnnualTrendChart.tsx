@@ -83,15 +83,11 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
     yAxis: [
       {
         type: 'value',
-        name: 'PM2.5 / AQI / 污染天',
-        nameTextStyle: { fontSize: 10, color: '#94a3b8' },
         splitLine: { lineStyle: { color: '#f1f5f9' } },
         axisLabel: { color: '#64748b', fontSize: 10 },
       },
       {
         type: 'value',
-        name: '达标率 (%)',
-        nameTextStyle: { fontSize: 10, color: '#94a3b8' },
         min: 0,
         max: 100,
         splitLine: { show: false },

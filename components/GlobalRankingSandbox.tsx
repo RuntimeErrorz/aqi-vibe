@@ -9,6 +9,7 @@ import {
   CountryRankingItem,
 } from '@/lib/services/history-data';
 import { COUNTRIES_META } from '@/lib/constants/countries';
+import { getCNEvaluation, getUSEvaluation } from '@/lib/aqi-calculator';
 import {
   Trophy,
   Globe,
@@ -116,7 +117,7 @@ export function GlobalRankingSandbox({
   onToggleCity,
   onAddCity,
 }: GlobalRankingSandboxProps) {
-  const { standard } = useStandard();
+  const { standard, mounted } = useStandard();
   const router = useRouter();
 
   // 当前主 Tab: 城市榜单 vs 国家榜单
@@ -343,7 +344,7 @@ export function GlobalRankingSandbox({
   // 统一规范的排名展示（移除前三名特殊的金银铜与奖牌 Emoji 表示）
   const renderRankBadge = (rank: number) => {
     return (
-      <span className="inline-flex items-center justify-center min-w-[26px] h-6 px-1.5 rounded-md bg-slate-100 text-slate-600 font-bold text-xs tabular-nums border border-slate-200/70">
+      <span className="inline-flex items-center justify-center min-w-[28px] h-6 px-1.5 rounded-md bg-slate-100 text-slate-700 font-bold text-xs sm:text-[13px] tabular-nums border border-slate-200/80">
         {rank}
       </span>
     );
@@ -351,48 +352,26 @@ export function GlobalRankingSandbox({
 
   // AQI 等级标签
   const renderAqiLevelTag = (aqi: number) => {
-    let label = '优 (Good)';
+    const evalResult = standard === 'CN' ? getCNEvaluation(aqi) : getUSEvaluation(aqi);
     let colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
 
-    if (standard === 'CN') {
-      if (aqi <= 50) {
-        label = '优';
-        colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      } else if (aqi <= 100) {
-        label = '良';
-        colorClass = 'bg-amber-50 text-amber-700 border-amber-200';
-      } else if (aqi <= 150) {
-        label = '轻度污染';
-        colorClass = 'bg-orange-50 text-orange-700 border-orange-200';
-      } else if (aqi <= 200) {
-        label = '中度污染';
-        colorClass = 'bg-rose-50 text-rose-700 border-rose-200';
-      } else {
-        label = '重度污染';
-        colorClass = 'bg-purple-50 text-purple-700 border-purple-200';
-      }
+    if (aqi <= 50) {
+      colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    } else if (aqi <= 100) {
+      colorClass = 'bg-amber-50 text-amber-700 border-amber-200';
+    } else if (aqi <= 150) {
+      colorClass = 'bg-orange-50 text-orange-700 border-orange-200';
+    } else if (aqi <= 200) {
+      colorClass = 'bg-rose-50 text-rose-700 border-rose-200';
+    } else if (aqi <= 300) {
+      colorClass = 'bg-purple-50 text-purple-700 border-purple-200';
     } else {
-      if (aqi <= 50) {
-        label = 'Good';
-        colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      } else if (aqi <= 100) {
-        label = 'Moderate';
-        colorClass = 'bg-amber-50 text-amber-700 border-amber-200';
-      } else if (aqi <= 150) {
-        label = 'USG (超标)';
-        colorClass = 'bg-orange-50 text-orange-700 border-orange-200';
-      } else if (aqi <= 200) {
-        label = 'Unhealthy';
-        colorClass = 'bg-rose-50 text-rose-700 border-rose-200';
-      } else {
-        label = 'Very Unhealthy';
-        colorClass = 'bg-purple-50 text-purple-700 border-purple-200';
-      }
+      colorClass = 'bg-rose-950/10 text-rose-900 border-rose-300';
     }
 
     return (
-      <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border ${colorClass}`}>
-        {label}
+      <span className={`px-2 py-0.5 rounded-md text-xs font-bold border ${colorClass}`}>
+        {evalResult.level}
       </span>
     );
   };
@@ -754,25 +733,38 @@ export function GlobalRankingSandbox({
       {/* 榜单表格展示 */}
       {activeTab === 'cities' ? (
         <div className="overflow-x-auto rounded-xl border border-slate-200/80 shadow-sm bg-white custom-scrollbar">
-          <table className="w-full min-w-[760px] text-left text-xs text-slate-700">
-            <thead className="bg-slate-50/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+          <table className="w-full min-w-[780px] text-left text-sm text-slate-700">
+            <thead className="bg-slate-50/90 text-xs sm:text-[13px] font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200">
               <tr>
-                <th className="py-3 px-3 w-16 text-center">排名</th>
-                <th className="py-3 px-3">城市 / 国家</th>
-                <th className="py-3 px-3">综合 AQI</th>
-                <th className="py-3 px-3">PM2.5 年均 (μg/m³)</th>
-                <th className="py-3 px-3">PM10 年均 (μg/m³)</th>
-                <th className="py-3 px-3">优良达标率</th>
-                <th className="py-3 px-3">改善幅度 (较基准)</th>
-                <th className="py-3 px-3 text-right">沙盘操作</th>
+                <th className="py-3.5 px-3 w-14 text-center whitespace-nowrap">排名</th>
+                <th className="py-3.5 px-3 min-w-[180px] whitespace-nowrap">城市 / 国家</th>
+                <th className="py-3.5 px-3 min-w-[110px] whitespace-nowrap">综合 AQI</th>
+                <th className="py-3.5 px-3 min-w-[120px] whitespace-nowrap">PM2.5 年均 (μg/m³)</th>
+                <th className="py-3.5 px-3 min-w-[120px] whitespace-nowrap">PM10 年均 (μg/m³)</th>
+                <th className="py-3.5 px-3 min-w-[130px] whitespace-nowrap">优良达标率</th>
+                <th className="py-3.5 px-3 min-w-[140px] whitespace-nowrap">改善幅度 (较基准)</th>
+                <th className="py-3.5 px-3 min-w-[90px] text-right whitespace-nowrap">沙盘操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {paginatedCities.length === 0 ? (
+              {!mounted ? (
+                [...Array(pageSize)].map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="py-3.5 px-3 text-center"><div className="h-6 w-6 bg-slate-100 rounded mx-auto" /></td>
+                    <td className="py-3.5 px-3"><div className="h-5 w-32 bg-slate-100 rounded" /></td>
+                    <td className="py-3.5 px-3"><div className="h-5 w-16 bg-slate-100 rounded" /></td>
+                    <td className="py-3.5 px-3"><div className="h-5 w-12 bg-slate-100 rounded" /></td>
+                    <td className="py-3.5 px-3"><div className="h-5 w-12 bg-slate-100 rounded" /></td>
+                    <td className="py-3.5 px-3"><div className="h-5 w-14 bg-slate-100 rounded" /></td>
+                    <td className="py-3.5 px-3"><div className="h-5 w-16 bg-slate-100 rounded" /></td>
+                    <td className="py-3.5 px-3 text-right"><div className="h-6 w-12 bg-slate-100 rounded ml-auto" /></td>
+                  </tr>
+                ))
+              ) : paginatedCities.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400">
                     <div className="space-y-1.5">
-                      <div>未找到符合当前筛选条件的官方监测城市</div>
+                      <div className="text-sm">未找到符合当前筛选条件的官方监测城市</div>
                       {geoScope !== 'all' && searchQuery.trim() && (
                         <div>
                           <button
@@ -805,29 +797,29 @@ export function GlobalRankingSandbox({
                       title="点击跳转查看该城市历史数据"
                     >
                       {/* 排名 */}
-                      <td className="py-3 px-3 text-center">
+                      <td className="py-3.5 px-3 text-center whitespace-nowrap">
                         <div className="flex justify-center">{renderRankBadge(rank)}</div>
                       </td>
 
                       {/* 城市与国家 */}
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 px-3 whitespace-nowrap">
                         <div className="flex items-center space-x-2.5">
-                          {/* 统一规范的定宽微型国际代码徽标，彻底消除字符宽度不一导致的参差不齐 */}
+                          {/* 统一规范的定宽微型国际代码徽标 */}
                           <span
-                            className="w-7 h-5 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-600 font-mono text-[10px] font-bold border border-slate-200/80 uppercase select-none tracking-tight"
+                            className="w-8 h-5.5 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-700 font-mono text-[11px] font-bold border border-slate-200/80 uppercase select-none tracking-tight"
                             title={`${item.countryZh} (${item.country})`}
                           >
                             {item.country}
                           </span>
                           <div className="min-w-0">
                             <div className="flex items-center space-x-1.5">
-                              <span className="font-bold text-slate-900 group-hover:text-sky-600 transition-colors inline-flex items-center space-x-1">
+                              <span className="font-bold text-sm sm:text-base text-slate-900 group-hover:text-sky-600 transition-colors inline-flex items-center space-x-1 whitespace-nowrap">
                                 <span>{item.nameZh}</span>
-                                <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-sky-600 transition-colors" />
+                                <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-600 transition-colors" />
                               </span>
-                              <span className="text-[10px] text-slate-400">({item.nameEn})</span>
+                              <span className="text-xs text-slate-500 whitespace-nowrap">({item.nameEn})</span>
                             </div>
-                            <div className="text-[10px] text-slate-500 truncate">
+                            <div className="text-xs text-slate-600 truncate whitespace-nowrap font-medium">
                               {item.province ? `${item.province} · ` : ''}
                               {item.countryZh}
                             </div>
@@ -836,74 +828,74 @@ export function GlobalRankingSandbox({
                       </td>
 
                       {/* 综合 AQI */}
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 px-3 whitespace-nowrap">
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm font-black text-slate-900">{item.aqiAvg}</span>
+                          <span className="text-base sm:text-lg font-black text-slate-900">{item.aqiAvg}</span>
                           {renderAqiLevelTag(item.aqiAvg)}
                         </div>
                       </td>
 
                       {/* PM2.5 */}
-                      <td className="py-3 px-3 font-semibold text-slate-800">
+                      <td className="py-3.5 px-3 text-sm sm:text-[15px] font-bold text-slate-800 whitespace-nowrap">
                         {item.pm25Avg}
                       </td>
 
                       {/* PM10 */}
-                      <td className="py-3 px-3 text-slate-600 font-medium">
+                      <td className="py-3.5 px-3 text-sm sm:text-[15px] text-slate-700 font-semibold whitespace-nowrap">
                         {item.pm10Avg > 0 ? item.pm10Avg : '-'}
                       </td>
 
                       {/* 优良达标率 */}
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 px-3 whitespace-nowrap">
                         <div className="flex items-center space-x-2">
-                          <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-emerald-500 rounded-full"
                               style={{ width: `${Math.min(100, item.goodDaysRatio)}%` }}
                             />
                           </div>
-                          <span className="font-bold text-emerald-700">
+                          <span className="font-extrabold text-sm sm:text-base text-emerald-700">
                             {item.goodDaysRatio}%
                           </span>
                         </div>
                       </td>
 
                       {/* 历史改善幅度 */}
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 px-3 whitespace-nowrap">
                         {item.improvementRate !== null ? (
-                          <div className="flex items-center space-x-1">
+                          <div className="flex items-center space-x-1 whitespace-nowrap">
                             {item.improvementRate < 0 ? (
                               <>
-                                <TrendingDown className="w-3.5 h-3.5 text-emerald-600" />
-                                <span className="font-bold text-emerald-600">
+                                <TrendingDown className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <span className="font-extrabold text-sm sm:text-base text-emerald-600">
                                   {item.improvementRate}%
                                 </span>
                               </>
                             ) : (
                               <>
-                                <TrendingUp className="w-3.5 h-3.5 text-rose-500" />
-                                <span className="font-bold text-rose-500">
+                                <TrendingUp className="w-4 h-4 text-rose-500 shrink-0" />
+                                <span className="font-extrabold text-sm sm:text-base text-rose-500">
                                   +{item.improvementRate}%
                                 </span>
                               </>
                             )}
-                            <span className="text-[10px] text-slate-400">
+                            <span className="text-xs text-slate-400 whitespace-nowrap">
                               (自{item.earliestYear})
                             </span>
                           </div>
                         ) : (
-                          <span className="text-slate-400">-</span>
+                          <span className="text-slate-400 text-sm">-</span>
                         )}
                       </td>
 
                       {/* 加入沙盘按钮 */}
-                      <td className="py-3 px-3 text-right">
+                      <td className="py-3 px-3 text-right whitespace-nowrap">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             onToggleCity(item.id);
                           }}
-                          className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                          className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all ${
                             isSelectedInSandbox
                               ? 'bg-sky-600 text-white shadow-sm'
                               : 'bg-slate-100 hover:bg-sky-100 text-slate-700 hover:text-sky-700 border border-slate-200'
@@ -911,13 +903,13 @@ export function GlobalRankingSandbox({
                         >
                           {isSelectedInSandbox ? (
                             <>
-                              <Check className="w-3 h-3" />
-                              <span>已在沙盘</span>
+                              <Check className="w-3 h-3 shrink-0" />
+                              <span className="whitespace-nowrap">已在沙盘</span>
                             </>
                           ) : (
                             <>
-                              <Plus className="w-3 h-3" />
-                              <span>对比</span>
+                              <Plus className="w-3 h-3 shrink-0" />
+                              <span className="whitespace-nowrap">对比</span>
                             </>
                           )}
                         </button>
@@ -932,24 +924,37 @@ export function GlobalRankingSandbox({
       ) : (
         /* 国家聚合榜单 */
         <div className="overflow-x-auto rounded-xl border border-slate-200/80 shadow-sm bg-white custom-scrollbar">
-          <table className="w-full min-w-[720px] text-left text-xs text-slate-700">
-            <thead className="bg-slate-50/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+          <table className="w-full min-w-[780px] text-left text-sm text-slate-700">
+            <thead className="bg-slate-50/90 text-xs sm:text-[13px] font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200">
               <tr>
-                <th className="py-3 px-3 w-16 text-center">排名</th>
-                <th className="py-3 px-3">国家 / 地区</th>
-                <th className="py-3 px-3">纳入监测城市数</th>
-                <th className="py-3 px-3">全国平均 AQI</th>
-                <th className="py-3 px-3">PM2.5 全国均值 (μg/m³)</th>
-                <th className="py-3 px-3">平均优良达标率</th>
-                <th className="py-3 px-3">最清洁代表城市</th>
-                <th className="py-3 px-3">污染最重代表城市</th>
+                <th className="py-3.5 px-3 w-14 text-center whitespace-nowrap">排名</th>
+                <th className="py-3.5 px-3 min-w-[150px] whitespace-nowrap">国家 / 地区</th>
+                <th className="py-3.5 px-3 min-w-[120px] whitespace-nowrap">纳入监测城市数</th>
+                <th className="py-3.5 px-3 min-w-[110px] whitespace-nowrap">全国平均 AQI</th>
+                <th className="py-3.5 px-3 min-w-[130px] whitespace-nowrap">PM2.5 全国均值 (μg/m³)</th>
+                <th className="py-3.5 px-3 min-w-[110px] whitespace-nowrap">平均优良达标率</th>
+                <th className="py-3.5 px-3 min-w-[170px] whitespace-nowrap">最清洁代表城市</th>
+                <th className="py-3.5 px-3 min-w-[170px] whitespace-nowrap">污染最重代表城市</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {paginatedCountries.length === 0 ? (
+              {!mounted ? (
+                [...Array(pageSize)].map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="py-3.5 px-3 text-center"><div className="h-6 w-6 bg-slate-100 rounded mx-auto" /></td>
+                    <td className="py-3.5 px-3"><div className="h-5 w-32 bg-slate-100 rounded" /></td>
+                    <td className="py-3.5 px-3"><div className="h-5 w-16 bg-slate-100 rounded" /></td>
+                    <td className="py-3.5 px-3"><div className="h-5 w-12 bg-slate-100 rounded" /></td>
+                    <td className="py-3.5 px-3"><div className="h-5 w-12 bg-slate-100 rounded" /></td>
+                    <td className="py-3.5 px-3"><div className="h-5 w-14 bg-slate-100 rounded" /></td>
+                    <td className="py-3.5 px-3"><div className="h-5 w-16 bg-slate-100 rounded" /></td>
+                    <td className="py-3.5 px-3 text-right"><div className="h-6 w-12 bg-slate-100 rounded ml-auto" /></td>
+                  </tr>
+                ))
+              ) : paginatedCountries.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400">
-                    未找到符合条件的国家或地区
+                    <span className="text-sm">未找到符合条件的国家或地区</span>
                   </td>
                 </tr>
               ) : (
@@ -959,12 +964,12 @@ export function GlobalRankingSandbox({
                   return (
                     <tr key={cItem.countryCode} className="hover:bg-sky-50/40 transition-colors">
                       {/* 排名 */}
-                      <td className="py-3 px-3 text-center">
+                      <td className="py-3.5 px-3 text-center whitespace-nowrap">
                         <div className="flex justify-center">{renderRankBadge(rank)}</div>
                       </td>
 
                       {/* 国家 */}
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 px-3 whitespace-nowrap">
                         <div className="flex items-center space-x-2.5">
                           <span
                             className="w-8 h-5.5 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-700 font-mono text-xs font-bold border border-slate-200 uppercase select-none tracking-wider"
@@ -973,60 +978,60 @@ export function GlobalRankingSandbox({
                             {cItem.countryCode}
                           </span>
                           <div>
-                            <span className="font-bold text-slate-900 text-sm">
+                            <span className="font-bold text-slate-900 text-sm sm:text-base whitespace-nowrap">
                               {cItem.nameZh}
                             </span>
-                            <div className="text-[10px] text-slate-400">{cItem.nameEn}</div>
+                            <div className="text-xs text-slate-400 whitespace-nowrap">{cItem.nameEn}</div>
                           </div>
                         </div>
                       </td>
 
                       {/* 城市数量 */}
-                      <td className="py-3 px-3 font-semibold text-slate-700">
+                      <td className="py-3.5 px-3 font-semibold text-slate-800 text-sm sm:text-[15px] whitespace-nowrap">
                         {cItem.cityCount} 座城市
                       </td>
 
                       {/* 全国平均 AQI */}
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 px-3 whitespace-nowrap">
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm font-black text-slate-900">{cItem.aqiAvg}</span>
+                          <span className="text-base sm:text-lg font-black text-slate-900">{cItem.aqiAvg}</span>
                           {renderAqiLevelTag(cItem.aqiAvg)}
                         </div>
                       </td>
 
                       {/* 全国 PM2.5 均值 */}
-                      <td className="py-3 px-3 font-semibold text-slate-800">
+                      <td className="py-3.5 px-3 font-bold text-slate-800 text-sm sm:text-[15px] whitespace-nowrap">
                         {cItem.pm25Avg}
                       </td>
 
                       {/* 平均达标率 */}
-                      <td className="py-3 px-3">
-                        <span className="font-bold text-emerald-700">
+                      <td className="py-3.5 px-3 whitespace-nowrap">
+                        <span className="font-extrabold text-sm sm:text-base text-emerald-700">
                           {cItem.goodDaysRatioAvg}%
                         </span>
                       </td>
 
                       {/* 最清洁城市 */}
-                      <td className="py-3 px-3">
-                        <div className="flex items-center space-x-2">
+                      <td className="py-3.5 px-3 whitespace-nowrap">
+                        <div className="flex items-center space-x-2 whitespace-nowrap">
                           <Link
                             href={`/history?city=${cItem.cleanestCity.id}&year=${selectedYear}`}
-                            className="flex items-center space-x-1.5 hover:text-sky-600 font-semibold group/c1 text-slate-800"
+                            className="flex items-center space-x-1.5 hover:text-sky-600 font-bold group/c1 text-slate-800 text-sm whitespace-nowrap"
                             title="点击跳转查看该城市历史数据"
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                            <span className="group-hover/c1:underline">{cItem.cleanestCity.nameZh}</span>
-                            <span className="text-[10px] text-slate-400">
+                            <span className="group-hover/c1:underline whitespace-nowrap">{cItem.cleanestCity.nameZh}</span>
+                            <span className="text-xs text-slate-400 whitespace-nowrap font-normal">
                               (AQI {cItem.cleanestCity.aqiAvg})
                             </span>
-                            <ExternalLink className="w-2.5 h-2.5 text-slate-400 group-hover/c1:text-sky-600" />
+                            <ExternalLink className="w-3 h-3 text-slate-400 group-hover/c1:text-sky-600 shrink-0" />
                           </Link>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               onAddCity(cItem.cleanestCity.id);
                             }}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-slate-600 transition-colors shrink-0"
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-slate-600 transition-colors shrink-0 whitespace-nowrap cursor-pointer"
                             title="加入对比沙盘"
                           >
                             +对比
@@ -1035,26 +1040,26 @@ export function GlobalRankingSandbox({
                       </td>
 
                       {/* 污染最重城市 */}
-                      <td className="py-3 px-3">
-                        <div className="flex items-center space-x-2">
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <div className="flex items-center space-x-2 whitespace-nowrap">
                           <Link
                             href={`/history?city=${cItem.worstCity.id}&year=${selectedYear}`}
-                            className="flex items-center space-x-1.5 hover:text-rose-600 font-semibold group/c2 text-slate-800"
+                            className="flex items-center space-x-1.5 hover:text-rose-600 font-semibold group/c2 text-slate-800 whitespace-nowrap"
                             title="点击跳转查看该城市历史数据"
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                            <span className="group-hover/c2:underline">{cItem.worstCity.nameZh}</span>
-                            <span className="text-[10px] text-slate-400">
+                            <span className="group-hover/c2:underline whitespace-nowrap">{cItem.worstCity.nameZh}</span>
+                            <span className="text-[10px] text-slate-400 whitespace-nowrap">
                               (AQI {cItem.worstCity.aqiAvg})
                             </span>
-                            <ExternalLink className="w-2.5 h-2.5 text-slate-400 group-hover/c2:text-rose-600" />
+                            <ExternalLink className="w-2.5 h-2.5 text-slate-400 group-hover/c2:text-rose-600 shrink-0" />
                           </Link>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               onAddCity(cItem.worstCity.id);
                             }}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-slate-600 transition-colors shrink-0"
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-sky-100 text-slate-600 transition-colors shrink-0 whitespace-nowrap cursor-pointer"
                             title="加入对比沙盘"
                           >
                             +对比
