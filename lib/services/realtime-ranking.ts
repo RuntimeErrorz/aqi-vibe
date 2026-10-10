@@ -50,8 +50,8 @@ const WAQI_TOKEN = process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef
  * 空间相邻都市圈自动去重合并，彻底消灭任何人工特判，所有在册城市 100% 自动对齐中心站点
  */
 function buildDynamicHighResBounds(cities: CityMeta[]): string[] {
-  const MAX_SPAN = 1.8; // 严格控制在 1.8° (约 200km)，远低于 WAQI 4.0° 抽稀阈值，兼顾超高分辨率与网络请求数
-  const PADDING = 0.22; // 边缘缓冲 0.22° (约 25km)
+  const MAX_SPAN = 2.8; // 控制在 2.8° (约 300km)，远低于 WAQI 4.0° 抽稀阈值，100% 保留中心站点并显著降低请求数
+  const PADDING = 0.25; // 边缘缓冲 0.25° (约 28km)
 
   // 空间网格排序：相邻经纬度的城市排在一起，最大化空间无缝合并率
   const sorted = [...cities].sort((a, b) => {
@@ -90,9 +90,54 @@ function buildDynamicHighResBounds(cities: CityMeta[]): string[] {
     }
   }
 
+  // 二次聚类合并：检查已有 bounds 之间能否进一步合并，消除边界网格割裂
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < bounds.length; i++) {
+      for (let j = i + 1; j < bounds.length; j++) {
+        const b1 = bounds[i];
+        const b2 = bounds[j];
+        const minLat = Math.min(b1.minLat, b2.minLat);
+        const maxLat = Math.max(b1.maxLat, b2.maxLat);
+        const minLon = Math.min(b1.minLon, b2.minLon);
+        const maxLon = Math.max(b1.maxLon, b2.maxLon);
+
+        if (maxLat - minLat <= MAX_SPAN && maxLon - minLon <= MAX_SPAN) {
+          bounds[i] = { minLat, maxLat, minLon, maxLon };
+          bounds.splice(j, 1);
+          changed = true;
+          break;
+        }
+      }
+      if (changed) break;
+    }
+  }
+
   return bounds.map(
     (b) => `${b.minLat.toFixed(2)},${b.minLon.toFixed(2)},${b.maxLat.toFixed(2)},${b.maxLon.toFixed(2)}`
   );
+}
+
+// 全局精确速率限制器：严格保证发往 WAQI 的请求速率不超过官方物理限额 (1,000 req/min = 16.6 req/s)
+// 设定稳态速率为 14.0 req/s (约 71ms 时钟周期)，消除瞬时突发，从根源上杜绝 429 拦截
+class RequestRateLimiter {
+  private nextAllowedTime = 0;
+  private readonly intervalMs: number;
+
+  constructor(targetQps = 14.0) {
+    this.intervalMs = Math.ceil(1000 / targetQps);
+  }
+
+  async acquire(): Promise<void> {
+    const now = Date.now();
+    const scheduled = Math.max(now, this.nextAllowedTime);
+    this.nextAllowedTime = scheduled + this.intervalMs;
+    const waitMs = scheduled - now;
+    if (waitMs > 0) {
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+  }
 }
 
 // 模块初始化时由 CITIES_REGISTRY 单次自动衍生，0 人工维护特判，100% 覆盖全部在册城市
@@ -244,8 +289,9 @@ async function performFetchAndAggregate(): Promise<RankingApiResponse> {
 
   try {
     const isClient = typeof window !== 'undefined';
-    // 服务端采用 10 并发（温和稳定，绝不触发 WAQI 429 拦截），客户端采用 6 并发
-    const CONCURRENCY = isClient ? 6 : 10;
+    // 服务端采用 16 个并发 Worker 管道配合 14.0 QPS 全局速率限制器，充分填满网络 RTT 延迟且杜绝 429 截断
+    const CONCURRENCY = isClient ? 8 : 16;
+    const rateLimiter = new RequestRateLimiter(isClient ? 10.0 : 14.0);
     let nextIndex = 0;
     const currentBatchMap = new Map<number, any>();
 
@@ -258,16 +304,15 @@ async function performFetchAndAggregate(): Promise<RankingApiResponse> {
 
         while (attempts > 0) {
           try {
-            // 微小延迟 15ms，平滑流量削峰，杜绝瞬时突发
-            await new Promise((r) => setTimeout(r, 15));
+            // 通过全局时钟调度器平滑放行，紧贴官方 16.6 QPS 物理上限并留出绝对安全裕度
+            await rateLimiter.acquire();
 
             const res = await fetch(url, { signal: getTimeoutSignal(10000), cache: 'no-store' });
 
             if (res.status === 429) {
               attempts--;
-              // 遭遇 429 频控退避：等待 800ms ~ 1600ms 后重试
-              const waitMs = 800 * (4 - attempts);
-              await new Promise((r) => setTimeout(r, waitMs));
+              // 遭遇 429 频控退避：等待 500ms 后重试
+              await new Promise((r) => setTimeout(r, 500));
               continue;
             }
 
