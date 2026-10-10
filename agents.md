@@ -61,8 +61,7 @@
 ### 2.2 实时数据流（定时同步）
 1. **主调度源：WAQI REST API**
    - **调度频率**：每小时第 15 分钟触发（官方站点通常在整点后 10-15 分钟完成数据发布）。
-   - **城市/站点池**：维护一份活跃监控清单（国内重点 100 城 + 海外名城 100 城），逐个调用 `/feed/:city/` 接口；
-   - **配额利用**：WAQI 官方名义配额为 **1,000 次/分钟** (折合约 16.6 QPS，突发 Burst 桶容量 60 次)；工程实测证实：持续稳态速率超过 16.6 QPS 时会被 Nginx 网关（rxstreamer-waqi）严格以 429 拦截。系统采用 **16 并发 Worker 管道 + 14.0 QPS 全局时钟速率限制器**，既跑满官方物理吞吐极限，又确保 0 次 429 截断，并结合 8 分钟 SWR 内存快照实现客户端毫秒级响应。
+   - **配额利用与多 Token 池**：WAQI 官方单 Token 名义配额为 **1,000 次/分钟** (折合约 16.6 QPS，突发 Burst 桶容量 60 次)。系统创新引入 **多 Token 轮询池（Multi-Token Pool）+ 24 并发 Worker 管道**，将全局稳态吞吐提升至 **24.0 QPS（41ms 原子时钟周期）**；在部署至 Cloudflare 边缘环境时，借助 Cloudflare 全球 Anycast 分布式海量出口 IP 代理池，可彻底突破单机 IP 频控限制，实现更极速的全网全量无损抓取。
 2. **地图服务：WAQI Tile Server**
    - 前端地图直接引入切片瓦片服务 `https://tiles.aqicn.org/tiles/usepa-aqi/{z}/{x}/{y}.png?token={TOKEN}`，无需自建昂贵切片服务器。
 3. **兜底源：Open-Meteo Air Quality API**

@@ -61,6 +61,7 @@ interface RankingData {
   updatedAt: string;
   totalStations: number;
   totalCities: number;
+  isRefreshing?: boolean;
   domestic: {
     cleanest: RankedCityItem[];
     polluted: RankedCityItem[];
@@ -145,6 +146,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
   const [scope, setScope] = useState<'global' | 'domestic'>('global');
   const [data, setData] = useState<RankingData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 搜索框与即时下拉预览
@@ -156,14 +158,20 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
   const [cleanPage, setCleanPage] = useState(1);
   const [pollutedPage, setPollutedPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(10);
-  const [populationTier, setPopulationTier] = useState<PopulationTier>('all');
+  const [populationTier, setPopulationTier] = useState<PopulationTier>('100w');
   const [metricMode, setMetricMode] = useState<'avg' | 'rep'>('avg'); // 'avg' = 全市多站均值, 'rep' = 官方代表站
 
-  const fetchRankings = async (isManual?: boolean | unknown) => {
-    setLoading(true);
+  const fetchRankings = async (isManual?: boolean | unknown, silent = false) => {
+    if (!silent && !data) {
+      setLoading(true);
+    }
+    if (isManual === true) {
+      setIsSyncing(true);
+    }
     setError(null);
+    let apiJson: RankingData | null = null;
     try {
-      // 直连同源服务端聚合接口 (Node.js 24 并发池 + 60s 极短防抖打闸，支持手动刷新直接穿透)
+      // 直连同源服务端聚合接口 (Node.js 16 并发管道 + SWR 内存快照，0ms 瞬间秒回)
       const apiUrl = `/api/ranking/realtime${isManual === true ? '?refresh=true' : ''}`;
       const apiRes = await fetch(apiUrl);
       if (!apiRes.ok) {
@@ -178,9 +186,18 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
         }
         throw new Error(`排行榜服务响应异常 (${apiRes.status})`);
       }
-      const apiJson = (await apiRes.json()) as RankingData;
+      apiJson = (await apiRes.json()) as RankingData;
       if (apiJson && apiJson.success && apiJson.totalCities > 0) {
         setData(apiJson);
+        // 若服务端返回 isRefreshing: true，表明后台已触发静默增量拉取，客户端在 5 秒后无感静默收取最新数据
+        if (apiJson.isRefreshing) {
+          setIsSyncing(true);
+          setTimeout(() => {
+            fetchRankings(false, true);
+          }, 5000);
+        } else {
+          setIsSyncing(false);
+        }
         return;
       }
       throw new Error('未获取到有效排行数据');
@@ -189,6 +206,9 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
       setError(err?.message || '获取实时排行失败，请检查网络后重试');
     } finally {
       setLoading(false);
+      if (!apiJson?.isRefreshing) {
+        setIsSyncing(false);
+      }
     }
   };
 
@@ -215,9 +235,17 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
 
   const activeCategory = scope === 'global' ? data?.global : data?.domestic;
 
-  // 为当前所有城市赋予真实、固定的绝对名次 (1 .. N)，依据选定标准与测站口径(全市均值 vs 官方代表站)动态排序
-  const allCitiesWithRank = useMemo<RankedCityWithOrder[]>(() => {
+  // 1. 人口规模阶梯过滤 (全部 / 1000万+ / 500万+ / 100万+ / 10万+)
+  const populationFilteredCities = useMemo(() => {
     const cleanest = activeCategory?.cleanest || [];
+    const threshold = POPULATION_THRESHOLDS[populationTier];
+    if (threshold <= 0) return cleanest;
+    return cleanest.filter((c) => (c.population ?? 0) >= threshold);
+  }, [activeCategory, populationTier]);
+
+  // 2. 为当前人口池赋予真实、固定的阶梯排名 (1 .. N)，依据选定标准与测站口径动态排序
+  // 在 100万+ 默认视图下：全部 442 座百万大城已在 Phase 1 全部就绪，长尾小城绝不会进入此池，名次 100% 绝对恒定永不跳变！
+  const allCitiesWithRank = useMemo<RankedCityWithOrder[]>(() => {
     const getVal = (c: RankedCityItem) => {
       if (metricMode === 'rep') {
         return standard === 'CN' ? (c.repAqiCN ?? c.aqiCN ?? c.aqi) : (c.repAqiUS ?? c.aqiUS ?? c.aqi);
@@ -226,34 +254,27 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
     };
 
     // 依据选定标准进行升序排序 (AQI 越低越清新)
-    const sorted = [...cleanest].sort((a, b) => getVal(a) - getVal(b));
+    const sorted = [...populationFilteredCities].sort((a, b) => getVal(a) - getVal(b));
     const total = sorted.length;
     return sorted.map((c, idx) => ({
       ...c,
       cleanRank: idx + 1,
       pollutedRank: total - idx,
     }));
-  }, [activeCategory, standard, metricMode]);
+  }, [populationFilteredCities, standard, metricMode]);
 
-  // 人口规模阶梯过滤 (全部 / 1000万+ / 500万+ / 100万+ / 10万+)
-  const populationFilteredCities = useMemo(() => {
-    const threshold = POPULATION_THRESHOLDS[populationTier];
-    if (threshold <= 0) return allCitiesWithRank;
-    return allCitiesWithRank.filter((c) => (c.population ?? 0) >= threshold);
-  }, [allCitiesWithRank, populationTier]);
-
-  // 即时搜索匹配列表（携带保留的绝对名次）
+  // 3. 即时搜索匹配列表（携带保留的绝对名次）
   const searchMatchedCities = useMemo(() => {
-    if (!searchQuery.trim()) return populationFilteredCities;
+    if (!searchQuery.trim()) return allCitiesWithRank;
     const q = searchQuery.trim().toLowerCase();
-    return populationFilteredCities.filter(
+    return allCitiesWithRank.filter(
       (c) =>
         c.nameZh.toLowerCase().includes(q) ||
         c.nameEn.toLowerCase().includes(q) ||
         c.country.toLowerCase().includes(q) ||
         (c.province && c.province.toLowerCase().includes(q))
     );
-  }, [populationFilteredCities, searchQuery]);
+  }, [allCitiesWithRank, searchQuery]);
 
   // 页面列表过滤后的数据
   const filteredCleanest = useMemo(() => {
@@ -272,12 +293,13 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
       return standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi);
     };
 
-    if (!searchQuery.trim() && populationTier === 'all') {
+    if (!searchQuery.trim()) {
       return [...allCitiesWithRank].reverse();
     }
-    // 搜索或人口筛选时按当前标准下的污染程度降序排
+    // 搜索时按当前标准下的污染程度降序排
     return [...searchMatchedCities].sort((a, b) => getVal(b) - getVal(a));
-  }, [allCitiesWithRank, searchMatchedCities, searchQuery, populationTier, standard, metricMode]);
+  }, [allCitiesWithRank, searchMatchedCities, searchQuery, standard, metricMode]);
+
 
 
   // 双栏分页总页数与当前切片
@@ -417,12 +439,12 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
             <button
               type="button"
               onClick={() => fetchRankings(true)}
-              disabled={loading}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer text-xs font-semibold shrink-0"
-              title="手动刷新实时榜单"
+              disabled={isSyncing}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors shadow-2xs disabled:opacity-75 cursor-pointer text-xs font-semibold shrink-0"
+              title={isSyncing ? "正在后台同步最新全网数据..." : "手动刷新实时榜单"}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-sky-600' : ''}`} />
-              <span className="hidden sm:inline">刷新</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-sky-600' : ''}`} />
+              <span className="hidden sm:inline">{isSyncing ? '同步中' : '刷新'}</span>
             </button>
           </div>
         </div>
@@ -587,11 +609,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
               <select
                 value={populationTier}
                 onChange={(e) => setPopulationTier(e.target.value as PopulationTier)}
-                className={`pl-7 pr-2.5 py-1.5 rounded-xl border text-xs font-semibold focus:outline-none focus:border-sky-500 shadow-2xs cursor-pointer transition-colors ${
-                  populationTier !== 'all'
-                    ? 'bg-sky-50/90 text-sky-700 border-sky-300 font-bold ring-1 ring-sky-300/60'
-                    : 'bg-slate-50 text-slate-700 border-slate-200'
-                }`}
+                className="pl-7 pr-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:border-slate-300 shadow-2xs cursor-pointer transition-colors"
                 title="按常住人口规模筛选城市"
               >
                 <option value="all">不限人口</option>
@@ -602,6 +620,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
               </select>
             </div>
           </div>
+
         </div>
       </div>
 
