@@ -630,8 +630,8 @@ export function GlobalRankingSandbox({
                             <span className="min-w-[28px] h-5 px-1 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-700 font-bold text-[11px] border border-slate-200 tabular-nums">
                               #{c.rank}
                             </span>
-                            <span className="w-6 h-4.5 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-600 font-mono text-[9px] font-bold border border-slate-200 uppercase">
-                              {c.country}
+                            <span className="px-1.5 py-0.5 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200/90 select-none">
+                              {c.countryZh}
                             </span>
                             <div className="min-w-0">
                               <div className="flex items-center space-x-1">
@@ -642,9 +642,11 @@ export function GlobalRankingSandbox({
                                   ({c.nameEn})
                                 </span>
                               </div>
-                              <div className="text-[10px] text-slate-500 truncate">
-                                {c.province ? `${c.province} · ` : ''}{c.countryZh}
-                              </div>
+                              {!c.isDomestic && c.country !== 'CN' && c.province && (
+                                <div className="text-[10px] text-slate-500 truncate">
+                                  {c.province}
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -693,8 +695,8 @@ export function GlobalRankingSandbox({
                             <span className="min-w-[28px] h-5 px-1 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-700 font-bold text-[11px] border border-slate-200 tabular-nums">
                               #{co.rank}
                             </span>
-                            <span className="w-7 h-5 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-bold border border-slate-200 uppercase">
-                              {co.countryCode}
+                            <span className="text-base flex items-center justify-center shrink-0 select-none">
+                              {co.flag}
                             </span>
                             <div>
                               <div className="font-bold text-xs text-slate-900 group-hover:text-sky-600 transition-colors">
@@ -804,12 +806,12 @@ export function GlobalRankingSandbox({
                       {/* 城市与国家 */}
                       <td className="py-3.5 px-3 whitespace-nowrap">
                         <div className="flex items-center space-x-2.5">
-                          {/* 统一规范的定宽微型国际代码徽标 */}
+                          {/* 中文国家徽标 */}
                           <span
-                            className="w-8 h-5.5 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-700 font-mono text-[11px] font-bold border border-slate-200/80 uppercase select-none tracking-tight"
+                            className="px-2 py-0.5 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200/90 select-none whitespace-nowrap"
                             title={`${item.countryZh} (${item.country})`}
                           >
-                            {item.country}
+                            {item.countryZh}
                           </span>
                           <div className="min-w-0">
                             <div className="flex items-center space-x-1.5">
@@ -819,10 +821,11 @@ export function GlobalRankingSandbox({
                               </span>
                               <span className="text-xs text-slate-500 whitespace-nowrap">({item.nameEn})</span>
                             </div>
-                            <div className="text-xs text-slate-600 truncate whitespace-nowrap font-medium">
-                              {item.province ? `${item.province} · ` : ''}
-                              {item.countryZh}
-                            </div>
+                            {!item.isDomestic && item.country !== 'CN' && item.province && (
+                              <div className="text-xs text-slate-500 truncate whitespace-nowrap font-medium">
+                                {item.province}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -972,10 +975,10 @@ export function GlobalRankingSandbox({
                       <td className="py-3.5 px-3 whitespace-nowrap">
                         <div className="flex items-center space-x-2.5">
                           <span
-                            className="w-8 h-5.5 flex items-center justify-center shrink-0 rounded bg-slate-100 text-slate-700 font-mono text-xs font-bold border border-slate-200 uppercase select-none tracking-wider"
+                            className="text-lg flex items-center justify-center shrink-0 select-none"
                             title={`${cItem.nameZh} (${cItem.countryCode})`}
                           >
-                            {cItem.countryCode}
+                            {cItem.flag}
                           </span>
                           <div>
                             <span className="font-bold text-slate-900 text-sm sm:text-base whitespace-nowrap">

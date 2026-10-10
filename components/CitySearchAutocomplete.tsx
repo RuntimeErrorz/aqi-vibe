@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { CityMeta } from '@/lib/types';
-import { searchCities, HOT_CITY_IDS } from '@/lib/constants/cities';
+import { searchCities, HOT_CITY_IDS, formatPopulation } from '@/lib/constants/cities';
 import { getCountryInfo } from '@/lib/constants/countries';
 import { Search, MapPin, Globe, X, ChevronRight } from 'lucide-react';
 
@@ -170,11 +170,20 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
                           )}
                         </div>
                         <p className="text-[11px] text-slate-500 flex items-center space-x-1.5 mt-0.5 truncate">
-                          <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[9px] font-extrabold border border-slate-200 uppercase shrink-0">
-                            {c.country}
+                          <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200/90 shrink-0 select-none">
+                            {countryInfo.nameZh}
                           </span>
-                          <span className="font-medium text-slate-600 truncate">{countryInfo.nameZh}</span>
-                          {c.province && <span className="truncate">· {c.province}</span>}
+                          {!c.isDomestic && c.country !== 'CN' && c.province && (
+                            <span className="truncate text-slate-500">· {c.province}</span>
+                          )}
+                          {c.population && (
+                            <span
+                              className="text-slate-400 font-normal truncate"
+                              title={`常住人口: ${c.population.toLocaleString()} 人`}
+                            >
+                              · 👥 {formatPopulation(c.population)}
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>

@@ -11,7 +11,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.9042,
     "longitude": 116.4074,
     "isDomestic": true,
-    "waqiSlug": "beijing"
+    "waqiSlug": "beijing",
+    "population": 21893095
   },
   {
     "id": "cn-tianjin",
@@ -22,7 +23,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.0842,
     "longitude": 117.2009,
     "isDomestic": true,
-    "waqiSlug": "tianjin"
+    "waqiSlug": "tianjin",
+    "population": 13866009
   },
   {
     "id": "cn-shijiazhuang",
@@ -33,7 +35,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 38.0428,
     "longitude": 114.5149,
     "isDomestic": true,
-    "waqiSlug": "shijiazhuang"
+    "waqiSlug": "shijiazhuang",
+    "population": 11235086
   },
   {
     "id": "cn-tangshan",
@@ -44,7 +47,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.6351,
     "longitude": 118.1754,
     "isDomestic": true,
-    "waqiSlug": "tangshan"
+    "waqiSlug": "tangshan",
+    "population": 7717983
   },
   {
     "id": "cn-qinhuangdao",
@@ -55,7 +59,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.9354,
     "longitude": 119.5999,
     "isDomestic": true,
-    "waqiSlug": "qinhuangdao"
+    "waqiSlug": "qinhuangdao",
+    "population": 3136879
   },
   {
     "id": "cn-handan",
@@ -66,7 +71,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.6256,
     "longitude": 114.4907,
     "isDomestic": true,
-    "waqiSlug": "handan"
+    "waqiSlug": "handan",
+    "population": 9413990
   },
   {
     "id": "cn-baoding",
@@ -77,7 +83,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 38.8739,
     "longitude": 115.4648,
     "isDomestic": true,
-    "waqiSlug": "baoding"
+    "waqiSlug": "baoding",
+    "population": 11544036
   },
   {
     "id": "cn-zhangjiakou",
@@ -88,7 +95,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 40.8105,
     "longitude": 114.8864,
     "isDomestic": true,
-    "waqiSlug": "zhangjiakou"
+    "waqiSlug": "zhangjiakou",
+    "population": 4118908
   },
   {
     "id": "cn-chengde",
@@ -99,7 +107,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 40.9762,
     "longitude": 117.9392,
     "isDomestic": true,
-    "waqiSlug": "chengde"
+    "waqiSlug": "chengde",
+    "population": 3354444
   },
   {
     "id": "cn-langfang",
@@ -110,7 +119,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.5284,
     "longitude": 116.7044,
     "isDomestic": true,
-    "waqiSlug": "langfang"
+    "waqiSlug": "langfang",
+    "population": 5464087
   },
   {
     "id": "cn-cangzhou",
@@ -121,7 +131,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 38.3045,
     "longitude": 116.8388,
     "isDomestic": true,
-    "waqiSlug": "cangzhou"
+    "waqiSlug": "cangzhou",
+    "population": 7300783
   },
   {
     "id": "cn-hengshui",
@@ -132,7 +143,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.7351,
     "longitude": 115.6686,
     "isDomestic": true,
-    "waqiSlug": "hengshui"
+    "waqiSlug": "hengshui",
+    "population": 4212933
   },
   {
     "id": "cn-xingtai",
@@ -143,7 +155,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.0706,
     "longitude": 114.5048,
     "isDomestic": true,
-    "waqiSlug": "xingtai"
+    "waqiSlug": "xingtai",
+    "population": 7111106
   },
   {
     "id": "cn-taiyuan",
@@ -154,7 +167,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.8706,
     "longitude": 112.5489,
     "isDomestic": true,
-    "waqiSlug": "taiyuan"
+    "waqiSlug": "taiyuan",
+    "population": 5304061
   },
   {
     "id": "cn-hohhot",
@@ -165,7 +179,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 40.8424,
     "longitude": 111.7492,
     "isDomestic": true,
-    "waqiSlug": "hohhot"
+    "waqiSlug": "hohhot",
+    "population": 3446100
   },
   {
     "id": "cn-shenyang",
@@ -176,7 +191,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.8057,
     "longitude": 123.4315,
     "isDomestic": true,
-    "waqiSlug": "shenyang"
+    "waqiSlug": "shenyang",
+    "population": 9070093
   },
   {
     "id": "cn-dalian",
@@ -187,7 +203,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 38.914,
     "longitude": 121.6147,
     "isDomestic": true,
-    "waqiSlug": "dalian"
+    "waqiSlug": "dalian",
+    "population": 7450785
   },
   {
     "id": "cn-changchun",
@@ -198,7 +215,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 43.8171,
     "longitude": 125.3235,
     "isDomestic": true,
-    "waqiSlug": "changchun"
+    "waqiSlug": "changchun",
+    "population": 9066906
   },
   {
     "id": "cn-harbin",
@@ -209,7 +227,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 45.8038,
     "longitude": 126.5349,
     "isDomestic": true,
-    "waqiSlug": "harbin"
+    "waqiSlug": "harbin",
+    "population": 10009854
   },
   {
     "id": "cn-shanghai",
@@ -220,7 +239,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.2304,
     "longitude": 121.4737,
     "isDomestic": true,
-    "waqiSlug": "shanghai"
+    "waqiSlug": "shanghai",
+    "population": 24870895
   },
   {
     "id": "cn-nanjing",
@@ -231,7 +251,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.0603,
     "longitude": 118.7969,
     "isDomestic": true,
-    "waqiSlug": "nanjing"
+    "waqiSlug": "nanjing",
+    "population": 9314685
   },
   {
     "id": "cn-suzhou",
@@ -242,7 +263,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.2989,
     "longitude": 120.5853,
     "isDomestic": true,
-    "waqiSlug": "suzhou"
+    "waqiSlug": "suzhou",
+    "population": 12748262
   },
   {
     "id": "cn-nantong",
@@ -253,7 +275,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.9802,
     "longitude": 120.8943,
     "isDomestic": true,
-    "waqiSlug": "nantong"
+    "waqiSlug": "nantong",
+    "population": 7726634
   },
   {
     "id": "cn-lianyungang",
@@ -264,7 +287,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.5997,
     "longitude": 119.2216,
     "isDomestic": true,
-    "waqiSlug": "lianyungang"
+    "waqiSlug": "lianyungang",
+    "population": 4599360
   },
   {
     "id": "cn-xuzhou",
@@ -275,7 +299,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.2048,
     "longitude": 117.2841,
     "isDomestic": true,
-    "waqiSlug": "xuzhou"
+    "waqiSlug": "xuzhou",
+    "population": 9083790
   },
   {
     "id": "cn-yangzhou",
@@ -286,7 +311,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.3942,
     "longitude": 119.4129,
     "isDomestic": true,
-    "waqiSlug": "yangzhou"
+    "waqiSlug": "yangzhou",
+    "population": 4559797
   },
   {
     "id": "cn-wuxi",
@@ -297,7 +323,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.4912,
     "longitude": 120.3119,
     "isDomestic": true,
-    "waqiSlug": "wuxi"
+    "waqiSlug": "wuxi",
+    "population": 7462135
   },
   {
     "id": "cn-changzhou",
@@ -308,7 +335,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.8112,
     "longitude": 119.9741,
     "isDomestic": true,
-    "waqiSlug": "changzhou"
+    "waqiSlug": "changzhou",
+    "population": 5278121
   },
   {
     "id": "cn-zhenjiang",
@@ -319,7 +347,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.1878,
     "longitude": 119.4258,
     "isDomestic": true,
-    "waqiSlug": "zhenjiang"
+    "waqiSlug": "zhenjiang",
+    "population": 3210418
   },
   {
     "id": "cn-taizhou",
@@ -330,7 +359,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.4555,
     "longitude": 119.9229,
     "isDomestic": true,
-    "waqiSlug": "taizhou"
+    "waqiSlug": "taizhou",
+    "population": 4512762
   },
   {
     "id": "cn-huaian",
@@ -341,7 +371,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.5511,
     "longitude": 119.0153,
     "isDomestic": true,
-    "waqiSlug": "huaian"
+    "waqiSlug": "huaian",
+    "population": 4556230
   },
   {
     "id": "cn-yancheng",
@@ -352,7 +383,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.3474,
     "longitude": 120.1636,
     "isDomestic": true,
-    "waqiSlug": "yancheng"
+    "waqiSlug": "yancheng",
+    "population": 6709629
   },
   {
     "id": "cn-suqian",
@@ -363,7 +395,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.963,
     "longitude": 118.2752,
     "isDomestic": true,
-    "waqiSlug": "suqian"
+    "waqiSlug": "suqian",
+    "population": 4986192
   },
   {
     "id": "cn-hangzhou",
@@ -374,7 +407,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.2741,
     "longitude": 120.1551,
     "isDomestic": true,
-    "waqiSlug": "hangzhou"
+    "waqiSlug": "hangzhou",
+    "population": 11936010
   },
   {
     "id": "cn-ningbo",
@@ -385,7 +419,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.8683,
     "longitude": 121.544,
     "isDomestic": true,
-    "waqiSlug": "ningbo"
+    "waqiSlug": "ningbo",
+    "population": 9404283
   },
   {
     "id": "cn-wenzhou",
@@ -396,7 +431,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.9943,
     "longitude": 120.6994,
     "isDomestic": true,
-    "waqiSlug": "wenzhou"
+    "waqiSlug": "wenzhou",
+    "population": 9572903
   },
   {
     "id": "cn-shaoxing",
@@ -407,7 +443,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.0024,
     "longitude": 120.5821,
     "isDomestic": true,
-    "waqiSlug": "shaoxing"
+    "waqiSlug": "shaoxing",
+    "population": 5270977
   },
   {
     "id": "cn-huzhou",
@@ -418,7 +455,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.8943,
     "longitude": 120.0868,
     "isDomestic": true,
-    "waqiSlug": "huzhou"
+    "waqiSlug": "huzhou",
+    "population": 3367579
   },
   {
     "id": "cn-jiaxing",
@@ -429,7 +467,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.746,
     "longitude": 120.7555,
     "isDomestic": true,
-    "waqiSlug": "jiaxing"
+    "waqiSlug": "jiaxing",
+    "population": 5400868
   },
   {
     "id": "cn-taizhouzj",
@@ -440,7 +479,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 28.6564,
     "longitude": 121.4208,
     "isDomestic": true,
-    "waqiSlug": "taizhouzj"
+    "waqiSlug": "taizhouzj",
+    "population": 6622888
   },
   {
     "id": "cn-zhoushan",
@@ -451,7 +491,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.9853,
     "longitude": 122.2072,
     "isDomestic": true,
-    "waqiSlug": "zhoushan"
+    "waqiSlug": "zhoushan",
+    "population": 1157817
   },
   {
     "id": "cn-jinhua",
@@ -462,7 +503,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.0791,
     "longitude": 119.6474,
     "isDomestic": true,
-    "waqiSlug": "jinhua"
+    "waqiSlug": "jinhua",
+    "population": 7050683
   },
   {
     "id": "cn-quzhou",
@@ -473,7 +515,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 28.9701,
     "longitude": 118.8758,
     "isDomestic": true,
-    "waqiSlug": "quzhou"
+    "waqiSlug": "quzhou",
+    "population": 2276184
   },
   {
     "id": "cn-lishui",
@@ -484,7 +527,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 28.4676,
     "longitude": 119.9228,
     "isDomestic": true,
-    "waqiSlug": "lishui"
+    "waqiSlug": "lishui",
+    "population": 2507396
   },
   {
     "id": "cn-hefei",
@@ -495,7 +539,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.8206,
     "longitude": 117.2272,
     "isDomestic": true,
-    "waqiSlug": "hefei"
+    "waqiSlug": "hefei",
+    "population": 9369881
   },
   {
     "id": "cn-fuzhou",
@@ -506,7 +551,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.0745,
     "longitude": 119.2965,
     "isDomestic": true,
-    "waqiSlug": "fuzhou"
+    "waqiSlug": "fuzhou",
+    "population": 8291268
   },
   {
     "id": "cn-xiamen",
@@ -517,7 +563,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 24.4798,
     "longitude": 118.0894,
     "isDomestic": true,
-    "waqiSlug": "xiamen"
+    "waqiSlug": "xiamen",
+    "population": 5163970
   },
   {
     "id": "cn-nanchang",
@@ -528,7 +575,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 28.6829,
     "longitude": 115.8582,
     "isDomestic": true,
-    "waqiSlug": "nanchang"
+    "waqiSlug": "nanchang",
+    "population": 6255000
   },
   {
     "id": "cn-jinan",
@@ -539,7 +587,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.6512,
     "longitude": 117.1201,
     "isDomestic": true,
-    "waqiSlug": "jinan"
+    "waqiSlug": "jinan",
+    "population": 9202432
   },
   {
     "id": "cn-qingdao",
@@ -550,7 +599,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.0671,
     "longitude": 120.3826,
     "isDomestic": true,
-    "waqiSlug": "qingdao"
+    "waqiSlug": "qingdao",
+    "population": 10071722
   },
   {
     "id": "cn-zhengzhou",
@@ -561,7 +611,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.7466,
     "longitude": 113.6253,
     "isDomestic": true,
-    "waqiSlug": "zhengzhou"
+    "waqiSlug": "zhengzhou",
+    "population": 12600574
   },
   {
     "id": "cn-wuhan",
@@ -572,7 +623,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.5928,
     "longitude": 114.3055,
     "isDomestic": true,
-    "waqiSlug": "wuhan"
+    "waqiSlug": "wuhan",
+    "population": 12326518
   },
   {
     "id": "cn-changsha",
@@ -583,7 +635,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 28.2282,
     "longitude": 112.9388,
     "isDomestic": true,
-    "waqiSlug": "changsha"
+    "waqiSlug": "changsha",
+    "population": 10047914
   },
   {
     "id": "cn-guangzhou",
@@ -594,7 +647,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.1291,
     "longitude": 113.2644,
     "isDomestic": true,
-    "waqiSlug": "@9845"
+    "waqiSlug": "@9845",
+    "population": 18676605
   },
   {
     "id": "cn-shenzhen",
@@ -605,7 +659,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 22.5431,
     "longitude": 114.0579,
     "isDomestic": true,
-    "waqiSlug": "shenzhen"
+    "waqiSlug": "shenzhen",
+    "population": 17560061
   },
   {
     "id": "cn-zhuhai",
@@ -616,7 +671,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 22.2707,
     "longitude": 113.5767,
     "isDomestic": true,
-    "waqiSlug": "zhuhai"
+    "waqiSlug": "zhuhai",
+    "population": 2439585
   },
   {
     "id": "cn-foshan",
@@ -627,7 +683,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.0218,
     "longitude": 113.1214,
     "isDomestic": true,
-    "waqiSlug": "foshan"
+    "waqiSlug": "foshan",
+    "population": 9498863
   },
   {
     "id": "cn-zhongshan",
@@ -638,7 +695,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 22.5176,
     "longitude": 113.3928,
     "isDomestic": true,
-    "waqiSlug": "zhongshan"
+    "waqiSlug": "zhongshan",
+    "population": 4418060
   },
   {
     "id": "cn-jiangmen",
@@ -649,7 +707,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 22.5787,
     "longitude": 113.0815,
     "isDomestic": true,
-    "waqiSlug": "jiangmen"
+    "waqiSlug": "jiangmen",
+    "population": 4798090
   },
   {
     "id": "cn-dongguan",
@@ -660,7 +719,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.0207,
     "longitude": 113.7518,
     "isDomestic": true,
-    "waqiSlug": "dongguan"
+    "waqiSlug": "dongguan",
+    "population": 10466625
   },
   {
     "id": "cn-huizhou",
@@ -671,7 +731,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.1118,
     "longitude": 114.4162,
     "isDomestic": true,
-    "waqiSlug": "huizhou"
+    "waqiSlug": "huizhou",
+    "population": 6042852
   },
   {
     "id": "cn-zhaoqing",
@@ -682,7 +743,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.0472,
     "longitude": 112.4651,
     "isDomestic": true,
-    "waqiSlug": "zhaoqing"
+    "waqiSlug": "zhaoqing",
+    "population": 4113594
   },
   {
     "id": "cn-nanning",
@@ -693,7 +755,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 22.817,
     "longitude": 108.3665,
     "isDomestic": true,
-    "waqiSlug": "nanning"
+    "waqiSlug": "nanning",
+    "population": 8741584
   },
   {
     "id": "cn-haikou",
@@ -704,7 +767,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 20.044,
     "longitude": 110.1999,
     "isDomestic": true,
-    "waqiSlug": "haikou"
+    "waqiSlug": "haikou",
+    "population": 2873358
   },
   {
     "id": "cn-chongqing",
@@ -715,7 +779,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.563,
     "longitude": 106.5516,
     "isDomestic": true,
-    "waqiSlug": "chongqing"
+    "waqiSlug": "chongqing",
+    "population": 32054159
   },
   {
     "id": "cn-chengdu",
@@ -726,7 +791,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.5728,
     "longitude": 104.0668,
     "isDomestic": true,
-    "waqiSlug": "chengdu"
+    "waqiSlug": "chengdu",
+    "population": 20937757
   },
   {
     "id": "cn-guiyang",
@@ -737,7 +803,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.6477,
     "longitude": 106.6302,
     "isDomestic": true,
-    "waqiSlug": "guiyang"
+    "waqiSlug": "guiyang",
+    "population": 5987018
   },
   {
     "id": "cn-kunming",
@@ -748,7 +815,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 24.8797,
     "longitude": 102.8332,
     "isDomestic": true,
-    "waqiSlug": "kunming"
+    "waqiSlug": "kunming",
+    "population": 8460088
   },
   {
     "id": "cn-lhasa",
@@ -759,7 +827,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.6525,
     "longitude": 91.1721,
     "isDomestic": true,
-    "waqiSlug": "lhasa"
+    "waqiSlug": "lhasa",
+    "population": 867891
   },
   {
     "id": "cn-xian",
@@ -770,7 +839,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.3416,
     "longitude": 108.9398,
     "isDomestic": true,
-    "waqiSlug": "xian"
+    "waqiSlug": "xian",
+    "population": 12952907
   },
   {
     "id": "cn-lanzhou",
@@ -781,7 +851,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.0611,
     "longitude": 103.8343,
     "isDomestic": true,
-    "waqiSlug": "lanzhou"
+    "waqiSlug": "lanzhou",
+    "population": 4359446
   },
   {
     "id": "cn-xining",
@@ -792,7 +863,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.6171,
     "longitude": 101.7782,
     "isDomestic": true,
-    "waqiSlug": "xining"
+    "waqiSlug": "xining",
+    "population": 2467965
   },
   {
     "id": "cn-yinchuan",
@@ -803,7 +875,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 38.4872,
     "longitude": 106.2309,
     "isDomestic": true,
-    "waqiSlug": "yinchuan"
+    "waqiSlug": "yinchuan",
+    "population": 2859074
   },
   {
     "id": "cn-urumqi",
@@ -814,7 +887,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 43.8256,
     "longitude": 87.6168,
     "isDomestic": true,
-    "waqiSlug": "urumqi"
+    "waqiSlug": "urumqi",
+    "population": 4054369
   },
   {
     "id": "cn-xiangtan",
@@ -825,7 +899,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.8297,
     "longitude": 112.944,
     "isDomestic": true,
-    "waqiSlug": "xiangtan"
+    "waqiSlug": "xiangtan",
+    "population": 2726181
   },
   {
     "id": "cn-zhuzhou",
@@ -836,7 +911,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.8274,
     "longitude": 113.134,
     "isDomestic": true,
-    "waqiSlug": "zhuzhou"
+    "waqiSlug": "zhuzhou",
+    "population": 3902738
   },
   {
     "id": "cn-baotou",
@@ -847,7 +923,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 40.6574,
     "longitude": 109.8404,
     "isDomestic": true,
-    "waqiSlug": "baotou"
+    "waqiSlug": "baotou",
+    "population": 2709378
   },
   {
     "id": "cn-ordos",
@@ -858,7 +935,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.6083,
     "longitude": 109.7813,
     "isDomestic": true,
-    "waqiSlug": "ordos"
+    "waqiSlug": "ordos",
+    "population": 2153638
   },
   {
     "id": "cn-yingkou",
@@ -869,7 +947,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 40.667,
     "longitude": 122.2354,
     "isDomestic": true,
-    "waqiSlug": "yingkou"
+    "waqiSlug": "yingkou",
+    "population": 2244454
   },
   {
     "id": "cn-dandong",
@@ -880,7 +959,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 40.1287,
     "longitude": 124.3838,
     "isDomestic": true,
-    "waqiSlug": "dandong"
+    "waqiSlug": "dandong",
+    "population": 2188436
   },
   {
     "id": "cn-panjin",
@@ -891,7 +971,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.1199,
     "longitude": 122.0707,
     "isDomestic": true,
-    "waqiSlug": "panjin"
+    "waqiSlug": "panjin",
+    "population": 1389691
   },
   {
     "id": "cn-huludao",
@@ -902,7 +983,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 40.711,
     "longitude": 120.8369,
     "isDomestic": true,
-    "waqiSlug": "huludao"
+    "waqiSlug": "huludao",
+    "population": 2434194
   },
   {
     "id": "cn-quanzhou",
@@ -913,7 +995,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 24.8741,
     "longitude": 118.6757,
     "isDomestic": true,
-    "waqiSlug": "quanzhou"
+    "waqiSlug": "quanzhou",
+    "population": 8782285
   },
   {
     "id": "cn-linyi",
@@ -924,7 +1007,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.1047,
     "longitude": 118.3564,
     "isDomestic": true,
-    "waqiSlug": "linyi"
+    "waqiSlug": "linyi",
+    "population": 11018365
   },
   {
     "id": "cn-dezhou",
@@ -935,7 +1019,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.4357,
     "longitude": 116.3575,
     "isDomestic": true,
-    "waqiSlug": "dezhou"
+    "waqiSlug": "dezhou",
+    "population": 5611194
   },
   {
     "id": "cn-liaocheng",
@@ -946,7 +1031,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.456,
     "longitude": 115.9854,
     "isDomestic": true,
-    "waqiSlug": "liaocheng"
+    "waqiSlug": "liaocheng",
+    "population": 5952128
   },
   {
     "id": "cn-binzhou",
@@ -957,7 +1043,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.3829,
     "longitude": 118.017,
     "isDomestic": true,
-    "waqiSlug": "binzhou"
+    "waqiSlug": "binzhou",
+    "population": 3928566
   },
   {
     "id": "cn-zibo",
@@ -968,7 +1055,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.8135,
     "longitude": 118.0548,
     "isDomestic": true,
-    "waqiSlug": "zibo"
+    "waqiSlug": "zibo",
+    "population": 4704138
   },
   {
     "id": "cn-zaozhuang",
@@ -979,7 +1067,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.8105,
     "longitude": 117.3237,
     "isDomestic": true,
-    "waqiSlug": "zaozhuang"
+    "waqiSlug": "zaozhuang",
+    "population": 3855601
   },
   {
     "id": "cn-yantai",
@@ -990,7 +1079,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.4638,
     "longitude": 121.4479,
     "isDomestic": true,
-    "waqiSlug": "yantai"
+    "waqiSlug": "yantai",
+    "population": 7102116
   },
   {
     "id": "cn-weifang",
@@ -1001,7 +1091,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.7068,
     "longitude": 119.1618,
     "isDomestic": true,
-    "waqiSlug": "weifang"
+    "waqiSlug": "weifang",
+    "population": 9386705
   },
   {
     "id": "cn-jining",
@@ -1012,7 +1103,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.4149,
     "longitude": 116.5872,
     "isDomestic": true,
-    "waqiSlug": "jining"
+    "waqiSlug": "jining",
+    "population": 8357897
   },
   {
     "id": "cn-taian",
@@ -1023,7 +1115,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.2002,
     "longitude": 117.0877,
     "isDomestic": true,
-    "waqiSlug": "taian"
+    "waqiSlug": "taian",
+    "population": 5472217
   },
   {
     "id": "cn-rizhao",
@@ -1034,7 +1127,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.4164,
     "longitude": 119.5269,
     "isDomestic": true,
-    "waqiSlug": "rizhao"
+    "waqiSlug": "rizhao",
+    "population": 2968365
   },
   {
     "id": "cn-weihai",
@@ -1045,7 +1139,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.5131,
     "longitude": 122.1204,
     "isDomestic": true,
-    "waqiSlug": "weihai"
+    "waqiSlug": "weihai",
+    "population": 2906548
   },
   {
     "id": "cn-dongying",
@@ -1056,7 +1151,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.4337,
     "longitude": 118.6747,
     "isDomestic": true,
-    "waqiSlug": "dongying"
+    "waqiSlug": "dongying",
+    "population": 2193518
   },
   {
     "id": "cn-shaoguan",
@@ -1067,7 +1163,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 24.8104,
     "longitude": 113.5975,
     "isDomestic": true,
-    "waqiSlug": "shaoguan"
+    "waqiSlug": "shaoguan",
+    "population": 2855131
   },
   {
     "id": "cn-shantou",
@@ -1078,7 +1175,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.3541,
     "longitude": 116.682,
     "isDomestic": true,
-    "waqiSlug": "shantou"
+    "waqiSlug": "shantou",
+    "population": 5502031
   },
   {
     "id": "cn-zhanjiang",
@@ -1089,7 +1187,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 21.2707,
     "longitude": 110.3594,
     "isDomestic": true,
-    "waqiSlug": "zhanjiang"
+    "waqiSlug": "zhanjiang",
+    "population": 6981236
   },
   {
     "id": "cn-maoming",
@@ -1100,7 +1199,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 21.663,
     "longitude": 110.9255,
     "isDomestic": true,
-    "waqiSlug": "maoming"
+    "waqiSlug": "maoming",
+    "population": 6174050
   },
   {
     "id": "cn-meizhou",
@@ -1111,7 +1211,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 24.2886,
     "longitude": 116.1226,
     "isDomestic": true,
-    "waqiSlug": "meizhou"
+    "waqiSlug": "meizhou",
+    "population": 3873239
   },
   {
     "id": "cn-shanwei",
@@ -1122,7 +1223,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 22.7862,
     "longitude": 115.3753,
     "isDomestic": true,
-    "waqiSlug": "shanwei"
+    "waqiSlug": "shanwei",
+    "population": 2672819
   },
   {
     "id": "cn-heyuan",
@@ -1133,7 +1235,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.7438,
     "longitude": 114.7006,
     "isDomestic": true,
-    "waqiSlug": "heyuan"
+    "waqiSlug": "heyuan",
+    "population": 2837686
   },
   {
     "id": "cn-yangjiang",
@@ -1144,7 +1247,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 21.8569,
     "longitude": 111.9827,
     "isDomestic": true,
-    "waqiSlug": "yangjiang"
+    "waqiSlug": "yangjiang",
+    "population": 2602959
   },
   {
     "id": "cn-qingyuan",
@@ -1155,7 +1259,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.682,
     "longitude": 113.056,
     "isDomestic": true,
-    "waqiSlug": "qingyuan"
+    "waqiSlug": "qingyuan",
+    "population": 3969473
   },
   {
     "id": "cn-chaozhou",
@@ -1166,7 +1271,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.657,
     "longitude": 116.6226,
     "isDomestic": true,
-    "waqiSlug": "chaozhou"
+    "waqiSlug": "chaozhou",
+    "population": 2568387
   },
   {
     "id": "cn-jieyang",
@@ -1177,7 +1283,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.5499,
     "longitude": 116.3729,
     "isDomestic": true,
-    "waqiSlug": "jieyang"
+    "waqiSlug": "jieyang",
+    "population": 5577814
   },
   {
     "id": "cn-yunfu",
@@ -1188,7 +1295,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 22.9298,
     "longitude": 112.0445,
     "isDomestic": true,
-    "waqiSlug": "yunfu"
+    "waqiSlug": "yunfu",
+    "population": 2383350
   },
   {
     "id": "cn-yuxi",
@@ -1199,7 +1307,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 24.352,
     "longitude": 102.5465,
     "isDomestic": true,
-    "waqiSlug": "yuxi"
+    "waqiSlug": "yuxi",
+    "population": 2249502
   },
   {
     "id": "cn-heze",
@@ -1210,7 +1319,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.2338,
     "longitude": 115.4807,
     "isDomestic": true,
-    "waqiSlug": "heze"
+    "waqiSlug": "heze",
+    "population": 8795939
   },
   {
     "id": "cn-datong",
@@ -1221,7 +1331,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 40.0903,
     "longitude": 113.2953,
     "isDomestic": true,
-    "waqiSlug": "datong"
+    "waqiSlug": "datong",
+    "population": 3105591
   },
   {
     "id": "cn-changzhi",
@@ -1232,7 +1343,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.1954,
     "longitude": 113.1163,
     "isDomestic": true,
-    "waqiSlug": "changzhi"
+    "waqiSlug": "changzhi",
+    "population": 3180884
   },
   {
     "id": "cn-linfen",
@@ -1243,7 +1355,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.088,
     "longitude": 111.519,
     "isDomestic": true,
-    "waqiSlug": "linfen"
+    "waqiSlug": "linfen",
+    "population": 3976481
   },
   {
     "id": "cn-yangquan",
@@ -1254,7 +1367,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.8571,
     "longitude": 113.5805,
     "isDomestic": true,
-    "waqiSlug": "yangquan"
+    "waqiSlug": "yangquan",
+    "population": 1318505
   },
   {
     "id": "cn-chifeng",
@@ -1265,7 +1379,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 42.2683,
     "longitude": 118.9568,
     "isDomestic": true,
-    "waqiSlug": "chifeng"
+    "waqiSlug": "chifeng",
+    "population": 4035967
   },
   {
     "id": "cn-anshan",
@@ -1276,7 +1391,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.1078,
     "longitude": 122.9946,
     "isDomestic": true,
-    "waqiSlug": "anshan"
+    "waqiSlug": "anshan",
+    "population": 3325372
   },
   {
     "id": "cn-fushun",
@@ -1287,7 +1403,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.8808,
     "longitude": 123.9572,
     "isDomestic": true,
-    "waqiSlug": "fushun"
+    "waqiSlug": "fushun",
+    "population": 1861372
   },
   {
     "id": "cn-benxi",
@@ -1298,7 +1415,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.2941,
     "longitude": 123.7663,
     "isDomestic": true,
-    "waqiSlug": "benxi"
+    "waqiSlug": "benxi",
+    "population": 1326018
   },
   {
     "id": "cn-jinzhou",
@@ -1309,7 +1427,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.0951,
     "longitude": 121.127,
     "isDomestic": true,
-    "waqiSlug": "jinzhou"
+    "waqiSlug": "jinzhou",
+    "population": 2703853
   },
   {
     "id": "cn-jilin",
@@ -1320,7 +1439,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 43.8378,
     "longitude": 126.5494,
     "isDomestic": true,
-    "waqiSlug": "jilin"
+    "waqiSlug": "jilin",
+    "population": 3623713
   },
   {
     "id": "cn-qiqihar",
@@ -1331,7 +1451,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 47.3543,
     "longitude": 123.9182,
     "isDomestic": true,
-    "waqiSlug": "qiqihar"
+    "waqiSlug": "qiqihar",
+    "population": 4067489
   },
   {
     "id": "cn-mudanjiang",
@@ -1342,7 +1463,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 44.58,
     "longitude": 129.6,
     "isDomestic": true,
-    "waqiSlug": "mudanjiang"
+    "waqiSlug": "mudanjiang",
+    "population": 2290208
   },
   {
     "id": "cn-daqing",
@@ -1353,7 +1475,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 46.59,
     "longitude": 125.03,
     "isDomestic": true,
-    "waqiSlug": "daqing"
+    "waqiSlug": "daqing",
+    "population": 2781562
   },
   {
     "id": "cn-wuhu",
@@ -1364,7 +1487,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.3529,
     "longitude": 118.3765,
     "isDomestic": true,
-    "waqiSlug": "wuhu"
+    "waqiSlug": "wuhu",
+    "population": 3644420
   },
   {
     "id": "cn-maanshan",
@@ -1375,7 +1499,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.6885,
     "longitude": 118.5079,
     "isDomestic": true,
-    "waqiSlug": "maanshan"
+    "waqiSlug": "maanshan",
+    "population": 2159411
   },
   {
     "id": "cn-jiujiang",
@@ -1386,7 +1511,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.7051,
     "longitude": 115.9928,
     "isDomestic": true,
-    "waqiSlug": "jiujiang"
+    "waqiSlug": "jiujiang",
+    "population": 4600276
   },
   {
     "id": "cn-luoyang",
@@ -1397,7 +1523,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.6185,
     "longitude": 112.454,
     "isDomestic": true,
-    "waqiSlug": "luoyang"
+    "waqiSlug": "luoyang",
+    "population": 7056699
   },
   {
     "id": "cn-anyang",
@@ -1408,7 +1535,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.0987,
     "longitude": 114.3924,
     "isDomestic": true,
-    "waqiSlug": "anyang"
+    "waqiSlug": "anyang",
+    "population": 5477614
   },
   {
     "id": "cn-kaifeng",
@@ -1419,7 +1547,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.7972,
     "longitude": 114.3076,
     "isDomestic": true,
-    "waqiSlug": "kaifeng"
+    "waqiSlug": "kaifeng",
+    "population": 4824016
   },
   {
     "id": "cn-jiaozuo",
@@ -1430,7 +1559,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.2159,
     "longitude": 113.2418,
     "isDomestic": true,
-    "waqiSlug": "jiaozuo"
+    "waqiSlug": "jiaozuo",
+    "population": 3521078
   },
   {
     "id": "cn-pingdingshan",
@@ -1441,7 +1571,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.7662,
     "longitude": 113.1928,
     "isDomestic": true,
-    "waqiSlug": "pingdingshan"
+    "waqiSlug": "pingdingshan",
+    "population": 4987137
   },
   {
     "id": "cn-sanmenxia",
@@ -1452,7 +1583,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.7731,
     "longitude": 111.1941,
     "isDomestic": true,
-    "waqiSlug": "sanmenxia"
+    "waqiSlug": "sanmenxia",
+    "population": 2034872
   },
   {
     "id": "cn-yichang",
@@ -1463,7 +1595,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.692,
     "longitude": 111.2865,
     "isDomestic": true,
-    "waqiSlug": "yichang"
+    "waqiSlug": "yichang",
+    "population": 4017607
   },
   {
     "id": "cn-jingzhou",
@@ -1474,7 +1607,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.3352,
     "longitude": 112.2407,
     "isDomestic": true,
-    "waqiSlug": "jingzhou"
+    "waqiSlug": "jingzhou",
+    "population": 5231180
   },
   {
     "id": "cn-yueyang",
@@ -1485,7 +1619,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.3569,
     "longitude": 113.1289,
     "isDomestic": true,
-    "waqiSlug": "yueyang"
+    "waqiSlug": "yueyang",
+    "population": 5051922
   },
   {
     "id": "cn-changde",
@@ -1496,7 +1631,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.0317,
     "longitude": 111.6985,
     "isDomestic": true,
-    "waqiSlug": "changde"
+    "waqiSlug": "changde",
+    "population": 5279102
   },
   {
     "id": "cn-zhangjiajie",
@@ -1507,7 +1643,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.1171,
     "longitude": 110.4792,
     "isDomestic": true,
-    "waqiSlug": "zhangjiajie"
+    "waqiSlug": "zhangjiajie",
+    "population": 1517027
   },
   {
     "id": "cn-guilin",
@@ -1518,7 +1655,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 25.2736,
     "longitude": 110.2902,
     "isDomestic": true,
-    "waqiSlug": "guilin"
+    "waqiSlug": "guilin",
+    "population": 4931137
   },
   {
     "id": "cn-beihai",
@@ -1529,7 +1667,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 21.4812,
     "longitude": 109.1192,
     "isDomestic": true,
-    "waqiSlug": "beihai"
+    "waqiSlug": "beihai",
+    "population": 1853227
   },
   {
     "id": "cn-liuzhou",
@@ -1540,7 +1679,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 24.3255,
     "longitude": 109.416,
     "isDomestic": true,
-    "waqiSlug": "liuzhou"
+    "waqiSlug": "liuzhou",
+    "population": 4157934
   },
   {
     "id": "cn-sanya",
@@ -1551,7 +1691,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 18.2528,
     "longitude": 109.512,
     "isDomestic": true,
-    "waqiSlug": "sanya"
+    "waqiSlug": "sanya",
+    "population": 1031396
   },
   {
     "id": "cn-mianyang",
@@ -1562,7 +1703,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.4675,
     "longitude": 104.6791,
     "isDomestic": true,
-    "waqiSlug": "mianyang"
+    "waqiSlug": "mianyang",
+    "population": 4868243
   },
   {
     "id": "cn-yibin",
@@ -1573,7 +1715,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 28.7518,
     "longitude": 104.6432,
     "isDomestic": true,
-    "waqiSlug": "yibin"
+    "waqiSlug": "yibin",
+    "population": 4588804
   },
   {
     "id": "cn-panzhihua",
@@ -1584,7 +1727,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.5823,
     "longitude": 101.7186,
     "isDomestic": true,
-    "waqiSlug": "panzhihua"
+    "waqiSlug": "panzhihua",
+    "population": 1212203
   },
   {
     "id": "cn-luzhou",
@@ -1595,7 +1739,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 28.8718,
     "longitude": 105.4423,
     "isDomestic": true,
-    "waqiSlug": "luzhou"
+    "waqiSlug": "luzhou",
+    "population": 4254149
   },
   {
     "id": "cn-zigong",
@@ -1606,7 +1751,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.3392,
     "longitude": 104.7784,
     "isDomestic": true,
-    "waqiSlug": "zigong"
+    "waqiSlug": "zigong",
+    "population": 2489256
   },
   {
     "id": "cn-deyang",
@@ -1617,7 +1763,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.1268,
     "longitude": 104.3986,
     "isDomestic": true,
-    "waqiSlug": "deyang"
+    "waqiSlug": "deyang",
+    "population": 3456161
   },
   {
     "id": "cn-nanchong",
@@ -1628,7 +1775,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.8378,
     "longitude": 106.1107,
     "isDomestic": true,
-    "waqiSlug": "nanchong"
+    "waqiSlug": "nanchong",
+    "population": 5607765
   },
   {
     "id": "cn-zunyi",
@@ -1639,7 +1787,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.7257,
     "longitude": 106.9274,
     "isDomestic": true,
-    "waqiSlug": "zunyi"
+    "waqiSlug": "zunyi",
+    "population": 6606675
   },
   {
     "id": "cn-qujing",
@@ -1650,7 +1799,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 25.49,
     "longitude": 103.7962,
     "isDomestic": true,
-    "waqiSlug": "qujing"
+    "waqiSlug": "qujing",
+    "population": 5765775
   },
   {
     "id": "cn-xianyang",
@@ -1661,7 +1811,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.3296,
     "longitude": 108.709,
     "isDomestic": true,
-    "waqiSlug": "xianyang"
+    "waqiSlug": "xianyang",
+    "population": 3959842
   },
   {
     "id": "cn-tongchuan",
@@ -1672,7 +1823,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.8967,
     "longitude": 108.9451,
     "isDomestic": true,
-    "waqiSlug": "tongchuan"
+    "waqiSlug": "tongchuan",
+    "population": 698322
   },
   {
     "id": "cn-yanan",
@@ -1683,7 +1835,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.5854,
     "longitude": 109.4897,
     "isDomestic": true,
-    "waqiSlug": "yanan"
+    "waqiSlug": "yanan",
+    "population": 2282581
   },
   {
     "id": "cn-baoji",
@@ -1694,7 +1847,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.3619,
     "longitude": 107.1449,
     "isDomestic": true,
-    "waqiSlug": "baoji"
+    "waqiSlug": "baoji",
+    "population": 3321853
   },
   {
     "id": "cn-weinan",
@@ -1705,7 +1859,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.4994,
     "longitude": 109.5099,
     "isDomestic": true,
-    "waqiSlug": "weinan"
+    "waqiSlug": "weinan",
+    "population": 4688744
   },
   {
     "id": "cn-jinchang",
@@ -1716,7 +1871,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 38.5142,
     "longitude": 102.1879,
     "isDomestic": true,
-    "waqiSlug": "jinchang"
+    "waqiSlug": "jinchang",
+    "population": 438026
   },
   {
     "id": "cn-jiayuguan",
@@ -1727,7 +1883,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.7731,
     "longitude": 98.2891,
     "isDomestic": true,
-    "waqiSlug": "jiayuguan"
+    "waqiSlug": "jiayuguan",
+    "population": 312684
   },
   {
     "id": "cn-shizuishan",
@@ -1738,7 +1895,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.0134,
     "longitude": 106.3762,
     "isDomestic": true,
-    "waqiSlug": "shizuishan"
+    "waqiSlug": "shizuishan",
+    "population": 751389
   },
   {
     "id": "cn-karamay",
@@ -1749,7 +1907,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 45.5799,
     "longitude": 84.8893,
     "isDomestic": true,
-    "waqiSlug": "karamay"
+    "waqiSlug": "karamay",
+    "population": 490348
   },
   {
     "id": "cn-bayingolin",
@@ -1760,7 +1919,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.7641,
     "longitude": 86.1453,
     "isDomestic": true,
-    "waqiSlug": "bayingolin"
+    "waqiSlug": "bayingolin",
+    "population": 1613979
   },
   {
     "id": "cn-shouguang",
@@ -1771,7 +1931,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.88,
     "longitude": 118.73,
     "isDomestic": true,
-    "waqiSlug": "shouguang"
+    "waqiSlug": "shouguang",
+    "population": 1163000
   },
   {
     "id": "cn-zhangqiu",
@@ -1782,7 +1943,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.71,
     "longitude": 117.53,
     "isDomestic": true,
-    "waqiSlug": "zhangqiu"
+    "waqiSlug": "zhangqiu",
+    "population": 1111000
   },
   {
     "id": "cn-jimo",
@@ -1793,7 +1955,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.38,
     "longitude": 120.45,
     "isDomestic": true,
-    "waqiSlug": "jimo"
+    "waqiSlug": "jimo",
+    "population": 1336000
   },
   {
     "id": "cn-jiaonan",
@@ -1804,7 +1967,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.88,
     "longitude": 119.97,
     "isDomestic": true,
-    "waqiSlug": "jiaonan"
+    "waqiSlug": "jiaonan",
+    "population": 868000
   },
   {
     "id": "cn-jiaozhou",
@@ -1815,7 +1979,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.28,
     "longitude": 120.03,
     "isDomestic": true,
-    "waqiSlug": "jiaozhou"
+    "waqiSlug": "jiaozhou",
+    "population": 987000
   },
   {
     "id": "cn-laixi",
@@ -1826,7 +1991,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.86,
     "longitude": 120.53,
     "isDomestic": true,
-    "waqiSlug": "laixi"
+    "waqiSlug": "laixi",
+    "population": 720000
   },
   {
     "id": "cn-pingdu",
@@ -1837,7 +2003,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.78,
     "longitude": 119.97,
     "isDomestic": true,
-    "waqiSlug": "pingdu"
+    "waqiSlug": "pingdu",
+    "population": 1191000
   },
   {
     "id": "cn-penglai",
@@ -1848,7 +2015,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.81,
     "longitude": 120.75,
     "isDomestic": true,
-    "waqiSlug": "penglai"
+    "waqiSlug": "penglai",
+    "population": 440000
   },
   {
     "id": "cn-zhaoyuan",
@@ -1859,7 +2027,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.36,
     "longitude": 120.4,
     "isDomestic": true,
-    "waqiSlug": "zhaoyuan"
+    "waqiSlug": "zhaoyuan",
+    "population": 543000
   },
   {
     "id": "cn-laizhou",
@@ -1870,7 +2039,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.17,
     "longitude": 119.93,
     "isDomestic": true,
-    "waqiSlug": "laizhou"
+    "waqiSlug": "laizhou",
+    "population": 824000
   },
   {
     "id": "cn-rongcheng",
@@ -1881,7 +2051,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.16,
     "longitude": 122.48,
     "isDomestic": true,
-    "waqiSlug": "rongcheng"
+    "waqiSlug": "rongcheng",
+    "population": 714000
   },
   {
     "id": "cn-wendeng",
@@ -1892,7 +2063,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.19,
     "longitude": 122.05,
     "isDomestic": true,
-    "waqiSlug": "wendeng"
+    "waqiSlug": "wendeng",
+    "population": 579000
   },
   {
     "id": "cn-rushan",
@@ -1903,7 +2075,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.91,
     "longitude": 121.53,
     "isDomestic": true,
-    "waqiSlug": "rushan"
+    "waqiSlug": "rushan",
+    "population": 464000
   },
   {
     "id": "cn-wujiang",
@@ -1914,7 +2087,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.14,
     "longitude": 120.64,
     "isDomestic": true,
-    "waqiSlug": "wujiang"
+    "waqiSlug": "wujiang",
+    "population": 1545000
   },
   {
     "id": "cn-kunshan",
@@ -1925,7 +2099,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.38,
     "longitude": 120.98,
     "isDomestic": true,
-    "waqiSlug": "kunshan"
+    "waqiSlug": "kunshan",
+    "population": 2092496
   },
   {
     "id": "cn-changshu",
@@ -1936,7 +2111,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.65,
     "longitude": 120.75,
     "isDomestic": true,
-    "waqiSlug": "changshu"
+    "waqiSlug": "changshu",
+    "population": 1677050
   },
   {
     "id": "cn-zhangjiagang",
@@ -1947,7 +2123,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.87,
     "longitude": 120.55,
     "isDomestic": true,
-    "waqiSlug": "zhangjiagang"
+    "waqiSlug": "zhangjiagang",
+    "population": 1432044
   },
   {
     "id": "cn-taicang",
@@ -1958,7 +2135,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.45,
     "longitude": 121.1,
     "isDomestic": true,
-    "waqiSlug": "taicang"
+    "waqiSlug": "taicang",
+    "population": 831113
   },
   {
     "id": "cn-jurong",
@@ -1969,7 +2147,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.95,
     "longitude": 119.16,
     "isDomestic": true,
-    "waqiSlug": "jurong"
+    "waqiSlug": "jurong",
+    "population": 648000
   },
   {
     "id": "cn-jiangyin",
@@ -1980,7 +2159,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.911,
     "longitude": 120.285,
     "isDomestic": true,
-    "waqiSlug": "jiangyin"
+    "waqiSlug": "jiangyin",
+    "population": 1779515
   },
   {
     "id": "cn-yixing",
@@ -1991,7 +2171,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.36,
     "longitude": 119.82,
     "isDomestic": true,
-    "waqiSlug": "yixing"
+    "waqiSlug": "yixing",
+    "population": 1285785
   },
   {
     "id": "cn-jintan",
@@ -2002,7 +2183,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.74,
     "longitude": 119.57,
     "isDomestic": true,
-    "waqiSlug": "jintan"
+    "waqiSlug": "jintan",
+    "population": 585000
   },
   {
     "id": "cn-liyang",
@@ -2013,7 +2195,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.43,
     "longitude": 119.48,
     "isDomestic": true,
-    "waqiSlug": "liyang"
+    "waqiSlug": "liyang",
+    "population": 805000
   },
   {
     "id": "cn-haimen",
@@ -2024,7 +2207,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.89,
     "longitude": 121.16,
     "isDomestic": true,
-    "waqiSlug": "haimen"
+    "waqiSlug": "haimen",
+    "population": 992000
   },
   {
     "id": "cn-linan",
@@ -2035,7 +2219,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.23,
     "longitude": 119.72,
     "isDomestic": true,
-    "waqiSlug": "linan"
+    "waqiSlug": "linan",
+    "population": 634000
   },
   {
     "id": "cn-fuyangzj",
@@ -2046,7 +2231,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.05,
     "longitude": 119.95,
     "isDomestic": true,
-    "waqiSlug": "fuyangzj"
+    "waqiSlug": "fuyangzj",
+    "population": 832000
   },
   {
     "id": "cn-yiwu",
@@ -2057,7 +2243,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.31,
     "longitude": 120.07,
     "isDomestic": true,
-    "waqiSlug": "yiwu"
+    "waqiSlug": "yiwu",
+    "population": 1859390
   },
   {
     "id": "cn-zhuji",
@@ -2068,7 +2255,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.71,
     "longitude": 120.23,
     "isDomestic": true,
-    "waqiSlug": "zhuji"
+    "waqiSlug": "zhuji",
+    "population": 1218072
   },
   {
     "id": "cn-wafangdian",
@@ -2079,7 +2267,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.6274,
     "longitude": 122.0076,
     "isDomestic": true,
-    "waqiSlug": "wafangdian"
+    "waqiSlug": "wafangdian",
+    "population": 840000
   },
   {
     "id": "cn-xinyang",
@@ -2090,7 +2279,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.1471,
     "longitude": 114.0913,
     "isDomestic": true,
-    "waqiSlug": "xinyang"
+    "waqiSlug": "xinyang",
+    "population": 6234401
   },
   {
     "id": "cn-zhoukou",
@@ -2101,7 +2291,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.6251,
     "longitude": 114.697,
     "isDomestic": true,
-    "waqiSlug": "zhoukou"
+    "waqiSlug": "zhoukou",
+    "population": 9026015
   },
   {
     "id": "cn-zhangzhou",
@@ -2112,7 +2303,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 24.5129,
     "longitude": 117.6475,
     "isDomestic": true,
-    "waqiSlug": "zhangzhou"
+    "waqiSlug": "zhangzhou",
+    "population": 5054328
   },
   {
     "id": "cn-jincheng",
@@ -2123,7 +2315,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.4976,
     "longitude": 112.8512,
     "isDomestic": true,
-    "waqiSlug": "jincheng"
+    "waqiSlug": "jincheng",
+    "population": 2194542
   },
   {
     "id": "cn-shuozhou",
@@ -2134,7 +2327,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.3312,
     "longitude": 112.4328,
     "isDomestic": true,
-    "waqiSlug": "shuozhou"
+    "waqiSlug": "shuozhou",
+    "population": 1593444
   },
   {
     "id": "cn-jinzhong",
@@ -2145,7 +2339,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.6965,
     "longitude": 112.7527,
     "isDomestic": true,
-    "waqiSlug": "jinzhong"
+    "waqiSlug": "jinzhong",
+    "population": 3379498
   },
   {
     "id": "cn-yuncheng",
@@ -2156,7 +2351,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.0264,
     "longitude": 111.007,
     "isDomestic": true,
-    "waqiSlug": "yuncheng"
+    "waqiSlug": "yuncheng",
+    "population": 4774508
   },
   {
     "id": "cn-xinzhou",
@@ -2167,7 +2363,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 38.4167,
     "longitude": 112.7342,
     "isDomestic": true,
-    "waqiSlug": "xinzhou"
+    "waqiSlug": "xinzhou",
+    "population": 2689668
   },
   {
     "id": "cn-lvliang",
@@ -2178,7 +2375,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.5244,
     "longitude": 111.1343,
     "isDomestic": true,
-    "waqiSlug": "lvliang"
+    "waqiSlug": "lvliang",
+    "population": 3398431
   },
   {
     "id": "cn-wuhai",
@@ -2189,7 +2387,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.6557,
     "longitude": 106.8256,
     "isDomestic": true,
-    "waqiSlug": "wuhai"
+    "waqiSlug": "wuhai",
+    "population": 556621
   },
   {
     "id": "cn-tongliao",
@@ -2200,7 +2399,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 43.6138,
     "longitude": 122.2631,
     "isDomestic": true,
-    "waqiSlug": "tongliao"
+    "waqiSlug": "tongliao",
+    "population": 2873168
   },
   {
     "id": "cn-hulunbuir",
@@ -2211,7 +2411,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 49.2122,
     "longitude": 119.7544,
     "isDomestic": true,
-    "waqiSlug": "hulunbuir"
+    "waqiSlug": "hulunbuir",
+    "population": 2242875
   },
   {
     "id": "cn-bayannur",
@@ -2222,7 +2423,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 40.7574,
     "longitude": 107.4169,
     "isDomestic": true,
-    "waqiSlug": "bayannur"
+    "waqiSlug": "bayannur",
+    "population": 1538715
   },
   {
     "id": "cn-ulanqab",
@@ -2233,7 +2435,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.0305,
     "longitude": 113.1145,
     "isDomestic": true,
-    "waqiSlug": "ulanqab"
+    "waqiSlug": "ulanqab",
+    "population": 1706328
   },
   {
     "id": "cn-hinggan",
@@ -2244,7 +2447,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 46.0763,
     "longitude": 122.0703,
     "isDomestic": true,
-    "waqiSlug": "hinggan"
+    "waqiSlug": "hinggan",
+    "population": 1416929
   },
   {
     "id": "cn-xilingol",
@@ -2255,7 +2459,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 43.9334,
     "longitude": 116.091,
     "isDomestic": true,
-    "waqiSlug": "xilingol"
+    "waqiSlug": "xilingol",
+    "population": 1107075
   },
   {
     "id": "cn-alxa",
@@ -2266,7 +2471,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 38.8519,
     "longitude": 105.7064,
     "isDomestic": true,
-    "waqiSlug": "alxa"
+    "waqiSlug": "alxa",
+    "population": 262361
   },
   {
     "id": "cn-fuxin",
@@ -2277,7 +2483,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 42.0216,
     "longitude": 121.6489,
     "isDomestic": true,
-    "waqiSlug": "fuxin"
+    "waqiSlug": "fuxin",
+    "population": 1647284
   },
   {
     "id": "cn-liaoyang",
@@ -2288,7 +2495,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.2694,
     "longitude": 123.1731,
     "isDomestic": true,
-    "waqiSlug": "liaoyang"
+    "waqiSlug": "liaoyang",
+    "population": 1604580
   },
   {
     "id": "cn-tieling",
@@ -2299,7 +2507,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 42.2905,
     "longitude": 123.8443,
     "isDomestic": true,
-    "waqiSlug": "tieling"
+    "waqiSlug": "tieling",
+    "population": 2388294
   },
   {
     "id": "cn-chaoyang",
@@ -2310,7 +2519,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.5736,
     "longitude": 120.4511,
     "isDomestic": true,
-    "waqiSlug": "chaoyang"
+    "waqiSlug": "chaoyang",
+    "population": 2872857
   },
   {
     "id": "cn-siping",
@@ -2321,7 +2531,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 43.1664,
     "longitude": 124.3708,
     "isDomestic": true,
-    "waqiSlug": "siping"
+    "waqiSlug": "siping",
+    "population": 1814733
   },
   {
     "id": "cn-liaoyuan",
@@ -2332,7 +2543,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 42.9027,
     "longitude": 125.145,
     "isDomestic": true,
-    "waqiSlug": "liaoyuan"
+    "waqiSlug": "liaoyuan",
+    "population": 991153
   },
   {
     "id": "cn-tonghua",
@@ -2343,7 +2555,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.7284,
     "longitude": 125.9365,
     "isDomestic": true,
-    "waqiSlug": "tonghua"
+    "waqiSlug": "tonghua",
+    "population": 1812114
   },
   {
     "id": "cn-baishan",
@@ -2354,7 +2567,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.9386,
     "longitude": 126.4259,
     "isDomestic": true,
-    "waqiSlug": "baishan"
+    "waqiSlug": "baishan",
+    "population": 951900
   },
   {
     "id": "cn-songyuan",
@@ -2365,7 +2579,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 45.1418,
     "longitude": 124.8236,
     "isDomestic": true,
-    "waqiSlug": "songyuan"
+    "waqiSlug": "songyuan",
+    "population": 2252994
   },
   {
     "id": "cn-baicheng",
@@ -2376,7 +2591,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 45.619,
     "longitude": 122.8411,
     "isDomestic": true,
-    "waqiSlug": "baicheng"
+    "waqiSlug": "baicheng",
+    "population": 1551378
   },
   {
     "id": "cn-yanbian",
@@ -2387,7 +2603,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 42.8913,
     "longitude": 129.5089,
     "isDomestic": true,
-    "waqiSlug": "yanbian"
+    "waqiSlug": "yanbian",
+    "population": 1941700
   },
   {
     "id": "cn-jixi",
@@ -2398,7 +2615,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 45.3,
     "longitude": 130.97,
     "isDomestic": true,
-    "waqiSlug": "jixi"
+    "waqiSlug": "jixi",
+    "population": 1502060
   },
   {
     "id": "cn-hegang",
@@ -2409,7 +2627,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 47.35,
     "longitude": 130.27,
     "isDomestic": true,
-    "waqiSlug": "hegang"
+    "waqiSlug": "hegang",
+    "population": 891271
   },
   {
     "id": "cn-shuangyashan",
@@ -2420,7 +2639,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 46.64,
     "longitude": 131.16,
     "isDomestic": true,
-    "waqiSlug": "shuangyashan"
+    "waqiSlug": "shuangyashan",
+    "population": 1208803
   },
   {
     "id": "cn-yichun",
@@ -2431,7 +2651,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 47.7274,
     "longitude": 128.8993,
     "isDomestic": true,
-    "waqiSlug": "yichun"
+    "waqiSlug": "yichun",
+    "population": 878881
   },
   {
     "id": "cn-jiamusi",
@@ -2442,7 +2663,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 46.8,
     "longitude": 130.32,
     "isDomestic": true,
-    "waqiSlug": "jiamusi"
+    "waqiSlug": "jiamusi",
+    "population": 2156505
   },
   {
     "id": "cn-qitaihe",
@@ -2453,7 +2675,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 45.77,
     "longitude": 131,
     "isDomestic": true,
-    "waqiSlug": "qitaihe"
+    "waqiSlug": "qitaihe",
+    "population": 689611
   },
   {
     "id": "cn-heihe",
@@ -2464,7 +2687,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 50.24,
     "longitude": 127.53,
     "isDomestic": true,
-    "waqiSlug": "heihe"
+    "waqiSlug": "heihe",
+    "population": 1286401
   },
   {
     "id": "cn-suihua",
@@ -2475,7 +2699,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 46.63,
     "longitude": 126.97,
     "isDomestic": true,
-    "waqiSlug": "suihua"
+    "waqiSlug": "suihua",
+    "population": 3756167
   },
   {
     "id": "cn-daxinganling",
@@ -2486,7 +2711,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 52.34,
     "longitude": 124.71,
     "isDomestic": true,
-    "waqiSlug": "daxinganling"
+    "waqiSlug": "daxinganling",
+    "population": 331276
   },
   {
     "id": "cn-bengbu",
@@ -2497,7 +2723,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.9163,
     "longitude": 117.3897,
     "isDomestic": true,
-    "waqiSlug": "bengbu"
+    "waqiSlug": "bengbu",
+    "population": 3296408
   },
   {
     "id": "cn-huainan",
@@ -2508,7 +2735,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.6255,
     "longitude": 116.9999,
     "isDomestic": true,
-    "waqiSlug": "huainan"
+    "waqiSlug": "huainan",
+    "population": 3033528
   },
   {
     "id": "cn-huaibei",
@@ -2519,7 +2747,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.9558,
     "longitude": 116.7947,
     "isDomestic": true,
-    "waqiSlug": "huaibei"
+    "waqiSlug": "huaibei",
+    "population": 1970265
   },
   {
     "id": "cn-tongling",
@@ -2530,7 +2759,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.9455,
     "longitude": 117.8166,
     "isDomestic": true,
-    "waqiSlug": "tongling"
+    "waqiSlug": "tongling",
+    "population": 1311726
   },
   {
     "id": "cn-anqing",
@@ -2541,7 +2771,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.5434,
     "longitude": 117.0587,
     "isDomestic": true,
-    "waqiSlug": "anqing"
+    "waqiSlug": "anqing",
+    "population": 4165284
   },
   {
     "id": "cn-huangshan",
@@ -2552,7 +2783,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.7147,
     "longitude": 118.3375,
     "isDomestic": true,
-    "waqiSlug": "huangshan"
+    "waqiSlug": "huangshan",
+    "population": 1330565
   },
   {
     "id": "cn-chuzhou",
@@ -2563,7 +2795,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.3013,
     "longitude": 118.3162,
     "isDomestic": true,
-    "waqiSlug": "chuzhou"
+    "waqiSlug": "chuzhou",
+    "population": 3987054
   },
   {
     "id": "cn-fuyangah",
@@ -2574,7 +2807,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.8901,
     "longitude": 115.8197,
     "isDomestic": true,
-    "waqiSlug": "fuyangah"
+    "waqiSlug": "fuyangah",
+    "population": 8200264
   },
   {
     "id": "cn-suzhouah",
@@ -2585,7 +2819,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.6463,
     "longitude": 116.9841,
     "isDomestic": true,
-    "waqiSlug": "suzhouah"
+    "waqiSlug": "suzhouah",
+    "population": 5324476
   },
   {
     "id": "cn-luan",
@@ -2596,7 +2831,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.7348,
     "longitude": 116.5052,
     "isDomestic": true,
-    "waqiSlug": "luan"
+    "waqiSlug": "luan",
+    "population": 4393699
   },
   {
     "id": "cn-bozhou",
@@ -2607,7 +2843,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.8446,
     "longitude": 115.7787,
     "isDomestic": true,
-    "waqiSlug": "bozhou"
+    "waqiSlug": "bozhou",
+    "population": 4996844
   },
   {
     "id": "cn-chizhou",
@@ -2618,7 +2855,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.6648,
     "longitude": 117.4891,
     "isDomestic": true,
-    "waqiSlug": "chizhou"
+    "waqiSlug": "chizhou",
+    "population": 1342764
   },
   {
     "id": "cn-xuancheng",
@@ -2629,7 +2867,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.9407,
     "longitude": 118.7588,
     "isDomestic": true,
-    "waqiSlug": "xuancheng"
+    "waqiSlug": "xuancheng",
+    "population": 2500063
   },
   {
     "id": "cn-putian",
@@ -2640,7 +2879,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 25.4541,
     "longitude": 119.0078,
     "isDomestic": true,
-    "waqiSlug": "putian"
+    "waqiSlug": "putian",
+    "population": 3210714
   },
   {
     "id": "cn-sanming",
@@ -2651,7 +2891,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.2634,
     "longitude": 117.6387,
     "isDomestic": true,
-    "waqiSlug": "sanming"
+    "waqiSlug": "sanming",
+    "population": 2486450
   },
   {
     "id": "cn-nanping",
@@ -2662,7 +2903,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.6417,
     "longitude": 118.1777,
     "isDomestic": true,
-    "waqiSlug": "nanping"
+    "waqiSlug": "nanping",
+    "population": 2680645
   },
   {
     "id": "cn-longyan",
@@ -2673,7 +2915,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 25.0751,
     "longitude": 117.0177,
     "isDomestic": true,
-    "waqiSlug": "longyan"
+    "waqiSlug": "longyan",
+    "population": 2723637
   },
   {
     "id": "cn-ningde",
@@ -2684,7 +2927,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.6657,
     "longitude": 119.5479,
     "isDomestic": true,
-    "waqiSlug": "ningde"
+    "waqiSlug": "ningde",
+    "population": 3146789
   },
   {
     "id": "cn-jingdezhen",
@@ -2695,7 +2939,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.2687,
     "longitude": 117.1783,
     "isDomestic": true,
-    "waqiSlug": "jingdezhen"
+    "waqiSlug": "jingdezhen",
+    "population": 1620000
   },
   {
     "id": "cn-pingxiang",
@@ -2706,7 +2951,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.6229,
     "longitude": 113.8545,
     "isDomestic": true,
-    "waqiSlug": "pingxiang"
+    "waqiSlug": "pingxiang",
+    "population": 1804805
   },
   {
     "id": "cn-xinyu",
@@ -2717,7 +2963,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.8178,
     "longitude": 114.9174,
     "isDomestic": true,
-    "waqiSlug": "xinyu"
+    "waqiSlug": "xinyu",
+    "population": 1202499
   },
   {
     "id": "cn-yingtan",
@@ -2728,7 +2975,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 28.2601,
     "longitude": 117.0692,
     "isDomestic": true,
-    "waqiSlug": "yingtan"
+    "waqiSlug": "yingtan",
+    "population": 1154223
   },
   {
     "id": "cn-ganzhou",
@@ -2739,7 +2987,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 25.8318,
     "longitude": 114.9348,
     "isDomestic": true,
-    "waqiSlug": "ganzhou"
+    "waqiSlug": "ganzhou",
+    "population": 8970014
   },
   {
     "id": "cn-jian",
@@ -2750,7 +2999,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.1138,
     "longitude": 114.9864,
     "isDomestic": true,
-    "waqiSlug": "jian"
+    "waqiSlug": "jian",
+    "population": 4469176
   },
   {
     "id": "cn-yichunjx",
@@ -2761,7 +3011,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.8156,
     "longitude": 114.4168,
     "isDomestic": true,
-    "waqiSlug": "yichunjx"
+    "waqiSlug": "yichunjx",
+    "population": 5007702
   },
   {
     "id": "cn-fuzhoujx",
@@ -2772,7 +3023,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.9491,
     "longitude": 116.3584,
     "isDomestic": true,
-    "waqiSlug": "fuzhoujx"
+    "waqiSlug": "fuzhoujx",
+    "population": 3614866
   },
   {
     "id": "cn-shangrao",
@@ -2783,7 +3035,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 28.4532,
     "longitude": 117.9436,
     "isDomestic": true,
-    "waqiSlug": "shangrao"
+    "waqiSlug": "shangrao",
+    "population": 6491088
   },
   {
     "id": "cn-hebi",
@@ -2794,7 +3047,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.7482,
     "longitude": 114.2978,
     "isDomestic": true,
-    "waqiSlug": "hebi"
+    "waqiSlug": "hebi",
+    "population": 1565973
   },
   {
     "id": "cn-xinxiang",
@@ -2805,7 +3059,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.303,
     "longitude": 113.9268,
     "isDomestic": true,
-    "waqiSlug": "xinxiang"
+    "waqiSlug": "xinxiang",
+    "population": 6251929
   },
   {
     "id": "cn-puyang",
@@ -2816,7 +3071,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.7618,
     "longitude": 115.0299,
     "isDomestic": true,
-    "waqiSlug": "puyang"
+    "waqiSlug": "puyang",
+    "population": 3772088
   },
   {
     "id": "cn-xuchang",
@@ -2827,7 +3083,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.0355,
     "longitude": 113.8526,
     "isDomestic": true,
-    "waqiSlug": "xuchang"
+    "waqiSlug": "xuchang",
+    "population": 4379998
   },
   {
     "id": "cn-luohe",
@@ -2838,7 +3095,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.5815,
     "longitude": 114.0165,
     "isDomestic": true,
-    "waqiSlug": "luohe"
+    "waqiSlug": "luohe",
+    "population": 2367490
   },
   {
     "id": "cn-nanyang",
@@ -2849,7 +3107,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.9908,
     "longitude": 112.5283,
     "isDomestic": true,
-    "waqiSlug": "nanyang"
+    "waqiSlug": "nanyang",
+    "population": 9713112
   },
   {
     "id": "cn-shangqiu",
@@ -2860,7 +3119,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.414,
     "longitude": 115.6564,
     "isDomestic": true,
-    "waqiSlug": "shangqiu"
+    "waqiSlug": "shangqiu",
+    "population": 7816831
   },
   {
     "id": "cn-zhumadian",
@@ -2871,7 +3131,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.9774,
     "longitude": 114.0247,
     "isDomestic": true,
-    "waqiSlug": "zhumadian"
+    "waqiSlug": "zhumadian",
+    "population": 7008427
   },
   {
     "id": "cn-huangshi",
@@ -2882,7 +3143,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.2201,
     "longitude": 115.0385,
     "isDomestic": true,
-    "waqiSlug": "huangshi"
+    "waqiSlug": "huangshi",
+    "population": 2469077
   },
   {
     "id": "cn-shiyan",
@@ -2893,7 +3155,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.6294,
     "longitude": 110.798,
     "isDomestic": true,
-    "waqiSlug": "shiyan"
+    "waqiSlug": "shiyan",
+    "population": 3209004
   },
   {
     "id": "cn-xiangyang",
@@ -2904,7 +3167,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.0089,
     "longitude": 112.1224,
     "isDomestic": true,
-    "waqiSlug": "xiangyang"
+    "waqiSlug": "xiangyang",
+    "population": 5260951
   },
   {
     "id": "cn-ezhou",
@@ -2915,7 +3179,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.3919,
     "longitude": 114.8949,
     "isDomestic": true,
-    "waqiSlug": "ezhou"
+    "waqiSlug": "ezhou",
+    "population": 1079353
   },
   {
     "id": "cn-jingmen",
@@ -2926,7 +3191,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.0354,
     "longitude": 112.1994,
     "isDomestic": true,
-    "waqiSlug": "jingmen"
+    "waqiSlug": "jingmen",
+    "population": 2596927
   },
   {
     "id": "cn-xiaogan",
@@ -2937,7 +3203,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.9179,
     "longitude": 113.9267,
     "isDomestic": true,
-    "waqiSlug": "xiaogan"
+    "waqiSlug": "xiaogan",
+    "population": 4270371
   },
   {
     "id": "cn-huanggang",
@@ -2948,7 +3215,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.4537,
     "longitude": 114.8724,
     "isDomestic": true,
-    "waqiSlug": "huanggang"
+    "waqiSlug": "huanggang",
+    "population": 5882719
   },
   {
     "id": "cn-xianning",
@@ -2959,7 +3227,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.8415,
     "longitude": 114.3224,
     "isDomestic": true,
-    "waqiSlug": "xianning"
+    "waqiSlug": "xianning",
+    "population": 2658316
   },
   {
     "id": "cn-suizhou",
@@ -2970,7 +3239,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.6904,
     "longitude": 113.3826,
     "isDomestic": true,
-    "waqiSlug": "suizhou"
+    "waqiSlug": "suizhou",
+    "population": 2047923
   },
   {
     "id": "cn-enshi",
@@ -2981,7 +3251,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.295,
     "longitude": 109.4794,
     "isDomestic": true,
-    "waqiSlug": "enshi"
+    "waqiSlug": "enshi",
+    "population": 3456136
   },
   {
     "id": "cn-hengyang",
@@ -2992,7 +3263,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.8938,
     "longitude": 112.5719,
     "isDomestic": true,
-    "waqiSlug": "hengyang"
+    "waqiSlug": "hengyang",
+    "population": 6645243
   },
   {
     "id": "cn-shaoyang",
@@ -3003,7 +3275,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.2418,
     "longitude": 111.4678,
     "isDomestic": true,
-    "waqiSlug": "shaoyang"
+    "waqiSlug": "shaoyang",
+    "population": 6563520
   },
   {
     "id": "cn-yiyang",
@@ -3014,7 +3287,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 28.5539,
     "longitude": 112.3551,
     "isDomestic": true,
-    "waqiSlug": "yiyang"
+    "waqiSlug": "yiyang",
+    "population": 3851564
   },
   {
     "id": "cn-chenzhou",
@@ -3025,7 +3299,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 25.7705,
     "longitude": 113.0147,
     "isDomestic": true,
-    "waqiSlug": "chenzhou"
+    "waqiSlug": "chenzhou",
+    "population": 4667137
   },
   {
     "id": "cn-yongzhou",
@@ -3036,7 +3311,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.4204,
     "longitude": 111.6135,
     "isDomestic": true,
-    "waqiSlug": "yongzhou"
+    "waqiSlug": "yongzhou",
+    "population": 5289824
   },
   {
     "id": "cn-huaihua",
@@ -3047,7 +3323,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.5601,
     "longitude": 109.9985,
     "isDomestic": true,
-    "waqiSlug": "huaihua"
+    "waqiSlug": "huaihua",
+    "population": 4587594
   },
   {
     "id": "cn-loudi",
@@ -3058,7 +3335,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.7021,
     "longitude": 111.9964,
     "isDomestic": true,
-    "waqiSlug": "loudi"
+    "waqiSlug": "loudi",
+    "population": 3826996
   },
   {
     "id": "cn-xiangxi",
@@ -3069,7 +3347,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 28.3117,
     "longitude": 109.739,
     "isDomestic": true,
-    "waqiSlug": "xiangxi"
+    "waqiSlug": "xiangxi",
+    "population": 2488105
   },
   {
     "id": "cn-wuzhou",
@@ -3080,7 +3359,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.477,
     "longitude": 111.2791,
     "isDomestic": true,
-    "waqiSlug": "wuzhou"
+    "waqiSlug": "wuzhou",
+    "population": 2820977
   },
   {
     "id": "cn-fangchenggang",
@@ -3091,7 +3371,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 21.6868,
     "longitude": 108.3538,
     "isDomestic": true,
-    "waqiSlug": "fangchenggang"
+    "waqiSlug": "fangchenggang",
+    "population": 1046068
   },
   {
     "id": "cn-qinzhou",
@@ -3102,7 +3383,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 21.96,
     "longitude": 108.6242,
     "isDomestic": true,
-    "waqiSlug": "qinzhou"
+    "waqiSlug": "qinzhou",
+    "population": 3302238
   },
   {
     "id": "cn-guigang",
@@ -3113,7 +3395,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.0936,
     "longitude": 109.6021,
     "isDomestic": true,
-    "waqiSlug": "guigang"
+    "waqiSlug": "guigang",
+    "population": 4316262
   },
   {
     "id": "cn-yulin",
@@ -3124,7 +3407,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 22.6314,
     "longitude": 110.1544,
     "isDomestic": true,
-    "waqiSlug": "yulin"
+    "waqiSlug": "yulin",
+    "population": 5796766
   },
   {
     "id": "cn-baise",
@@ -3135,7 +3419,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.9048,
     "longitude": 106.618,
     "isDomestic": true,
-    "waqiSlug": "baise"
+    "waqiSlug": "baise",
+    "population": 3571505
   },
   {
     "id": "cn-hezhou",
@@ -3146,7 +3431,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 24.4036,
     "longitude": 111.5667,
     "isDomestic": true,
-    "waqiSlug": "hezhou"
+    "waqiSlug": "hezhou",
+    "population": 2007261
   },
   {
     "id": "cn-hechi",
@@ -3157,7 +3443,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 24.6958,
     "longitude": 108.0621,
     "isDomestic": true,
-    "waqiSlug": "hechi"
+    "waqiSlug": "hechi",
+    "population": 3417945
   },
   {
     "id": "cn-laibin",
@@ -3168,7 +3455,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.7337,
     "longitude": 109.2297,
     "isDomestic": true,
-    "waqiSlug": "laibin"
+    "waqiSlug": "laibin",
+    "population": 2074611
   },
   {
     "id": "cn-chongzuo",
@@ -3179,7 +3467,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 22.4041,
     "longitude": 107.3539,
     "isDomestic": true,
-    "waqiSlug": "chongzuo"
+    "waqiSlug": "chongzuo",
+    "population": 2088610
   },
   {
     "id": "cn-guangyuan",
@@ -3190,7 +3479,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.4354,
     "longitude": 105.8434,
     "isDomestic": true,
-    "waqiSlug": "guangyuan"
+    "waqiSlug": "guangyuan",
+    "population": 2305657
   },
   {
     "id": "cn-suining",
@@ -3201,7 +3491,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.5328,
     "longitude": 105.5929,
     "isDomestic": true,
-    "waqiSlug": "suining"
+    "waqiSlug": "suining",
+    "population": 2814196
   },
   {
     "id": "cn-neijiang",
@@ -3212,7 +3503,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.5802,
     "longitude": 105.0584,
     "isDomestic": true,
-    "waqiSlug": "neijiang"
+    "waqiSlug": "neijiang",
+    "population": 3140678
   },
   {
     "id": "cn-leshan",
@@ -3223,7 +3515,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.5521,
     "longitude": 103.7657,
     "isDomestic": true,
-    "waqiSlug": "leshan"
+    "waqiSlug": "leshan",
+    "population": 3160168
   },
   {
     "id": "cn-meishan",
@@ -3234,7 +3527,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.0756,
     "longitude": 103.8486,
     "isDomestic": true,
-    "waqiSlug": "meishan"
+    "waqiSlug": "meishan",
+    "population": 2955219
   },
   {
     "id": "cn-guangan",
@@ -3245,7 +3539,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.456,
     "longitude": 106.6334,
     "isDomestic": true,
-    "waqiSlug": "guangan"
+    "waqiSlug": "guangan",
+    "population": 3254883
   },
   {
     "id": "cn-dazhou",
@@ -3256,7 +3551,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.2096,
     "longitude": 107.468,
     "isDomestic": true,
-    "waqiSlug": "dazhou"
+    "waqiSlug": "dazhou",
+    "population": 5385422
   },
   {
     "id": "cn-yaan",
@@ -3267,7 +3563,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.9801,
     "longitude": 103.0133,
     "isDomestic": true,
-    "waqiSlug": "yaan"
+    "waqiSlug": "yaan",
+    "population": 1434603
   },
   {
     "id": "cn-bazhong",
@@ -3278,7 +3575,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.8591,
     "longitude": 106.7537,
     "isDomestic": true,
-    "waqiSlug": "bazhong"
+    "waqiSlug": "bazhong",
+    "population": 2712894
   },
   {
     "id": "cn-ziyang",
@@ -3289,7 +3587,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.129,
     "longitude": 104.642,
     "isDomestic": true,
-    "waqiSlug": "ziyang"
+    "waqiSlug": "ziyang",
+    "population": 2308631
   },
   {
     "id": "cn-aba",
@@ -3300,7 +3599,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.8998,
     "longitude": 102.2246,
     "isDomestic": true,
-    "waqiSlug": "aba"
+    "waqiSlug": "aba",
+    "population": 822587
   },
   {
     "id": "cn-garze",
@@ -3311,7 +3611,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.0495,
     "longitude": 101.9625,
     "isDomestic": true,
-    "waqiSlug": "garze"
+    "waqiSlug": "garze",
+    "population": 1107431
   },
   {
     "id": "cn-garze-301",
@@ -3322,7 +3623,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.0495,
     "longitude": 101.9625,
     "isDomestic": true,
-    "waqiSlug": "garze"
+    "waqiSlug": "garze",
+    "population": 1107431
   },
   {
     "id": "cn-liangshan",
@@ -3333,7 +3635,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.8864,
     "longitude": 102.2673,
     "isDomestic": true,
-    "waqiSlug": "liangshan"
+    "waqiSlug": "liangshan",
+    "population": 4858359
   },
   {
     "id": "cn-liupanshui",
@@ -3344,7 +3647,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.5927,
     "longitude": 104.8304,
     "isDomestic": true,
-    "waqiSlug": "liupanshui"
+    "waqiSlug": "liupanshui",
+    "population": 3031602
   },
   {
     "id": "cn-anshun",
@@ -3355,7 +3659,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.2531,
     "longitude": 105.9476,
     "isDomestic": true,
-    "waqiSlug": "anshun"
+    "waqiSlug": "anshun",
+    "population": 2470630
   },
   {
     "id": "cn-tongren",
@@ -3366,7 +3671,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.7315,
     "longitude": 109.1896,
     "isDomestic": true,
-    "waqiSlug": "tongren"
+    "waqiSlug": "tongren",
+    "population": 3298468
   },
   {
     "id": "cn-bijie",
@@ -3377,7 +3683,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.2985,
     "longitude": 105.2913,
     "isDomestic": true,
-    "waqiSlug": "bijie"
+    "waqiSlug": "bijie",
+    "population": 6899636
   },
   {
     "id": "cn-qianxinan",
@@ -3388,7 +3695,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 25.0881,
     "longitude": 104.9064,
     "isDomestic": true,
-    "waqiSlug": "qianxinan"
+    "waqiSlug": "qianxinan",
+    "population": 3015112
   },
   {
     "id": "cn-qiandongnan",
@@ -3399,7 +3707,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.5838,
     "longitude": 107.9813,
     "isDomestic": true,
-    "waqiSlug": "qiandongnan"
+    "waqiSlug": "qiandongnan",
+    "population": 3758622
   },
   {
     "id": "cn-qiandongnan-309",
@@ -3410,7 +3719,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.5838,
     "longitude": 107.9813,
     "isDomestic": true,
-    "waqiSlug": "qiandongnan"
+    "waqiSlug": "qiandongnan",
+    "population": 3758622
   },
   {
     "id": "cn-qiannan",
@@ -3421,7 +3731,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.2582,
     "longitude": 107.5172,
     "isDomestic": true,
-    "waqiSlug": "qiannan"
+    "waqiSlug": "qiannan",
+    "population": 3494385
   },
   {
     "id": "cn-baoshan",
@@ -3432,7 +3743,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 25.1118,
     "longitude": 102.161,
     "isDomestic": true,
-    "waqiSlug": "baoshan"
+    "waqiSlug": "baoshan",
+    "population": 2431211
   },
   {
     "id": "cn-zhaotong",
@@ -3443,7 +3755,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.337,
     "longitude": 103.7172,
     "isDomestic": true,
-    "waqiSlug": "zhaotong"
+    "waqiSlug": "zhaotong",
+    "population": 5092611
   },
   {
     "id": "cn-lijiang",
@@ -3454,7 +3767,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.8721,
     "longitude": 100.2297,
     "isDomestic": true,
-    "waqiSlug": "lijiang"
+    "waqiSlug": "lijiang",
+    "population": 1253878
   },
   {
     "id": "cn-puer",
@@ -3465,7 +3779,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 22.7753,
     "longitude": 100.9723,
     "isDomestic": true,
-    "waqiSlug": "puer"
+    "waqiSlug": "puer",
+    "population": 2404997
   },
   {
     "id": "cn-lincang",
@@ -3476,7 +3791,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.8866,
     "longitude": 100.0869,
     "isDomestic": true,
-    "waqiSlug": "lincang"
+    "waqiSlug": "lincang",
+    "population": 2257991
   },
   {
     "id": "cn-chuxiong",
@@ -3487,7 +3803,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 25.0454,
     "longitude": 101.546,
     "isDomestic": true,
-    "waqiSlug": "chuxiong"
+    "waqiSlug": "chuxiong",
+    "population": 2416795
   },
   {
     "id": "cn-honghe",
@@ -3498,7 +3815,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.3668,
     "longitude": 103.3842,
     "isDomestic": true,
-    "waqiSlug": "honghe"
+    "waqiSlug": "honghe",
+    "population": 4475022
   },
   {
     "id": "cn-wenshan",
@@ -3509,7 +3827,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 23.3695,
     "longitude": 104.2443,
     "isDomestic": true,
-    "waqiSlug": "wenshan"
+    "waqiSlug": "wenshan",
+    "population": 3503218
   },
   {
     "id": "cn-xishuangbanna",
@@ -3520,7 +3839,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 22.0017,
     "longitude": 100.7979,
     "isDomestic": true,
-    "waqiSlug": "xishuangbanna"
+    "waqiSlug": "xishuangbanna",
+    "population": 1301407
   },
   {
     "id": "cn-dali",
@@ -3531,7 +3851,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 25.5916,
     "longitude": 100.229,
     "isDomestic": true,
-    "waqiSlug": "dali"
+    "waqiSlug": "dali",
+    "population": 3337559
   },
   {
     "id": "cn-dehong",
@@ -3542,7 +3863,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 24.4367,
     "longitude": 98.5784,
     "isDomestic": true,
-    "waqiSlug": "dehong"
+    "waqiSlug": "dehong",
+    "population": 1315709
   },
   {
     "id": "cn-nujiang",
@@ -3553,7 +3875,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 25.8509,
     "longitude": 98.8543,
     "isDomestic": true,
-    "waqiSlug": "nujiang"
+    "waqiSlug": "nujiang",
+    "population": 552697
   },
   {
     "id": "cn-diqing",
@@ -3564,7 +3887,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.8268,
     "longitude": 99.7065,
     "isDomestic": true,
-    "waqiSlug": "diqing"
+    "waqiSlug": "diqing",
+    "population": 387511
   },
   {
     "id": "cn-chamdo",
@@ -3575,7 +3899,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.1409,
     "longitude": 97.1785,
     "isDomestic": true,
-    "waqiSlug": "chamdo"
+    "waqiSlug": "chamdo",
+    "population": 760966
   },
   {
     "id": "cn-shannan",
@@ -3586,7 +3911,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.237,
     "longitude": 91.7734,
     "isDomestic": true,
-    "waqiSlug": "shannan"
+    "waqiSlug": "shannan",
+    "population": 354035
   },
   {
     "id": "cn-shigatse",
@@ -3597,7 +3923,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.2676,
     "longitude": 88.8804,
     "isDomestic": true,
-    "waqiSlug": "shigatse"
+    "waqiSlug": "shigatse",
+    "population": 798153
   },
   {
     "id": "cn-nagqu",
@@ -3608,7 +3935,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.476,
     "longitude": 92.0574,
     "isDomestic": true,
-    "waqiSlug": "nagqu"
+    "waqiSlug": "nagqu",
+    "population": 504838
   },
   {
     "id": "cn-nagqu-328",
@@ -3619,7 +3947,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.476,
     "longitude": 92.0574,
     "isDomestic": true,
-    "waqiSlug": "nagqu"
+    "waqiSlug": "nagqu",
+    "population": 504838
   },
   {
     "id": "cn-ngari",
@@ -3630,7 +3959,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.5011,
     "longitude": 80.1055,
     "isDomestic": true,
-    "waqiSlug": "ngari"
+    "waqiSlug": "ngari",
+    "population": 123281
   },
   {
     "id": "cn-nyingchi",
@@ -3641,7 +3971,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.6493,
     "longitude": 94.3623,
     "isDomestic": true,
-    "waqiSlug": "nyingchi"
+    "waqiSlug": "nyingchi",
+    "population": 238936
   },
   {
     "id": "cn-hanzhong",
@@ -3652,7 +3983,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.0677,
     "longitude": 107.0286,
     "isDomestic": true,
-    "waqiSlug": "hanzhong"
+    "waqiSlug": "hanzhong",
+    "population": 3211462
   },
   {
     "id": "cn-yulinsx",
@@ -3663,7 +3995,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 38.2906,
     "longitude": 109.7412,
     "isDomestic": true,
-    "waqiSlug": "yulinsx"
+    "waqiSlug": "yulinsx",
+    "population": 3624750
   },
   {
     "id": "cn-ankang",
@@ -3674,7 +4007,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.6849,
     "longitude": 109.0293,
     "isDomestic": true,
-    "waqiSlug": "ankang"
+    "waqiSlug": "ankang",
+    "population": 2493436
   },
   {
     "id": "cn-shangluo",
@@ -3685,7 +4019,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.8684,
     "longitude": 109.9412,
     "isDomestic": true,
-    "waqiSlug": "shangluo"
+    "waqiSlug": "shangluo",
+    "population": 2041231
   },
   {
     "id": "cn-baiyin",
@@ -3696,7 +4031,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.5456,
     "longitude": 104.1736,
     "isDomestic": true,
-    "waqiSlug": "baiyin"
+    "waqiSlug": "baiyin",
+    "population": 1512110
   },
   {
     "id": "cn-tianshui",
@@ -3707,7 +4043,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.5785,
     "longitude": 105.725,
     "isDomestic": true,
-    "waqiSlug": "tianshui"
+    "waqiSlug": "tianshui",
+    "population": 2984659
   },
   {
     "id": "cn-wuwei",
@@ -3718,7 +4055,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.9283,
     "longitude": 102.6379,
     "isDomestic": true,
-    "waqiSlug": "wuwei"
+    "waqiSlug": "wuwei",
+    "population": 1465355
   },
   {
     "id": "cn-zhangye",
@@ -3729,7 +4067,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 38.9259,
     "longitude": 100.4498,
     "isDomestic": true,
-    "waqiSlug": "zhangye"
+    "waqiSlug": "zhangye",
+    "population": 1131016
   },
   {
     "id": "cn-pingliang",
@@ -3740,7 +4079,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.5393,
     "longitude": 106.6651,
     "isDomestic": true,
-    "waqiSlug": "pingliang"
+    "waqiSlug": "pingliang",
+    "population": 1848607
   },
   {
     "id": "cn-jiuquan",
@@ -3751,7 +4091,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.7444,
     "longitude": 98.5103,
     "isDomestic": true,
-    "waqiSlug": "jiuquan"
+    "waqiSlug": "jiuquan",
+    "population": 1055706
   },
   {
     "id": "cn-qingyang",
@@ -3762,7 +4103,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.738,
     "longitude": 107.6384,
     "isDomestic": true,
-    "waqiSlug": "qingyang"
+    "waqiSlug": "qingyang",
+    "population": 2179716
   },
   {
     "id": "cn-dingxi",
@@ -3773,7 +4115,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.5806,
     "longitude": 104.6263,
     "isDomestic": true,
-    "waqiSlug": "dingxi"
+    "waqiSlug": "dingxi",
+    "population": 2524095
   },
   {
     "id": "cn-longnan",
@@ -3784,7 +4127,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.3886,
     "longitude": 104.9212,
     "isDomestic": true,
-    "waqiSlug": "longnan"
+    "waqiSlug": "longnan",
+    "population": 2407272
   },
   {
     "id": "cn-linxia",
@@ -3795,7 +4139,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.6012,
     "longitude": 103.2106,
     "isDomestic": true,
-    "waqiSlug": "linxia"
+    "waqiSlug": "linxia",
+    "population": 2109750
   },
   {
     "id": "cn-gannan",
@@ -3806,7 +4151,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.9864,
     "longitude": 102.911,
     "isDomestic": true,
-    "waqiSlug": "gannan"
+    "waqiSlug": "gannan",
+    "population": 691808
   },
   {
     "id": "cn-haidong",
@@ -3817,7 +4163,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.5029,
     "longitude": 102.1033,
     "isDomestic": true,
-    "waqiSlug": "haidong"
+    "waqiSlug": "haidong",
+    "population": 1358471
   },
   {
     "id": "cn-haibei",
@@ -3828,7 +4175,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.9594,
     "longitude": 100.9011,
     "isDomestic": true,
-    "waqiSlug": "haibei"
+    "waqiSlug": "haibei",
+    "population": 265322
   },
   {
     "id": "cn-huangnan",
@@ -3839,7 +4187,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.5177,
     "longitude": 102.0152,
     "isDomestic": true,
-    "waqiSlug": "huangnan"
+    "waqiSlug": "huangnan",
+    "population": 276215
   },
   {
     "id": "cn-hainanqh",
@@ -3850,7 +4199,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.2804,
     "longitude": 100.6195,
     "isDomestic": true,
-    "waqiSlug": "hainanqh"
+    "waqiSlug": "hainanqh",
+    "population": 446996
   },
   {
     "id": "cn-golog",
@@ -3861,7 +4211,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.4736,
     "longitude": 100.244,
     "isDomestic": true,
-    "waqiSlug": "golog"
+    "waqiSlug": "golog",
+    "population": 215573
   },
   {
     "id": "cn-yushu",
@@ -3872,7 +4223,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.0062,
     "longitude": 97.0085,
     "isDomestic": true,
-    "waqiSlug": "yushu"
+    "waqiSlug": "yushu",
+    "population": 425199
   },
   {
     "id": "cn-haixi",
@@ -3883,7 +4235,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.3742,
     "longitude": 97.3708,
     "isDomestic": true,
-    "waqiSlug": "haixi"
+    "waqiSlug": "haixi",
+    "population": 468226
   },
   {
     "id": "cn-wuzhong",
@@ -3894,7 +4247,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.9862,
     "longitude": 106.1983,
     "isDomestic": true,
-    "waqiSlug": "wuzhong"
+    "waqiSlug": "wuzhong",
+    "population": 1382713
   },
   {
     "id": "cn-zhongwei",
@@ -3905,7 +4259,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.5149,
     "longitude": 105.1896,
     "isDomestic": true,
-    "waqiSlug": "zhongwei"
+    "waqiSlug": "zhongwei",
+    "population": 1067336
   },
   {
     "id": "cn-guyuan",
@@ -3916,7 +4271,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.0046,
     "longitude": 106.2852,
     "isDomestic": true,
-    "waqiSlug": "guyuan"
+    "waqiSlug": "guyuan",
+    "population": 1142142
   },
   {
     "id": "cn-turpan",
@@ -3927,7 +4283,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 42.9513,
     "longitude": 89.1897,
     "isDomestic": true,
-    "waqiSlug": "turpan"
+    "waqiSlug": "turpan",
+    "population": 693988
   },
   {
     "id": "cn-hami",
@@ -3938,7 +4295,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 42.8332,
     "longitude": 93.5152,
     "isDomestic": true,
-    "waqiSlug": "hami"
+    "waqiSlug": "hami",
+    "population": 673383
   },
   {
     "id": "cn-changji",
@@ -3949,7 +4307,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 44.0145,
     "longitude": 87.304,
     "isDomestic": true,
-    "waqiSlug": "changji"
+    "waqiSlug": "changji",
+    "population": 1613585
   },
   {
     "id": "cn-bortala",
@@ -3960,7 +4319,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 44.9056,
     "longitude": 82.0747,
     "isDomestic": true,
-    "waqiSlug": "bortala"
+    "waqiSlug": "bortala",
+    "population": 488198
   },
   {
     "id": "cn-aksu",
@@ -3971,7 +4331,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.1688,
     "longitude": 80.2606,
     "isDomestic": true,
-    "waqiSlug": "aksu"
+    "waqiSlug": "aksu",
+    "population": 2714422
   },
   {
     "id": "cn-kizilsu",
@@ -3982,7 +4343,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.7148,
     "longitude": 76.1683,
     "isDomestic": true,
-    "waqiSlug": "kizilsu"
+    "waqiSlug": "kizilsu",
+    "population": 622222
   },
   {
     "id": "cn-kashgar",
@@ -3993,7 +4355,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.4677,
     "longitude": 75.9898,
     "isDomestic": true,
-    "waqiSlug": "kashgar"
+    "waqiSlug": "kashgar",
+    "population": 4496377
   },
   {
     "id": "cn-hotan",
@@ -4004,7 +4367,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.1121,
     "longitude": 79.9222,
     "isDomestic": true,
-    "waqiSlug": "hotan"
+    "waqiSlug": "hotan",
+    "population": 2504718
   },
   {
     "id": "cn-ili",
@@ -4015,7 +4379,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 43.9219,
     "longitude": 81.3179,
     "isDomestic": true,
-    "waqiSlug": "ili"
+    "waqiSlug": "ili",
+    "population": 2848393
   },
   {
     "id": "cn-tacheng",
@@ -4026,7 +4391,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 46.7454,
     "longitude": 82.9857,
     "isDomestic": true,
-    "waqiSlug": "tacheng"
+    "waqiSlug": "tacheng",
+    "population": 1138638
   },
   {
     "id": "cn-altay",
@@ -4037,7 +4403,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 47.8449,
     "longitude": 88.1396,
     "isDomestic": true,
-    "waqiSlug": "altay"
+    "waqiSlug": "altay",
+    "population": 668587
   },
   {
     "id": "cn-shihezi",
@@ -4048,7 +4415,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 44.3059,
     "longitude": 86.0411,
     "isDomestic": true,
-    "waqiSlug": "shihezi"
+    "waqiSlug": "shihezi",
+    "population": 635582
   },
   {
     "id": "cn-wujiaqu",
@@ -4059,7 +4427,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 44.1674,
     "longitude": 87.5401,
     "isDomestic": true,
-    "waqiSlug": "wujiaqu"
+    "waqiSlug": "wujiaqu",
+    "population": 141432
   },
   {
     "id": "cn-sansha",
@@ -4070,7 +4439,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 16.83,
     "longitude": 112.33,
     "isDomestic": true,
-    "waqiSlug": "sansha"
+    "waqiSlug": "sansha",
+    "population": 1800
   },
   {
     "id": "cn-lanzhounew",
@@ -4081,7 +4451,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.52,
     "longitude": 103.71,
     "isDomestic": true,
-    "waqiSlug": "lanzhounew"
+    "waqiSlug": "lanzhounew",
+    "population": 4359446
   },
   {
     "id": "cn-ganjiang",
@@ -4092,7 +4463,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 28.82,
     "longitude": 115.89,
     "isDomestic": true,
-    "waqiSlug": "ganjiang"
+    "waqiSlug": "ganjiang",
+    "population": 650000
   },
   {
     "id": "cn-danzhou",
@@ -4103,7 +4475,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 19.52,
     "longitude": 109.58,
     "isDomestic": true,
-    "waqiSlug": "danzhou"
+    "waqiSlug": "danzhou",
+    "population": 954995
   },
   {
     "id": "cn-xiongan",
@@ -4114,7 +4487,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 38.995,
     "longitude": 115.986,
     "isDomestic": true,
-    "waqiSlug": "xiongan"
+    "waqiSlug": "xiongan",
+    "population": 1205400
   },
   {
     "id": "cn-xixian",
@@ -4125,7 +4499,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.31,
     "longitude": 108.75,
     "isDomestic": true,
-    "waqiSlug": "xixian"
+    "waqiSlug": "xixian",
+    "population": 1304000
   },
   {
     "id": "gl-tokyo",
@@ -4135,7 +4510,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.6762,
     "longitude": 139.6503,
     "isDomestic": false,
-    "waqiSlug": "tokyo"
+    "waqiSlug": "tokyo",
+    "population": 13960000
   },
   {
     "id": "gl-osaka",
@@ -4145,7 +4521,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.6937,
     "longitude": 135.5023,
     "isDomestic": false,
-    "waqiSlug": "osaka"
+    "waqiSlug": "osaka",
+    "population": 2750000
   },
   {
     "id": "gl-kyoto",
@@ -4155,7 +4532,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.0116,
     "longitude": 135.7681,
     "isDomestic": false,
-    "waqiSlug": "kyoto"
+    "waqiSlug": "kyoto",
+    "population": 1460000
   },
   {
     "id": "gl-nagoya",
@@ -4165,7 +4543,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.1815,
     "longitude": 136.9066,
     "isDomestic": false,
-    "waqiSlug": "nagoya"
+    "waqiSlug": "nagoya",
+    "population": 2330000
   },
   {
     "id": "gl-sapporo",
@@ -4175,7 +4554,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 43.0618,
     "longitude": 141.3545,
     "isDomestic": false,
-    "waqiSlug": "sapporo"
+    "waqiSlug": "sapporo",
+    "population": 1970000
   },
   {
     "id": "gl-fukuoka",
@@ -4185,7 +4565,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.5904,
     "longitude": 130.4017,
     "isDomestic": false,
-    "waqiSlug": "fukuoka"
+    "waqiSlug": "fukuoka",
+    "population": 1610000
   },
   {
     "id": "gl-seoul",
@@ -4195,7 +4576,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.5665,
     "longitude": 126.978,
     "isDomestic": false,
-    "waqiSlug": "seoul"
+    "waqiSlug": "seoul",
+    "population": 9776000
   },
   {
     "id": "gl-busan",
@@ -4205,7 +4587,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.1796,
     "longitude": 129.0756,
     "isDomestic": false,
-    "waqiSlug": "busan"
+    "waqiSlug": "busan",
+    "population": 3410000
   },
   {
     "id": "gl-incheon",
@@ -4215,7 +4598,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.4563,
     "longitude": 126.7052,
     "isDomestic": false,
-    "waqiSlug": "incheon"
+    "waqiSlug": "incheon",
+    "population": 2950000
   },
   {
     "id": "gl-singapore",
@@ -4225,7 +4609,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 1.3521,
     "longitude": 103.8198,
     "isDomestic": false,
-    "waqiSlug": "singapore"
+    "waqiSlug": "singapore",
+    "population": 5637000
   },
   {
     "id": "gl-bangkok",
@@ -4235,7 +4620,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 13.7563,
     "longitude": 100.5018,
     "isDomestic": false,
-    "waqiSlug": "bangkok"
+    "waqiSlug": "bangkok",
+    "population": 10539000
   },
   {
     "id": "gl-chiangmai",
@@ -4245,7 +4631,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 18.7883,
     "longitude": 98.9853,
     "isDomestic": false,
-    "waqiSlug": "chiang-mai"
+    "waqiSlug": "chiang-mai",
+    "population": 127240
   },
   {
     "id": "gl-hanoi",
@@ -4255,7 +4642,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 21.0285,
     "longitude": 105.8542,
     "isDomestic": false,
-    "waqiSlug": "hanoi"
+    "waqiSlug": "hanoi",
+    "population": 8053663
   },
   {
     "id": "gl-hochiminh",
@@ -4265,7 +4653,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 10.8231,
     "longitude": 106.6297,
     "isDomestic": false,
-    "waqiSlug": "ho-chi-minh-city"
+    "waqiSlug": "ho-chi-minh-city",
+    "population": 8993082
   },
   {
     "id": "gl-kualalumpur",
@@ -4275,7 +4664,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 3.139,
     "longitude": 101.6869,
     "isDomestic": false,
-    "waqiSlug": "kuala-lumpur"
+    "waqiSlug": "kuala-lumpur",
+    "population": 1982112
   },
   {
     "id": "gl-jakarta",
@@ -4285,7 +4675,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -6.2088,
     "longitude": 106.8456,
     "isDomestic": false,
-    "waqiSlug": "jakarta"
+    "waqiSlug": "jakarta",
+    "population": 10562088
   },
   {
     "id": "gl-manila",
@@ -4295,7 +4686,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 14.5995,
     "longitude": 120.9842,
     "isDomestic": false,
-    "waqiSlug": "manila"
+    "waqiSlug": "manila",
+    "population": 1846513
   },
   {
     "id": "gl-delhi",
@@ -4305,7 +4697,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 28.6139,
     "longitude": 77.209,
     "isDomestic": false,
-    "waqiSlug": "delhi"
+    "waqiSlug": "delhi",
+    "population": 32941000
   },
   {
     "id": "gl-mumbai",
@@ -4315,7 +4708,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 19.076,
     "longitude": 72.8777,
     "isDomestic": false,
-    "waqiSlug": "mumbai"
+    "waqiSlug": "mumbai",
+    "population": 20961000
   },
   {
     "id": "gl-kolkata",
@@ -4325,7 +4719,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 22.5726,
     "longitude": 88.3639,
     "isDomestic": false,
-    "waqiSlug": "kolkata"
+    "waqiSlug": "kolkata",
+    "population": 15134000
   },
   {
     "id": "gl-bengaluru",
@@ -4335,7 +4730,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 12.9716,
     "longitude": 77.5946,
     "isDomestic": false,
-    "waqiSlug": "bengaluru"
+    "waqiSlug": "bengaluru",
+    "population": 13193000
   },
   {
     "id": "gl-dubai",
@@ -4345,7 +4741,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 25.2048,
     "longitude": 55.2708,
     "isDomestic": false,
-    "waqiSlug": "dubai"
+    "waqiSlug": "dubai",
+    "population": 3331420
   },
   {
     "id": "gl-abudhabi",
@@ -4355,7 +4752,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 24.4539,
     "longitude": 54.3773,
     "isDomestic": false,
-    "waqiSlug": "abu-dhabi"
+    "waqiSlug": "abu-dhabi",
+    "population": 1450000
   },
   {
     "id": "gl-riyadh",
@@ -4365,7 +4763,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 24.7136,
     "longitude": 46.6753,
     "isDomestic": false,
-    "waqiSlug": "riyadh"
+    "waqiSlug": "riyadh",
+    "population": 7676654
   },
   {
     "id": "gl-doha",
@@ -4375,7 +4774,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 25.2854,
     "longitude": 51.531,
     "isDomestic": false,
-    "waqiSlug": "doha"
+    "waqiSlug": "doha",
+    "population": 2382000
   },
   {
     "id": "gl-telaviv",
@@ -4385,7 +4785,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.0853,
     "longitude": 34.7818,
     "isDomestic": false,
-    "waqiSlug": "tel-aviv"
+    "waqiSlug": "tel-aviv",
+    "population": 460613
   },
   {
     "id": "gl-istanbul",
@@ -4395,7 +4796,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.0082,
     "longitude": 28.9784,
     "isDomestic": false,
-    "waqiSlug": "istanbul"
+    "waqiSlug": "istanbul",
+    "population": 15462452
   },
   {
     "id": "gl-london",
@@ -4405,7 +4807,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 51.5074,
     "longitude": -0.1278,
     "isDomestic": false,
-    "waqiSlug": "london"
+    "waqiSlug": "london",
+    "population": 14800000
   },
   {
     "id": "gl-manchester",
@@ -4415,7 +4818,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 53.4808,
     "longitude": -2.2426,
     "isDomestic": false,
-    "waqiSlug": "manchester"
+    "waqiSlug": "manchester",
+    "population": 553230
   },
   {
     "id": "gl-edinburgh",
@@ -4425,7 +4829,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 55.9533,
     "longitude": -3.1883,
     "isDomestic": false,
-    "waqiSlug": "edinburgh"
+    "waqiSlug": "edinburgh",
+    "population": 527620
   },
   {
     "id": "gl-paris",
@@ -4435,7 +4840,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 48.8566,
     "longitude": 2.3522,
     "isDomestic": false,
-    "waqiSlug": "paris"
+    "waqiSlug": "paris",
+    "population": 12271794
   },
   {
     "id": "gl-lyon",
@@ -4445,7 +4851,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 45.764,
     "longitude": 4.8357,
     "isDomestic": false,
-    "waqiSlug": "lyon"
+    "waqiSlug": "lyon",
+    "population": 522969
   },
   {
     "id": "gl-berlin",
@@ -4455,7 +4862,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 52.52,
     "longitude": 13.405,
     "isDomestic": false,
-    "waqiSlug": "berlin"
+    "waqiSlug": "berlin",
+    "population": 3645000
   },
   {
     "id": "gl-munich",
@@ -4465,7 +4873,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 48.1351,
     "longitude": 11.582,
     "isDomestic": false,
-    "waqiSlug": "munich"
+    "waqiSlug": "munich",
+    "population": 1488202
   },
   {
     "id": "gl-frankfurt",
@@ -4475,7 +4884,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 50.1109,
     "longitude": 8.6821,
     "isDomestic": false,
-    "waqiSlug": "frankfurt"
+    "waqiSlug": "frankfurt",
+    "population": 753056
   },
   {
     "id": "gl-madrid",
@@ -4485,7 +4895,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 40.4168,
     "longitude": -3.7038,
     "isDomestic": false,
-    "waqiSlug": "madrid"
+    "waqiSlug": "madrid",
+    "population": 3223000
   },
   {
     "id": "gl-barcelona",
@@ -4495,7 +4906,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.3879,
     "longitude": 2.1699,
     "isDomestic": false,
-    "waqiSlug": "barcelona"
+    "waqiSlug": "barcelona",
+    "population": 1620000
   },
   {
     "id": "gl-rome",
@@ -4505,7 +4917,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.9028,
     "longitude": 12.4964,
     "isDomestic": false,
-    "waqiSlug": "rome"
+    "waqiSlug": "rome",
+    "population": 2873000
   },
   {
     "id": "gl-milan",
@@ -4515,7 +4928,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 45.4642,
     "longitude": 9.19,
     "isDomestic": false,
-    "waqiSlug": "milan"
+    "waqiSlug": "milan",
+    "population": 1371000
   },
   {
     "id": "gl-amsterdam",
@@ -4525,7 +4939,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 52.3676,
     "longitude": 4.9041,
     "isDomestic": false,
-    "waqiSlug": "amsterdam"
+    "waqiSlug": "amsterdam",
+    "population": 872680
   },
   {
     "id": "gl-zurich",
@@ -4535,7 +4950,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 47.3769,
     "longitude": 8.5417,
     "isDomestic": false,
-    "waqiSlug": "zurich"
+    "waqiSlug": "zurich",
+    "population": 421878
   },
   {
     "id": "gl-geneva",
@@ -4545,7 +4961,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 46.2044,
     "longitude": 6.1432,
     "isDomestic": false,
-    "waqiSlug": "geneva"
+    "waqiSlug": "geneva",
+    "population": 201818
   },
   {
     "id": "gl-vienna",
@@ -4555,7 +4972,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 48.2082,
     "longitude": 16.3738,
     "isDomestic": false,
-    "waqiSlug": "vienna"
+    "waqiSlug": "vienna",
+    "population": 1911191
   },
   {
     "id": "gl-stockholm",
@@ -4565,7 +4983,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 59.3293,
     "longitude": 18.0686,
     "isDomestic": false,
-    "waqiSlug": "stockholm"
+    "waqiSlug": "stockholm",
+    "population": 975551
   },
   {
     "id": "gl-oslo",
@@ -4575,7 +4994,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 59.9139,
     "longitude": 10.7522,
     "isDomestic": false,
-    "waqiSlug": "oslo"
+    "waqiSlug": "oslo",
+    "population": 693494
   },
   {
     "id": "gl-copenhagen",
@@ -4585,7 +5005,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 55.6761,
     "longitude": 12.5683,
     "isDomestic": false,
-    "waqiSlug": "copenhagen"
+    "waqiSlug": "copenhagen",
+    "population": 632340
   },
   {
     "id": "gl-helsinki",
@@ -4595,7 +5016,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 60.1699,
     "longitude": 24.9384,
     "isDomestic": false,
-    "waqiSlug": "helsinki"
+    "waqiSlug": "helsinki",
+    "population": 656920
   },
   {
     "id": "gl-dublin",
@@ -4605,7 +5027,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 53.3498,
     "longitude": -6.2603,
     "isDomestic": false,
-    "waqiSlug": "dublin"
+    "waqiSlug": "dublin",
+    "population": 554554
   },
   {
     "id": "gl-brussels",
@@ -4615,7 +5038,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 50.8503,
     "longitude": 4.3517,
     "isDomestic": false,
-    "waqiSlug": "brussels"
+    "waqiSlug": "brussels",
+    "population": 1208542
   },
   {
     "id": "gl-warsaw",
@@ -4625,7 +5049,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 52.2297,
     "longitude": 21.0122,
     "isDomestic": false,
-    "waqiSlug": "warsaw"
+    "waqiSlug": "warsaw",
+    "population": 1790658
   },
   {
     "id": "gl-prague",
@@ -4635,7 +5060,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 50.0755,
     "longitude": 14.4378,
     "isDomestic": false,
-    "waqiSlug": "prague"
+    "waqiSlug": "prague",
+    "population": 1324277
   },
   {
     "id": "gl-budapest",
@@ -4645,7 +5071,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 47.4979,
     "longitude": 19.0402,
     "isDomestic": false,
-    "waqiSlug": "budapest"
+    "waqiSlug": "budapest",
+    "population": 1752286
   },
   {
     "id": "gl-athens",
@@ -4655,7 +5082,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.9838,
     "longitude": 23.7275,
     "isDomestic": false,
-    "waqiSlug": "athens"
+    "waqiSlug": "athens",
+    "population": 3153000
   },
   {
     "id": "gl-lisbon",
@@ -4665,7 +5093,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 38.7223,
     "longitude": -9.1393,
     "isDomestic": false,
-    "waqiSlug": "lisbon"
+    "waqiSlug": "lisbon",
+    "population": 504718
   },
   {
     "id": "gl-moscow",
@@ -4675,7 +5104,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 55.7558,
     "longitude": 37.6173,
     "isDomestic": false,
-    "waqiSlug": "moscow"
+    "waqiSlug": "moscow",
+    "population": 12655050
   },
   {
     "id": "gl-spb",
@@ -4685,7 +5115,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 59.9343,
     "longitude": 30.3351,
     "isDomestic": false,
-    "waqiSlug": "saint-petersburg"
+    "waqiSlug": "saint-petersburg",
+    "population": 5384342
   },
   {
     "id": "gl-newyork",
@@ -4695,7 +5126,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 40.7128,
     "longitude": -74.006,
     "isDomestic": false,
-    "waqiSlug": "usa/newyork"
+    "waqiSlug": "usa/newyork",
+    "population": 8804190
   },
   {
     "id": "gl-losangeles",
@@ -4705,7 +5137,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.0522,
     "longitude": -118.2437,
     "isDomestic": false,
-    "waqiSlug": "los-angeles"
+    "waqiSlug": "los-angeles",
+    "population": 3898747
   },
   {
     "id": "gl-sanfrancisco",
@@ -4715,7 +5148,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.7749,
     "longitude": -122.4194,
     "isDomestic": false,
-    "waqiSlug": "san-francisco"
+    "waqiSlug": "san-francisco",
+    "population": 873965
   },
   {
     "id": "gl-chicago",
@@ -4725,7 +5159,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 41.8781,
     "longitude": -87.6298,
     "isDomestic": false,
-    "waqiSlug": "chicago"
+    "waqiSlug": "chicago",
+    "population": 2746388
   },
   {
     "id": "gl-seattle",
@@ -4735,7 +5170,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 47.6062,
     "longitude": -122.3321,
     "isDomestic": false,
-    "waqiSlug": "seattle"
+    "waqiSlug": "seattle",
+    "population": 737015
   },
   {
     "id": "gl-boston",
@@ -4745,7 +5181,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 42.3601,
     "longitude": -71.0589,
     "isDomestic": false,
-    "waqiSlug": "boston"
+    "waqiSlug": "boston",
+    "population": 675647
   },
   {
     "id": "gl-washington",
@@ -4755,7 +5192,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 38.9072,
     "longitude": -77.0369,
     "isDomestic": false,
-    "waqiSlug": "washington-dc"
+    "waqiSlug": "washington-dc",
+    "population": 689545
   },
   {
     "id": "gl-miami",
@@ -4765,7 +5203,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 25.7617,
     "longitude": -80.1918,
     "isDomestic": false,
-    "waqiSlug": "miami"
+    "waqiSlug": "miami",
+    "population": 442241
   },
   {
     "id": "gl-toronto",
@@ -4775,7 +5214,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 43.6532,
     "longitude": -79.3832,
     "isDomestic": false,
-    "waqiSlug": "toronto"
+    "waqiSlug": "toronto",
+    "population": 2794356
   },
   {
     "id": "gl-vancouver",
@@ -4785,7 +5225,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 49.2827,
     "longitude": -123.1207,
     "isDomestic": false,
-    "waqiSlug": "vancouver"
+    "waqiSlug": "vancouver",
+    "population": 675218
   },
   {
     "id": "gl-montreal",
@@ -4795,7 +5236,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 45.5017,
     "longitude": -73.5673,
     "isDomestic": false,
-    "waqiSlug": "montreal"
+    "waqiSlug": "montreal",
+    "population": 1762949
   },
   {
     "id": "gl-mexicocity",
@@ -4805,7 +5247,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 19.4326,
     "longitude": -99.1332,
     "isDomestic": false,
-    "waqiSlug": "mexico-city"
+    "waqiSlug": "mexico-city",
+    "population": 9209944
   },
   {
     "id": "gl-saopaulo",
@@ -4815,7 +5258,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -23.5505,
     "longitude": -46.6333,
     "isDomestic": false,
-    "waqiSlug": "sao-paulo"
+    "waqiSlug": "sao-paulo",
+    "population": 12330000
   },
   {
     "id": "gl-riodejaneiro",
@@ -4825,7 +5269,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -22.9068,
     "longitude": -43.1729,
     "isDomestic": false,
-    "waqiSlug": "rio-de-janeiro"
+    "waqiSlug": "rio-de-janeiro",
+    "population": 6748000
   },
   {
     "id": "gl-buenosaires",
@@ -4835,7 +5280,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -34.6037,
     "longitude": -58.3816,
     "isDomestic": false,
-    "waqiSlug": "buenos-aires"
+    "waqiSlug": "buenos-aires",
+    "population": 3120612
   },
   {
     "id": "gl-santiago",
@@ -4845,7 +5291,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -33.4489,
     "longitude": -70.6693,
     "isDomestic": false,
-    "waqiSlug": "santiago"
+    "waqiSlug": "santiago",
+    "population": 6257000
   },
   {
     "id": "gl-bogota",
@@ -4855,7 +5302,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 4.711,
     "longitude": -74.0721,
     "isDomestic": false,
-    "waqiSlug": "bogota"
+    "waqiSlug": "bogota",
+    "population": 7743955
   },
   {
     "id": "gl-lima",
@@ -4865,7 +5313,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -12.0464,
     "longitude": -77.0428,
     "isDomestic": false,
-    "waqiSlug": "lima"
+    "waqiSlug": "lima",
+    "population": 9752000
   },
   {
     "id": "gl-sydney",
@@ -4875,7 +5324,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -33.8688,
     "longitude": 151.2093,
     "isDomestic": false,
-    "waqiSlug": "sydney"
+    "waqiSlug": "sydney",
+    "population": 5312163
   },
   {
     "id": "gl-melbourne",
@@ -4885,7 +5335,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -37.8136,
     "longitude": 144.9631,
     "isDomestic": false,
-    "waqiSlug": "melbourne"
+    "waqiSlug": "melbourne",
+    "population": 5078193
   },
   {
     "id": "gl-brisbane",
@@ -4895,7 +5346,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -27.4698,
     "longitude": 153.0251,
     "isDomestic": false,
-    "waqiSlug": "brisbane"
+    "waqiSlug": "brisbane",
+    "population": 2560720
   },
   {
     "id": "gl-perth",
@@ -4905,7 +5357,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -31.9505,
     "longitude": 115.8605,
     "isDomestic": false,
-    "waqiSlug": "perth"
+    "waqiSlug": "perth",
+    "population": 2125114
   },
   {
     "id": "gl-auckland",
@@ -4915,7 +5368,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -36.8485,
     "longitude": 174.7633,
     "isDomestic": false,
-    "waqiSlug": "auckland"
+    "waqiSlug": "auckland",
+    "population": 1657200
   },
   {
     "id": "gl-wellington",
@@ -4925,7 +5379,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -41.2865,
     "longitude": 174.7762,
     "isDomestic": false,
-    "waqiSlug": "wellington"
+    "waqiSlug": "wellington",
+    "population": 434900
   },
   {
     "id": "gl-cairo",
@@ -4935,7 +5390,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.0444,
     "longitude": 31.2357,
     "isDomestic": false,
-    "waqiSlug": "cairo"
+    "waqiSlug": "cairo",
+    "population": 21750020
   },
   {
     "id": "gl-johannesburg",
@@ -4945,7 +5401,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -26.2041,
     "longitude": 28.0473,
     "isDomestic": false,
-    "waqiSlug": "johannesburg"
+    "waqiSlug": "johannesburg",
+    "population": 5635127
   },
   {
     "id": "gl-capetown",
@@ -4955,7 +5412,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -33.9249,
     "longitude": 18.4241,
     "isDomestic": false,
-    "waqiSlug": "cape-town"
+    "waqiSlug": "cape-town",
+    "population": 4618000
   },
   {
     "id": "gl-nairobi",
@@ -4965,7 +5423,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -1.2921,
     "longitude": 36.8219,
     "isDomestic": false,
-    "waqiSlug": "nairobi"
+    "waqiSlug": "nairobi",
+    "population": 4397073
   },
   {
     "id": "gl-lagos",
@@ -4975,147 +5434,162 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 6.5244,
     "longitude": 3.3792,
     "isDomestic": false,
-    "waqiSlug": "lagos"
+    "waqiSlug": "lagos",
+    "population": 15388000
   },
   {
     "id": "gl-ostrava",
-    "nameZh": "Ostrava",
+    "nameZh": "奥斯特拉瓦",
     "nameEn": "Ostrava",
     "country": "CZ",
     "latitude": 49.8398,
     "longitude": 18.29,
     "isDomestic": false,
-    "waqiSlug": "ostrava"
+    "waqiSlug": "ostrava",
+    "population": 287968
   },
   {
     "id": "gl-brno",
-    "nameZh": "Brno",
+    "nameZh": "布尔诺",
     "nameEn": "Brno",
     "country": "CZ",
     "latitude": 49.2027,
     "longitude": 16.6163,
     "isDomestic": false,
-    "waqiSlug": "brno"
+    "waqiSlug": "brno",
+    "population": 381346
   },
   {
     "id": "gl-pilsen",
-    "nameZh": "Pilsen",
+    "nameZh": "比尔森",
     "nameEn": "Pilsen",
     "country": "CZ",
     "latitude": 49.7686,
     "longitude": 13.4234,
     "isDomestic": false,
-    "waqiSlug": "pilsen"
+    "waqiSlug": "pilsen",
+    "population": 174842
   },
   {
     "id": "gl-olomouc",
-    "nameZh": "Olomouc",
+    "nameZh": "奥洛穆茨",
     "nameEn": "Olomouc",
     "country": "CZ",
     "latitude": 49.6015,
     "longitude": 17.2381,
     "isDomestic": false,
-    "waqiSlug": "olomouc"
+    "waqiSlug": "olomouc",
+    "population": 100523
   },
   {
     "id": "gl-salzburg",
-    "nameZh": "Salzburg",
+    "nameZh": "萨尔茨堡",
     "nameEn": "Salzburg",
     "country": "AT",
     "latitude": 47.7975,
     "longitude": 13.0536,
     "isDomestic": false,
-    "waqiSlug": "salzburg"
+    "waqiSlug": "salzburg",
+    "population": 155021
   },
   {
     "id": "gl-linz",
-    "nameZh": "Linz",
+    "nameZh": "林茨",
     "nameEn": "Linz",
     "country": "AT",
     "latitude": 48.3028,
     "longitude": 14.2828,
     "isDomestic": false,
-    "waqiSlug": "linz"
+    "waqiSlug": "linz",
+    "population": 206595
   },
   {
     "id": "gl-innsbruck",
-    "nameZh": "Innsbruck",
+    "nameZh": "因斯布鲁克",
     "nameEn": "Innsbruck",
     "country": "AT",
     "latitude": 47.2626,
     "longitude": 11.3924,
     "isDomestic": false,
-    "waqiSlug": "innsbruck"
+    "waqiSlug": "innsbruck",
+    "population": 132493
   },
   {
     "id": "gl-graz",
-    "nameZh": "Graz",
+    "nameZh": "格拉茨",
     "nameEn": "Graz",
     "country": "AT",
     "latitude": 47.0594,
     "longitude": 15.4667,
     "isDomestic": false,
-    "waqiSlug": "graz"
+    "waqiSlug": "graz",
+    "population": 291072
   },
   {
     "id": "gl-liege",
-    "nameZh": "Liège",
+    "nameZh": "列日",
     "nameEn": "Liège",
     "country": "BE",
     "latitude": 50.6326,
     "longitude": 5.5797,
     "isDomestic": false,
-    "waqiSlug": "liege"
+    "waqiSlug": "liege",
+    "population": 197000
   },
   {
     "id": "gl-charleroi",
-    "nameZh": "Charleroi",
+    "nameZh": "沙勒罗瓦",
     "nameEn": "Charleroi",
     "country": "BE",
     "latitude": 50.4108,
     "longitude": 4.4446,
     "isDomestic": false,
-    "waqiSlug": "charleroi"
+    "waqiSlug": "charleroi",
+    "population": 202746
   },
   {
     "id": "gl-gent",
-    "nameZh": "Gent",
+    "nameZh": "根特",
     "nameEn": "Gent",
     "country": "BE",
     "latitude": 51.0583,
     "longitude": 3.7293,
     "isDomestic": false,
-    "waqiSlug": "gent"
+    "waqiSlug": "gent",
+    "population": 263927
   },
   {
     "id": "gl-namur",
-    "nameZh": "Namur",
+    "nameZh": "那慕尔",
     "nameEn": "Namur",
     "country": "BE",
     "latitude": 50.4624,
     "longitude": 4.8653,
     "isDomestic": false,
-    "waqiSlug": "namur"
+    "waqiSlug": "namur",
+    "population": 110939
   },
   {
     "id": "gl-antwerpen",
-    "nameZh": "Antwerpen",
+    "nameZh": "安特卫普",
     "nameEn": "Antwerpen",
     "country": "BE",
     "latitude": 51.2057,
     "longitude": 4.4181,
     "isDomestic": false,
-    "waqiSlug": "antwerpen"
+    "waqiSlug": "antwerpen",
+    "population": 529247
   },
   {
     "id": "gl-jeonju",
-    "nameZh": "Jeonju",
+    "nameZh": "全州",
     "nameEn": "Jeonju",
     "country": "KR",
     "latitude": 35.8242,
     "longitude": 127.148,
     "isDomestic": false,
-    "waqiSlug": "jeonju"
+    "waqiSlug": "jeonju",
+    "population": 650000
   },
   {
     "id": "gl-sejong",
@@ -5125,7 +5599,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.5929,
     "longitude": 127.2923,
     "isDomestic": false,
-    "waqiSlug": "sejong"
+    "waqiSlug": "sejong",
+    "population": 385000
   },
   {
     "id": "gl-ulsan",
@@ -5135,17 +5610,19 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.5384,
     "longitude": 129.3114,
     "isDomestic": false,
-    "waqiSlug": "ulsan"
+    "waqiSlug": "ulsan",
+    "population": 1130000
   },
   {
     "id": "gl-yeosu",
-    "nameZh": "Yeosu",
+    "nameZh": "丽水",
     "nameEn": "Yeosu",
     "country": "KR",
     "latitude": 34.7604,
     "longitude": 127.6622,
     "isDomestic": false,
-    "waqiSlug": "yeosu"
+    "waqiSlug": "yeosu",
+    "population": 280000
   },
   {
     "id": "gl-gwangju",
@@ -5155,17 +5632,19 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.1595,
     "longitude": 126.8526,
     "isDomestic": false,
-    "waqiSlug": "gwangju"
+    "waqiSlug": "gwangju",
+    "population": 1450000
   },
   {
     "id": "gl-seongnam-si",
-    "nameZh": "Seongnam-si",
+    "nameZh": "城南",
     "nameEn": "Seongnam-si",
     "country": "KR",
     "latitude": 37.4449,
     "longitude": 127.1389,
     "isDomestic": false,
-    "waqiSlug": "seongnam-si"
+    "waqiSlug": "seongnam-si",
+    "population": 940000
   },
   {
     "id": "gl-daejeon",
@@ -5175,17 +5654,19 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.3504,
     "longitude": 127.3845,
     "isDomestic": false,
-    "waqiSlug": "daejeon"
+    "waqiSlug": "daejeon",
+    "population": 1470000
   },
   {
     "id": "gl-pohang",
-    "nameZh": "Pohang",
+    "nameZh": "浦项",
     "nameEn": "Pohang",
     "country": "KR",
     "latitude": 36.019,
     "longitude": 129.3435,
     "isDomestic": false,
-    "waqiSlug": "pohang"
+    "waqiSlug": "pohang",
+    "population": 500000
   },
   {
     "id": "gl-changwon",
@@ -5195,7 +5676,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.2361,
     "longitude": 128.6839,
     "isDomestic": false,
-    "waqiSlug": "changwon"
+    "waqiSlug": "changwon",
+    "population": 1030000
   },
   {
     "id": "gl-suwon",
@@ -5205,27 +5687,30 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 37.2636,
     "longitude": 127.0286,
     "isDomestic": false,
-    "waqiSlug": "suwon"
+    "waqiSlug": "suwon",
+    "population": 1190000
   },
   {
     "id": "gl-cheongju-si",
-    "nameZh": "Cheongju-si",
+    "nameZh": "清州",
     "nameEn": "Cheongju-si",
     "country": "KR",
     "latitude": 36.6424,
     "longitude": 127.489,
     "isDomestic": false,
-    "waqiSlug": "cheongju-si"
+    "waqiSlug": "cheongju-si",
+    "population": 850000
   },
   {
     "id": "gl-chuncheon",
-    "nameZh": "Chuncheon",
+    "nameZh": "春川",
     "nameEn": "Chuncheon",
     "country": "KR",
     "latitude": 37.8754,
     "longitude": 127.7202,
     "isDomestic": false,
-    "waqiSlug": "chuncheon"
+    "waqiSlug": "chuncheon",
+    "population": 280000
   },
   {
     "id": "gl-daegu",
@@ -5235,87 +5720,96 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.8714,
     "longitude": 128.6014,
     "isDomestic": false,
-    "waqiSlug": "daegu"
+    "waqiSlug": "daegu",
+    "population": 2420000
   },
   {
     "id": "gl-jeju-city",
-    "nameZh": "Jeju City",
+    "nameZh": "济州市",
     "nameEn": "Jeju City",
     "country": "KR",
     "latitude": 33.5001,
     "longitude": 126.5324,
     "isDomestic": false,
-    "waqiSlug": "jeju-city"
+    "waqiSlug": "jeju-city",
+    "population": 490000
   },
   {
     "id": "gl-suncheon",
-    "nameZh": "Suncheon",
+    "nameZh": "顺天",
     "nameEn": "Suncheon",
     "country": "KR",
     "latitude": 34.9506,
     "longitude": 127.4872,
     "isDomestic": false,
-    "waqiSlug": "suncheon"
+    "waqiSlug": "suncheon",
+    "population": 280000
   },
   {
     "id": "gl-mokpo",
-    "nameZh": "Mokpo",
+    "nameZh": "木浦",
     "nameEn": "Mokpo",
     "country": "KR",
     "latitude": 34.8059,
     "longitude": 126.3918,
     "isDomestic": false,
-    "waqiSlug": "mokpo"
+    "waqiSlug": "mokpo",
+    "population": 220000
   },
   {
     "id": "gl-andong",
-    "nameZh": "Andong",
+    "nameZh": "安东",
     "nameEn": "Andong",
     "country": "KR",
     "latitude": 36.5642,
     "longitude": 128.7281,
     "isDomestic": false,
-    "waqiSlug": "andong"
+    "waqiSlug": "andong",
+    "population": 160000
   },
   {
     "id": "gl-ulan-bator",
-    "nameZh": "Ulan Bator",
+    "nameZh": "乌兰巴托",
     "nameEn": "Ulan Bator",
     "country": "MN",
     "latitude": 47.8943,
     "longitude": 106.8825,
     "isDomestic": false,
-    "waqiSlug": "ulan-bator"
+    "waqiSlug": "ulan-bator",
+    "population": 1499000
   },
   {
     "id": "gl-trondheim",
-    "nameZh": "Trondheim",
+    "nameZh": "特隆赫姆",
     "nameEn": "Trondheim",
     "country": "NO",
     "latitude": 63.4105,
     "longitude": 10.4444,
     "isDomestic": false,
-    "waqiSlug": "trondheim"
+    "waqiSlug": "trondheim",
+    "population": 205163
   },
   {
     "id": "gl-stavanger",
-    "nameZh": "Stavanger",
+    "nameZh": "斯塔万格",
     "nameEn": "Stavanger",
     "country": "NO",
     "latitude": 58.9726,
     "longitude": 5.7265,
     "isDomestic": false,
-    "waqiSlug": "stavanger"
+    "waqiSlug": "stavanger",
+    "population": 144346
   },
   {
     "id": "gl-bergen",
-    "nameZh": "Bergen",
+    "nameZh": "卑尔根",
     "nameEn": "Bergen",
     "country": "NO",
     "latitude": 60.3959,
     "longitude": 5.3127,
     "isDomestic": false,
-    "waqiSlug": "bergen"
+    "waqiSlug": "bergen",
+    "population": 283929
   },
   {
     "id": "gl-kathmandu",
@@ -5325,7 +5819,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 27.7172,
     "longitude": 85.324,
     "isDomestic": false,
-    "waqiSlug": "kathmandu"
+    "waqiSlug": "kathmandu",
+    "population": 1442000
   },
   {
     "id": "gl-pokhara",
@@ -5335,57 +5830,63 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 28.2669,
     "longitude": 83.9685,
     "isDomestic": false,
-    "waqiSlug": "pokhara"
+    "waqiSlug": "pokhara",
+    "population": 518000
   },
   {
     "id": "gl-sarajevo",
-    "nameZh": "Sarajevo",
+    "nameZh": "萨拉热窝",
     "nameEn": "Sarajevo",
     "country": "BA",
     "latitude": 43.8483,
     "longitude": 18.3634,
     "isDomestic": false,
-    "waqiSlug": "sarajevo"
+    "waqiSlug": "sarajevo",
+    "population": 275524
   },
   {
     "id": "gl-zenica",
-    "nameZh": "Zenica",
+    "nameZh": "泽尼察",
     "nameEn": "Zenica",
     "country": "BA",
     "latitude": 44.2034,
     "longitude": 17.9077,
     "isDomestic": false,
-    "waqiSlug": "zenica"
+    "waqiSlug": "zenica",
+    "population": 110658
   },
   {
     "id": "gl-tuzla",
-    "nameZh": "Tuzla",
+    "nameZh": "图兹拉",
     "nameEn": "Tuzla",
     "country": "BA",
     "latitude": 44.5408,
     "longitude": 18.6733,
     "isDomestic": false,
-    "waqiSlug": "tuzla"
+    "waqiSlug": "tuzla",
+    "population": 110979
   },
   {
     "id": "gl-sao-jose-dos-campos",
-    "nameZh": "São José dos Campos",
+    "nameZh": "圣若泽杜斯坎普斯",
     "nameEn": "São José dos Campos",
     "country": "BR",
     "latitude": -23.1879,
     "longitude": -45.8712,
     "isDomestic": false,
-    "waqiSlug": "sao-jose-dos-campos"
+    "waqiSlug": "sao-jose-dos-campos",
+    "population": 730000
   },
   {
     "id": "gl-haifa",
-    "nameZh": "Haifa",
+    "nameZh": "海法",
     "nameEn": "Haifa",
     "country": "IL",
     "latitude": 32.794,
     "longitude": 34.9896,
     "isDomestic": false,
-    "waqiSlug": "haifa"
+    "waqiSlug": "haifa",
+    "population": 285300
   },
   {
     "id": "gl-jerusalem",
@@ -5395,137 +5896,151 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.7683,
     "longitude": 35.2137,
     "isDomestic": false,
-    "waqiSlug": "jerusalem"
+    "waqiSlug": "jerusalem",
+    "population": 936425
   },
   {
     "id": "gl-ashdod",
-    "nameZh": "Ashdod",
+    "nameZh": "阿什杜德",
     "nameEn": "Ashdod",
     "country": "IL",
     "latitude": 31.8044,
     "longitude": 34.6553,
     "isDomestic": false,
-    "waqiSlug": "ashdod"
+    "waqiSlug": "ashdod",
+    "population": 226000
   },
   {
     "id": "gl-netanya",
-    "nameZh": "Netanya",
+    "nameZh": "内坦亚",
     "nameEn": "Netanya",
     "country": "IL",
     "latitude": 32.3109,
     "longitude": 34.8749,
     "isDomestic": false,
-    "waqiSlug": "netanya"
+    "waqiSlug": "netanya",
+    "population": 225000
   },
   {
     "id": "gl-ashkelon",
-    "nameZh": "Ashkelon",
+    "nameZh": "阿什凯隆",
     "nameEn": "Ashkelon",
     "country": "IL",
     "latitude": 31.6595,
     "longitude": 34.5697,
     "isDomestic": false,
-    "waqiSlug": "ashkelon"
+    "waqiSlug": "ashkelon",
+    "population": 149000
   },
   {
     "id": "gl-petah-tiqwa",
-    "nameZh": "Petaẖ Tiqwa",
+    "nameZh": "佩塔提克瓦",
     "nameEn": "Petaẖ Tiqwa",
     "country": "IL",
     "latitude": 32.0994,
     "longitude": 34.871,
     "isDomestic": false,
-    "waqiSlug": "petah-tiqwa"
+    "waqiSlug": "petah-tiqwa",
+    "population": 252000
   },
   {
     "id": "gl-hyderabad",
-    "nameZh": "Hyderabad",
+    "nameZh": "海得拉巴",
     "nameEn": "Hyderabad",
     "country": "IN",
     "latitude": 17.3841,
     "longitude": 78.4564,
     "isDomestic": false,
-    "waqiSlug": "hyderabad"
+    "waqiSlug": "hyderabad",
+    "population": 10490000
   },
   {
     "id": "gl-chandigarh",
-    "nameZh": "Chandigarh",
+    "nameZh": "昌迪加尔",
     "nameEn": "Chandigarh",
     "country": "IN",
     "latitude": 30.7356,
     "longitude": 76.7757,
     "isDomestic": false,
-    "waqiSlug": "chandigarh"
+    "waqiSlug": "chandigarh",
+    "population": 1158000
   },
   {
     "id": "gl-bhopal",
-    "nameZh": "Bhopal",
+    "nameZh": "博帕尔",
     "nameEn": "Bhopal",
     "country": "IN",
     "latitude": 23.2336,
     "longitude": 77.4006,
     "isDomestic": false,
-    "waqiSlug": "bhopal"
+    "waqiSlug": "bhopal",
+    "population": 1883000
   },
   {
     "id": "gl-lucknow",
-    "nameZh": "Lucknow",
+    "nameZh": "勒克瑙",
     "nameEn": "Lucknow",
     "country": "IN",
     "latitude": 26.8821,
     "longitude": 80.9303,
     "isDomestic": false,
-    "waqiSlug": "lucknow"
+    "waqiSlug": "lucknow",
+    "population": 2901000
   },
   {
     "id": "gl-ghaziabad",
-    "nameZh": "Ghāziābād",
+    "nameZh": "加济阿巴德",
     "nameEn": "Ghāziābād",
     "country": "IN",
     "latitude": 28.6854,
     "longitude": 77.4538,
     "isDomestic": false,
-    "waqiSlug": "ghaziabad"
+    "waqiSlug": "ghaziabad",
+    "population": 2358000
   },
   {
     "id": "gl-hapur",
-    "nameZh": "Hāpur",
+    "nameZh": "哈普尔",
     "nameEn": "Hāpur",
     "country": "IN",
     "latitude": 28.7256,
     "longitude": 77.7497,
     "isDomestic": false,
-    "waqiSlug": "hapur"
+    "waqiSlug": "hapur",
+    "population": 262000
   },
   {
     "id": "gl-gandhinagar",
-    "nameZh": "Gandhinagar",
+    "nameZh": "甘地讷格尔",
     "nameEn": "Gandhinagar",
     "country": "IN",
     "latitude": 23.2436,
     "longitude": 72.6899,
     "isDomestic": false,
-    "waqiSlug": "gandhinagar"
+    "waqiSlug": "gandhinagar",
+    "population": 292000
   },
   {
     "id": "gl-chennai",
-    "nameZh": "Chennai",
+    "nameZh": "金奈",
     "nameEn": "Chennai",
     "country": "IN",
     "latitude": 13.0878,
     "longitude": 80.2785,
     "isDomestic": false,
-    "waqiSlug": "chennai"
+    "waqiSlug": "chennai",
+    "population": 11503000
   },
   {
     "id": "gl-nashik",
-    "nameZh": "Nashik",
+    "nameZh": "纳西克",
     "nameEn": "Nashik",
     "country": "IN",
     "latitude": 19.9975,
     "longitude": 73.7898,
     "isDomestic": false,
-    "waqiSlug": "nashik"
+    "waqiSlug": "nashik",
+    "population": 1486000
   },
   {
     "id": "gl-visakhapatnam",
@@ -5535,207 +6050,228 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 17.6801,
     "longitude": 83.2016,
     "isDomestic": false,
-    "waqiSlug": "visakhapatnam"
+    "waqiSlug": "visakhapatnam",
+    "population": 2035000
   },
   {
     "id": "gl-jaipur",
-    "nameZh": "Jaipur",
+    "nameZh": "斋浦尔",
     "nameEn": "Jaipur",
     "country": "IN",
     "latitude": 26.9164,
     "longitude": 75.7995,
     "isDomestic": false,
-    "waqiSlug": "jaipur"
+    "waqiSlug": "jaipur",
+    "population": 3073000
   },
   {
     "id": "gl-patna",
-    "nameZh": "Patna",
+    "nameZh": "巴特那",
     "nameEn": "Patna",
     "country": "IN",
     "latitude": 25.6104,
     "longitude": 85.1327,
     "isDomestic": false,
-    "waqiSlug": "patna"
+    "waqiSlug": "patna",
+    "population": 2046000
   },
   {
     "id": "gl-muzaffarnagar",
-    "nameZh": "Muzaffarnagar",
+    "nameZh": "穆扎法尔纳加尔",
     "nameEn": "Muzaffarnagar",
     "country": "IN",
     "latitude": 29.4724,
     "longitude": 77.7194,
     "isDomestic": false,
-    "waqiSlug": "muzaffarnagar"
+    "waqiSlug": "muzaffarnagar",
+    "population": 450000
   },
   {
     "id": "gl-thiruvananthapuram",
-    "nameZh": "Thiruvananthapuram",
+    "nameZh": "特里凡得琅",
     "nameEn": "Thiruvananthapuram",
     "country": "IN",
     "latitude": 8.5149,
     "longitude": 76.9436,
     "isDomestic": false,
-    "waqiSlug": "thiruvananthapuram"
+    "waqiSlug": "thiruvananthapuram",
+    "population": 450000
   },
   {
     "id": "gl-isfahan",
-    "nameZh": "Isfahan",
+    "nameZh": "伊斯法罕",
     "nameEn": "Isfahan",
     "country": "IR",
     "latitude": 32.6544,
     "longitude": 51.6775,
     "isDomestic": false,
-    "waqiSlug": "isfahan"
+    "waqiSlug": "isfahan",
+    "population": 2220000
   },
   {
     "id": "gl-arak",
-    "nameZh": "Arāk",
+    "nameZh": "阿拉克",
     "nameEn": "Arāk",
     "country": "IR",
     "latitude": 34.0872,
     "longitude": 49.6879,
     "isDomestic": false,
-    "waqiSlug": "arak"
+    "waqiSlug": "arak",
+    "population": 450000
   },
   {
     "id": "gl-karaj",
-    "nameZh": "Karaj",
+    "nameZh": "卡拉季",
     "nameEn": "Karaj",
     "country": "IR",
     "latitude": 35.8075,
     "longitude": 50.9884,
     "isDomestic": false,
-    "waqiSlug": "karaj"
+    "waqiSlug": "karaj",
+    "population": 450000
   },
   {
     "id": "gl-qom",
-    "nameZh": "Qom",
+    "nameZh": "库姆",
     "nameEn": "Qom",
     "country": "IR",
     "latitude": 34.6404,
     "longitude": 50.8732,
     "isDomestic": false,
-    "waqiSlug": "qom"
+    "waqiSlug": "qom",
+    "population": 450000
   },
   {
     "id": "gl-orumiyeh",
-    "nameZh": "Orūmīyeh",
+    "nameZh": "乌尔米耶",
     "nameEn": "Orūmīyeh",
     "country": "IR",
     "latitude": 37.5541,
     "longitude": 45.0471,
     "isDomestic": false,
-    "waqiSlug": "orumiyeh"
+    "waqiSlug": "orumiyeh",
+    "population": 450000
   },
   {
     "id": "gl-yazd",
-    "nameZh": "Yazd",
+    "nameZh": "亚兹德",
     "nameEn": "Yazd",
     "country": "IR",
     "latitude": 31.8587,
     "longitude": 54.3612,
     "isDomestic": false,
-    "waqiSlug": "yazd"
+    "waqiSlug": "yazd",
+    "population": 450000
   },
   {
     "id": "gl-ilam",
-    "nameZh": "Īlām",
+    "nameZh": "伊拉姆",
     "nameEn": "Īlām",
     "country": "IR",
     "latitude": 33.6453,
     "longitude": 46.4095,
     "isDomestic": false,
-    "waqiSlug": "ilam"
+    "waqiSlug": "ilam",
+    "population": 450000
   },
   {
     "id": "gl-kerman",
-    "nameZh": "Kerman",
+    "nameZh": "克尔曼",
     "nameEn": "Kerman",
     "country": "IR",
     "latitude": 30.2937,
     "longitude": 57.0876,
     "isDomestic": false,
-    "waqiSlug": "kerman"
+    "waqiSlug": "kerman",
+    "population": 450000
   },
   {
     "id": "gl-khorramshahr",
-    "nameZh": "Khorramshahr",
+    "nameZh": "霍拉姆沙赫尔",
     "nameEn": "Khorramshahr",
     "country": "IR",
     "latitude": 30.4371,
     "longitude": 48.1813,
     "isDomestic": false,
-    "waqiSlug": "khorramshahr"
+    "waqiSlug": "khorramshahr",
+    "population": 450000
   },
   {
     "id": "gl-tabriz",
-    "nameZh": "Tabriz",
+    "nameZh": "大不里士",
     "nameEn": "Tabriz",
     "country": "IR",
     "latitude": 38.0793,
     "longitude": 46.2887,
     "isDomestic": false,
-    "waqiSlug": "tabriz"
+    "waqiSlug": "tabriz",
+    "population": 1558693
   },
   {
     "id": "gl-sanandaj",
-    "nameZh": "Sanandaj",
+    "nameZh": "萨南达季",
     "nameEn": "Sanandaj",
     "country": "IR",
     "latitude": 35.3116,
     "longitude": 46.9969,
     "isDomestic": false,
-    "waqiSlug": "sanandaj"
+    "waqiSlug": "sanandaj",
+    "population": 450000
   },
   {
     "id": "gl-kermanshah",
-    "nameZh": "Kermanshah",
+    "nameZh": "克尔曼沙赫",
     "nameEn": "Kermanshah",
     "country": "IR",
     "latitude": 34.3104,
     "longitude": 47.0703,
     "isDomestic": false,
-    "waqiSlug": "kermanshah"
+    "waqiSlug": "kermanshah",
+    "population": 450000
   },
   {
     "id": "gl-khorramabad",
-    "nameZh": "Khorramabad",
+    "nameZh": "霍拉马巴德",
     "nameEn": "Khorramabad",
     "country": "IR",
     "latitude": 33.4838,
     "longitude": 48.4086,
     "isDomestic": false,
-    "waqiSlug": "khorramabad"
+    "waqiSlug": "khorramabad",
+    "population": 450000
   },
   {
     "id": "gl-shiraz",
-    "nameZh": "Shiraz",
+    "nameZh": "设拉子",
     "nameEn": "Shiraz",
     "country": "IR",
     "latitude": 29.6093,
     "longitude": 52.5301,
     "isDomestic": false,
-    "waqiSlug": "shiraz"
+    "waqiSlug": "shiraz",
+    "population": 1869001
   },
   {
     "id": "gl-zanjan",
-    "nameZh": "Zanjān",
+    "nameZh": "赞詹",
     "nameEn": "Zanjān",
     "country": "IR",
     "latitude": 36.6718,
     "longitude": 48.5065,
     "isDomestic": false,
-    "waqiSlug": "zanjan"
+    "waqiSlug": "zanjan",
+    "population": 450000
   },
   {
     "id": "gl-mashhad",
-    "nameZh": "Mashhad",
+    "nameZh": "马什哈德",
     "nameEn": "Mashhad",
     "country": "IR",
     "latitude": 36.3048,
     "longitude": 59.562,
     "isDomestic": false,
-    "waqiSlug": "mashhad"
+    "waqiSlug": "mashhad",
+    "population": 3001297
   },
   {
     "id": "gl-tehran",
@@ -5745,117 +6281,129 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.6892,
     "longitude": 51.389,
     "isDomestic": false,
-    "waqiSlug": "tehran"
+    "waqiSlug": "tehran",
+    "population": 9039000
   },
   {
     "id": "gl-christchurch",
-    "nameZh": "Christchurch",
+    "nameZh": "基督城",
     "nameEn": "Christchurch",
     "country": "NZ",
     "latitude": -43.5474,
     "longitude": 172.679,
     "isDomestic": false,
-    "waqiSlug": "christchurch"
+    "waqiSlug": "christchurch",
+    "population": 394700
   },
   {
     "id": "gl-odessa",
-    "nameZh": "Odessa",
+    "nameZh": "敖德萨",
     "nameEn": "Odessa",
     "country": "UA",
     "latitude": 46.4847,
     "longitude": 30.6964,
     "isDomestic": false,
-    "waqiSlug": "odessa"
+    "waqiSlug": "odessa",
+    "population": 450000
   },
   {
     "id": "gl-ternopil",
-    "nameZh": "Ternopil",
+    "nameZh": "捷尔诺波尔",
     "nameEn": "Ternopil",
     "country": "UA",
     "latitude": 49.556,
     "longitude": 25.594,
     "isDomestic": false,
-    "waqiSlug": "ternopil"
+    "waqiSlug": "ternopil",
+    "population": 450000
   },
   {
     "id": "gl-kyiv",
-    "nameZh": "Kyiv",
+    "nameZh": "基辅",
     "nameEn": "Kyiv",
     "country": "UA",
     "latitude": 50.444,
     "longitude": 30.54,
     "isDomestic": false,
-    "waqiSlug": "kyiv"
+    "waqiSlug": "kyiv",
+    "population": 2962180
   },
   {
     "id": "gl-kamianske",
-    "nameZh": "Kamianske",
+    "nameZh": "卡缅斯科耶",
     "nameEn": "Kamianske",
     "country": "UA",
     "latitude": 48.5095,
     "longitude": 34.6158,
     "isDomestic": false,
-    "waqiSlug": "kamianske"
+    "waqiSlug": "kamianske",
+    "population": 450000
   },
   {
     "id": "gl-dnipro",
-    "nameZh": "Dnipro",
+    "nameZh": "第聂伯罗",
     "nameEn": "Dnipro",
     "country": "UA",
     "latitude": 48.4675,
     "longitude": 35.0415,
     "isDomestic": false,
-    "waqiSlug": "dnipro"
+    "waqiSlug": "dnipro",
+    "population": 980000
   },
   {
     "id": "gl-zaporizhia",
-    "nameZh": "Zaporizhia",
+    "nameZh": "扎波罗热",
     "nameEn": "Zaporizhia",
     "country": "UA",
     "latitude": 47.8385,
     "longitude": 35.2197,
     "isDomestic": false,
-    "waqiSlug": "zaporizhia"
+    "waqiSlug": "zaporizhia",
+    "population": 450000
   },
   {
     "id": "gl-kryvyi-rih",
-    "nameZh": "Kryvyi Rih",
+    "nameZh": "克里沃罗格",
     "nameEn": "Kryvyi Rih",
     "country": "UA",
     "latitude": 47.8839,
     "longitude": 33.3887,
     "isDomestic": false,
-    "waqiSlug": "kryvyi-rih"
+    "waqiSlug": "kryvyi-rih",
+    "population": 612000
   },
   {
     "id": "gl-ivano-frankivsk",
-    "nameZh": "Ivano-Frankivsk",
+    "nameZh": "伊万诺-弗兰科夫斯克",
     "nameEn": "Ivano-Frankivsk",
     "country": "UA",
     "latitude": 48.9199,
     "longitude": 24.707,
     "isDomestic": false,
-    "waqiSlug": "ivano-frankivsk"
+    "waqiSlug": "ivano-frankivsk",
+    "population": 450000
   },
   {
     "id": "gl-oklahoma-city",
-    "nameZh": "Oklahoma City",
+    "nameZh": "俄克拉荷马城",
     "nameEn": "Oklahoma City",
     "country": "US",
     "latitude": 35.503,
     "longitude": -97.5777,
     "isDomestic": false,
-    "waqiSlug": "oklahoma-city"
+    "waqiSlug": "oklahoma-city",
+    "population": 450000
   },
   {
     "id": "gl-raleigh",
-    "nameZh": "Raleigh",
+    "nameZh": "罗利",
     "nameEn": "Raleigh",
     "country": "US",
     "latitude": 35.8561,
     "longitude": -78.5742,
     "isDomestic": false,
-    "waqiSlug": "raleigh"
+    "waqiSlug": "raleigh",
+    "population": 467000
   },
   {
     "id": "gl-memphis",
@@ -5865,27 +6413,30 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 35.1495,
     "longitude": -90.049,
     "isDomestic": false,
-    "waqiSlug": "memphis"
+    "waqiSlug": "memphis",
+    "population": 633000
   },
   {
     "id": "gl-jackson",
-    "nameZh": "Jackson",
+    "nameZh": "杰克逊",
     "nameEn": "Jackson",
     "country": "US",
     "latitude": 32.3291,
     "longitude": -90.1827,
     "isDomestic": false,
-    "waqiSlug": "jackson"
+    "waqiSlug": "jackson",
+    "population": 450000
   },
   {
     "id": "gl-richmond",
-    "nameZh": "Richmond",
+    "nameZh": "里士满",
     "nameEn": "Richmond",
     "country": "US",
     "latitude": 37.5565,
     "longitude": -77.4003,
     "isDomestic": false,
-    "waqiSlug": "richmond"
+    "waqiSlug": "richmond",
+    "population": 230000
   },
   {
     "id": "gl-portland",
@@ -5895,17 +6446,19 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 45.5152,
     "longitude": -122.6784,
     "isDomestic": false,
-    "waqiSlug": "portland"
+    "waqiSlug": "portland",
+    "population": 652503
   },
   {
     "id": "gl-boise",
-    "nameZh": "Boise",
+    "nameZh": "博伊西",
     "nameEn": "Boise",
     "country": "US",
     "latitude": 43.6189,
     "longitude": -116.2136,
     "isDomestic": false,
-    "waqiSlug": "boise"
+    "waqiSlug": "boise",
+    "population": 450000
   },
   {
     "id": "gl-austin",
@@ -5915,7 +6468,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 30.2672,
     "longitude": -97.7431,
     "isDomestic": false,
-    "waqiSlug": "austin"
+    "waqiSlug": "austin",
+    "population": 961855
   },
   {
     "id": "gl-honolulu",
@@ -5925,47 +6479,52 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 21.3069,
     "longitude": -157.8583,
     "isDomestic": false,
-    "waqiSlug": "honolulu"
+    "waqiSlug": "honolulu",
+    "population": 350000
   },
   {
     "id": "gl-fresno",
-    "nameZh": "Fresno",
+    "nameZh": "弗雷斯诺",
     "nameEn": "Fresno",
     "country": "US",
     "latitude": 36.7854,
     "longitude": -119.7732,
     "isDomestic": false,
-    "waqiSlug": "fresno"
+    "waqiSlug": "fresno",
+    "population": 542000
   },
   {
     "id": "gl-milwaukee",
-    "nameZh": "Milwaukee",
+    "nameZh": "密尔沃基",
     "nameEn": "Milwaukee",
     "country": "US",
     "latitude": 43.0172,
     "longitude": -87.9337,
     "isDomestic": false,
-    "waqiSlug": "milwaukee"
+    "waqiSlug": "milwaukee",
+    "population": 577000
   },
   {
     "id": "gl-columbia",
-    "nameZh": "Columbia",
+    "nameZh": "哥伦比亚",
     "nameEn": "Columbia",
     "country": "US",
     "latitude": 35.6519,
     "longitude": -87.0096,
     "isDomestic": false,
-    "waqiSlug": "columbia"
+    "waqiSlug": "columbia",
+    "population": 450000
   },
   {
     "id": "gl-hartford",
-    "nameZh": "Hartford",
+    "nameZh": "哈特福德",
     "nameEn": "Hartford",
     "country": "US",
     "latitude": 41.7648,
     "longitude": -72.6682,
     "isDomestic": false,
-    "waqiSlug": "hartford"
+    "waqiSlug": "hartford",
+    "population": 450000
   },
   {
     "id": "gl-houston",
@@ -5975,17 +6534,19 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.7604,
     "longitude": -95.3698,
     "isDomestic": false,
-    "waqiSlug": "houston"
+    "waqiSlug": "houston",
+    "population": 2304580
   },
   {
     "id": "gl-indianapolis",
-    "nameZh": "Indianapolis",
+    "nameZh": "印第安纳波利斯",
     "nameEn": "Indianapolis",
     "country": "US",
     "latitude": 39.7879,
     "longitude": -86.1309,
     "isDomestic": false,
-    "waqiSlug": "indianapolis"
+    "waqiSlug": "indianapolis",
+    "population": 887000
   },
   {
     "id": "gl-atlanta",
@@ -5995,97 +6556,107 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.7202,
     "longitude": -84.3571,
     "isDomestic": false,
-    "waqiSlug": "atlanta"
+    "waqiSlug": "atlanta",
+    "population": 498715
   },
   {
     "id": "gl-charlotte",
-    "nameZh": "Charlotte",
+    "nameZh": "夏洛特",
     "nameEn": "Charlotte",
     "country": "US",
     "latitude": 35.2818,
     "longitude": -80.8515,
     "isDomestic": false,
-    "waqiSlug": "charlotte"
+    "waqiSlug": "charlotte",
+    "population": 874000
   },
   {
     "id": "gl-sacramento",
-    "nameZh": "Sacramento",
+    "nameZh": "萨克拉门托",
     "nameEn": "Sacramento",
     "country": "US",
     "latitude": 38.5684,
     "longitude": -121.4931,
     "isDomestic": false,
-    "waqiSlug": "sacramento"
+    "waqiSlug": "sacramento",
+    "population": 524000
   },
   {
     "id": "gl-oakland",
-    "nameZh": "Oakland",
+    "nameZh": "奥克兰",
     "nameEn": "Oakland",
     "country": "US",
     "latitude": 37.8148,
     "longitude": -122.2824,
     "isDomestic": false,
-    "waqiSlug": "oakland"
+    "waqiSlug": "oakland",
+    "population": 440000
   },
   {
     "id": "gl-providence",
-    "nameZh": "Providence",
+    "nameZh": "普罗维登斯",
     "nameEn": "Providence",
     "country": "US",
     "latitude": 41.8295,
     "longitude": -71.4175,
     "isDomestic": false,
-    "waqiSlug": "providence"
+    "waqiSlug": "providence",
+    "population": 450000
   },
   {
     "id": "gl-springfield",
-    "nameZh": "Springfield",
+    "nameZh": "斯普林菲尔德",
     "nameEn": "Springfield",
     "country": "US",
     "latitude": 37.2561,
     "longitude": -93.2997,
     "isDomestic": false,
-    "waqiSlug": "springfield"
+    "waqiSlug": "springfield",
+    "population": 450000
   },
   {
     "id": "gl-san-jose",
-    "nameZh": "San Jose",
+    "nameZh": "圣何塞",
     "nameEn": "San Jose",
     "country": "US",
     "latitude": 37.3485,
     "longitude": -121.8949,
     "isDomestic": false,
-    "waqiSlug": "san-jose"
+    "waqiSlug": "san-jose",
+    "population": 450000
   },
   {
     "id": "gl-detroit",
-    "nameZh": "Detroit",
+    "nameZh": "底特律",
     "nameEn": "Detroit",
     "country": "US",
     "latitude": 42.3149,
     "longitude": -83.0364,
     "isDomestic": false,
-    "waqiSlug": "detroit"
+    "waqiSlug": "detroit",
+    "population": 639000
   },
   {
     "id": "gl-little-rock",
-    "nameZh": "Little Rock",
+    "nameZh": "小石城",
     "nameEn": "Little Rock",
     "country": "US",
     "latitude": 34.7561,
     "longitude": -92.2758,
     "isDomestic": false,
-    "waqiSlug": "little-rock"
+    "waqiSlug": "little-rock",
+    "population": 450000
   },
   {
     "id": "gl-baltimore",
-    "nameZh": "Baltimore",
+    "nameZh": "巴尔的摩",
     "nameEn": "Baltimore",
     "country": "US",
     "latitude": 39.2981,
     "longitude": -76.6047,
     "isDomestic": false,
-    "waqiSlug": "baltimore"
+    "waqiSlug": "baltimore",
+    "population": 585000
   },
   {
     "id": "gl-phoenix",
@@ -6095,27 +6666,30 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 33.4031,
     "longitude": -112.0753,
     "isDomestic": false,
-    "waqiSlug": "phoenix"
+    "waqiSlug": "phoenix",
+    "population": 1608139
   },
   {
     "id": "gl-omaha",
-    "nameZh": "Omaha",
+    "nameZh": "奥马哈",
     "nameEn": "Omaha",
     "country": "US",
     "latitude": 41.2474,
     "longitude": -95.9731,
     "isDomestic": false,
-    "waqiSlug": "omaha"
+    "waqiSlug": "omaha",
+    "population": 486000
   },
   {
     "id": "gl-el-paso",
-    "nameZh": "El Paso",
+    "nameZh": "埃尔帕索",
     "nameEn": "El Paso",
     "country": "US",
     "latitude": 31.7657,
     "longitude": -106.4552,
     "isDomestic": false,
-    "waqiSlug": "el-paso"
+    "waqiSlug": "el-paso",
+    "population": 678000
   },
   {
     "id": "gl-dallas",
@@ -6125,17 +6699,19 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.8201,
     "longitude": -96.8601,
     "isDomestic": false,
-    "waqiSlug": "dallas"
+    "waqiSlug": "dallas",
+    "population": 1304379
   },
   {
     "id": "gl-jacksonville",
-    "nameZh": "Jacksonville",
+    "nameZh": "杰克逊维尔",
     "nameEn": "Jacksonville",
     "country": "US",
     "latitude": 30.3564,
     "longitude": -81.6353,
     "isDomestic": false,
-    "waqiSlug": "jacksonville"
+    "waqiSlug": "jacksonville",
+    "population": 450000
   },
   {
     "id": "gl-las-vegas",
@@ -6145,7 +6721,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 36.1913,
     "longitude": -115.1229,
     "isDomestic": false,
-    "waqiSlug": "las-vegas"
+    "waqiSlug": "las-vegas",
+    "population": 450000
   },
   {
     "id": "gl-san-antonio",
@@ -6155,7 +6732,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 29.4073,
     "longitude": -98.4313,
     "isDomestic": false,
-    "waqiSlug": "san-antonio"
+    "waqiSlug": "san-antonio",
+    "population": 450000
   },
   {
     "id": "gl-philadelphia",
@@ -6165,7 +6743,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.924,
     "longitude": -75.1223,
     "isDomestic": false,
-    "waqiSlug": "philadelphia"
+    "waqiSlug": "philadelphia",
+    "population": 1603797
   },
   {
     "id": "gl-san-diego",
@@ -6175,27 +6754,30 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 32.7102,
     "longitude": -117.1427,
     "isDomestic": false,
-    "waqiSlug": "san-diego"
+    "waqiSlug": "san-diego",
+    "population": 450000
   },
   {
     "id": "gl-columbus",
-    "nameZh": "Columbus",
+    "nameZh": "哥伦布",
     "nameEn": "Columbus",
     "country": "US",
     "latitude": 40.0027,
     "longitude": -82.9944,
     "isDomestic": false,
-    "waqiSlug": "columbus"
+    "waqiSlug": "columbus",
+    "population": 905000
   },
   {
     "id": "gl-saint-paul",
-    "nameZh": "Saint Paul",
+    "nameZh": "圣保罗",
     "nameEn": "Saint Paul",
     "country": "US",
     "latitude": -21.011,
     "longitude": 55.2747,
     "isDomestic": false,
-    "waqiSlug": "saint-paul"
+    "waqiSlug": "saint-paul",
+    "population": 450000
   },
   {
     "id": "gl-denver",
@@ -6205,97 +6787,107 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.7512,
     "longitude": -104.9876,
     "isDomestic": false,
-    "waqiSlug": "denver"
+    "waqiSlug": "denver",
+    "population": 715522
   },
   {
     "id": "gl-salt-lake-city",
-    "nameZh": "Salt Lake City",
+    "nameZh": "盐湖城",
     "nameEn": "Salt Lake City",
     "country": "US",
     "latitude": 40.7335,
     "longitude": -111.8717,
     "isDomestic": false,
-    "waqiSlug": "salt-lake-city"
+    "waqiSlug": "salt-lake-city",
+    "population": 200000
   },
   {
     "id": "gl-albuquerque",
-    "nameZh": "Albuquerque",
+    "nameZh": "阿尔伯克基",
     "nameEn": "Albuquerque",
     "country": "US",
     "latitude": 35.0186,
     "longitude": -106.6519,
     "isDomestic": false,
-    "waqiSlug": "albuquerque"
+    "waqiSlug": "albuquerque",
+    "population": 564000
   },
   {
     "id": "gl-salem",
-    "nameZh": "Salem",
+    "nameZh": "塞勒姆",
     "nameEn": "Salem",
     "country": "US",
     "latitude": 44.9431,
     "longitude": -123.0059,
     "isDomestic": false,
-    "waqiSlug": "salem"
+    "waqiSlug": "salem",
+    "population": 450000
   },
   {
     "id": "gl-madison",
-    "nameZh": "Madison",
+    "nameZh": "麦迪逊",
     "nameEn": "Madison",
     "country": "US",
     "latitude": 43.0738,
     "longitude": -89.436,
     "isDomestic": false,
-    "waqiSlug": "madison"
+    "waqiSlug": "madison",
+    "population": 450000
   },
   {
     "id": "gl-nashville",
-    "nameZh": "Nashville",
+    "nameZh": "纳什维尔",
     "nameEn": "Nashville",
     "country": "US",
     "latitude": 36.1767,
     "longitude": -86.7386,
     "isDomestic": false,
-    "waqiSlug": "nashville"
+    "waqiSlug": "nashville",
+    "population": 450000
   },
   {
     "id": "gl-tucson",
-    "nameZh": "Tucson",
+    "nameZh": "图森",
     "nameEn": "Tucson",
     "country": "US",
     "latitude": 32.2518,
     "longitude": -110.9653,
     "isDomestic": false,
-    "waqiSlug": "tucson"
+    "waqiSlug": "tucson",
+    "population": 542000
   },
   {
     "id": "gl-tallahassee",
-    "nameZh": "Tallahassee",
+    "nameZh": "塔拉哈西",
     "nameEn": "Tallahassee",
     "country": "US",
     "latitude": 30.4397,
     "longitude": -84.3464,
     "isDomestic": false,
-    "waqiSlug": "tallahassee"
+    "waqiSlug": "tallahassee",
+    "population": 450000
   },
   {
     "id": "gl-fort-worth",
-    "nameZh": "Fort Worth",
+    "nameZh": "沃思堡",
     "nameEn": "Fort Worth",
     "country": "US",
     "latitude": 32.7591,
     "longitude": -97.3423,
     "isDomestic": false,
-    "waqiSlug": "fort-worth"
+    "waqiSlug": "fort-worth",
+    "population": 450000
   },
   {
     "id": "gl-tours",
-    "nameZh": "Tours",
+    "nameZh": "图尔",
     "nameEn": "Tours",
     "country": "FR",
     "latitude": 47.395,
     "longitude": 0.7046,
     "isDomestic": false,
-    "waqiSlug": "tours"
+    "waqiSlug": "tours",
+    "population": 136000
   },
   {
     "id": "gl-marseille",
@@ -6305,47 +6897,52 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 43.3053,
     "longitude": 5.3947,
     "isDomestic": false,
-    "waqiSlug": "marseille"
+    "waqiSlug": "marseille",
+    "population": 870731
   },
   {
     "id": "gl-nimes",
-    "nameZh": "Nîmes",
+    "nameZh": "尼姆",
     "nameEn": "Nîmes",
     "country": "FR",
     "latitude": 43.8344,
     "longitude": 4.3742,
     "isDomestic": false,
-    "waqiSlug": "nimes"
+    "waqiSlug": "nimes",
+    "population": 149000
   },
   {
     "id": "gl-besancon",
-    "nameZh": "Besançon",
+    "nameZh": "贝桑松",
     "nameEn": "Besançon",
     "country": "FR",
     "latitude": 47.2476,
     "longitude": 6.0157,
     "isDomestic": false,
-    "waqiSlug": "besancon"
+    "waqiSlug": "besancon",
+    "population": 116000
   },
   {
     "id": "gl-nantes",
-    "nameZh": "Nantes",
+    "nameZh": "南特",
     "nameEn": "Nantes",
     "country": "FR",
     "latitude": 47.2222,
     "longitude": -1.5374,
     "isDomestic": false,
-    "waqiSlug": "nantes"
+    "waqiSlug": "nantes",
+    "population": 320732
   },
   {
     "id": "gl-rennes",
-    "nameZh": "Rennes",
+    "nameZh": "雷恩",
     "nameEn": "Rennes",
     "country": "FR",
     "latitude": 48.1152,
     "longitude": -1.6731,
     "isDomestic": false,
-    "waqiSlug": "rennes"
+    "waqiSlug": "rennes",
+    "population": 222485
   },
   {
     "id": "gl-toulouse",
@@ -6355,127 +6952,140 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 43.5873,
     "longitude": 1.444,
     "isDomestic": false,
-    "waqiSlug": "toulouse"
+    "waqiSlug": "toulouse",
+    "population": 493465
   },
   {
     "id": "gl-nancy",
-    "nameZh": "Nancy",
+    "nameZh": "南锡",
     "nameEn": "Nancy",
     "country": "FR",
     "latitude": 48.6881,
     "longitude": 6.1904,
     "isDomestic": false,
-    "waqiSlug": "nancy"
+    "waqiSlug": "nancy",
+    "population": 104000
   },
   {
     "id": "gl-clermont-ferrand",
-    "nameZh": "Clermont-Ferrand",
+    "nameZh": "克莱蒙费朗",
     "nameEn": "Clermont-Ferrand",
     "country": "FR",
     "latitude": 45.7981,
     "longitude": 3.1133,
     "isDomestic": false,
-    "waqiSlug": "clermont-ferrand"
+    "waqiSlug": "clermont-ferrand",
+    "population": 143000
   },
   {
     "id": "gl-lille",
-    "nameZh": "Lille",
+    "nameZh": "里尔",
     "nameEn": "Lille",
     "country": "FR",
     "latitude": 50.6408,
     "longitude": 3.0748,
     "isDomestic": false,
-    "waqiSlug": "lille"
+    "waqiSlug": "lille",
+    "population": 234475
   },
   {
     "id": "gl-orleans",
-    "nameZh": "Orléans",
+    "nameZh": "奥尔良",
     "nameEn": "Orléans",
     "country": "FR",
     "latitude": 47.9071,
     "longitude": 1.9011,
     "isDomestic": false,
-    "waqiSlug": "orleans"
+    "waqiSlug": "orleans",
+    "population": 116000
   },
   {
     "id": "gl-montpellier",
-    "nameZh": "Montpellier",
+    "nameZh": "蒙彼利埃",
     "nameEn": "Montpellier",
     "country": "FR",
     "latitude": 43.5915,
     "longitude": 3.8868,
     "isDomestic": false,
-    "waqiSlug": "montpellier"
+    "waqiSlug": "montpellier",
+    "population": 299096
   },
   {
     "id": "gl-amiens",
-    "nameZh": "Amiens",
+    "nameZh": "亚眠",
     "nameEn": "Amiens",
     "country": "FR",
     "latitude": 49.9025,
     "longitude": 2.3046,
     "isDomestic": false,
-    "waqiSlug": "amiens"
+    "waqiSlug": "amiens",
+    "population": 133000
   },
   {
     "id": "gl-rouen",
-    "nameZh": "Rouen",
+    "nameZh": "鲁昂",
     "nameEn": "Rouen",
     "country": "FR",
     "latitude": 49.4367,
     "longitude": 1.0986,
     "isDomestic": false,
-    "waqiSlug": "rouen"
+    "waqiSlug": "rouen",
+    "population": 111000
   },
   {
     "id": "gl-grenoble",
-    "nameZh": "Grenoble",
+    "nameZh": "格勒诺布尔",
     "nameEn": "Grenoble",
     "country": "FR",
     "latitude": 45.1808,
     "longitude": 5.7201,
     "isDomestic": false,
-    "waqiSlug": "grenoble"
+    "waqiSlug": "grenoble",
+    "population": 158000
   },
   {
     "id": "gl-toulon",
-    "nameZh": "Toulon",
+    "nameZh": "土伦",
     "nameEn": "Toulon",
     "country": "FR",
     "latitude": 43.1268,
     "longitude": 5.9216,
     "isDomestic": false,
-    "waqiSlug": "toulon"
+    "waqiSlug": "toulon",
+    "population": 176000
   },
   {
     "id": "gl-limoges",
-    "nameZh": "Limoges",
+    "nameZh": "利摩日",
     "nameEn": "Limoges",
     "country": "FR",
     "latitude": 45.8422,
     "longitude": 1.2597,
     "isDomestic": false,
-    "waqiSlug": "limoges"
+    "waqiSlug": "limoges",
+    "population": 131000
   },
   {
     "id": "gl-perpignan",
-    "nameZh": "Perpignan",
+    "nameZh": "佩皮尼昂",
     "nameEn": "Perpignan",
     "country": "FR",
     "latitude": 42.6955,
     "longitude": 2.9005,
     "isDomestic": false,
-    "waqiSlug": "perpignan"
+    "waqiSlug": "perpignan",
+    "population": 121000
   },
   {
     "id": "gl-bordeaux",
-    "nameZh": "Bordeaux",
+    "nameZh": "波尔多",
     "nameEn": "Bordeaux",
     "country": "FR",
     "latitude": 44.8584,
     "longitude": -0.5843,
     "isDomestic": false,
-    "waqiSlug": "bordeaux"
+    "waqiSlug": "bordeaux",
+    "population": 260958
   },
   {
     "id": "gl-nice",
@@ -6485,77 +7095,85 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 43.7021,
     "longitude": 7.2863,
     "isDomestic": false,
-    "waqiSlug": "nice"
+    "waqiSlug": "nice",
+    "population": 342669
   },
   {
     "id": "gl-saint-etienne",
-    "nameZh": "Saint-Étienne",
+    "nameZh": "圣艾蒂安",
     "nameEn": "Saint-Étienne",
     "country": "FR",
     "latitude": 45.448,
     "longitude": 4.3888,
     "isDomestic": false,
-    "waqiSlug": "saint-etienne"
+    "waqiSlug": "saint-etienne",
+    "population": 173000
   },
   {
     "id": "gl-metz",
-    "nameZh": "Metz",
+    "nameZh": "梅斯",
     "nameEn": "Metz",
     "country": "FR",
     "latitude": 49.1197,
     "longitude": 6.1809,
     "isDomestic": false,
-    "waqiSlug": "metz"
+    "waqiSlug": "metz",
+    "population": 116000
   },
   {
     "id": "gl-strasbourg",
-    "nameZh": "Strasbourg",
+    "nameZh": "斯特拉斯堡",
     "nameEn": "Strasbourg",
     "country": "FR",
     "latitude": 48.5904,
     "longitude": 7.745,
     "isDomestic": false,
-    "waqiSlug": "strasbourg"
+    "waqiSlug": "strasbourg",
+    "population": 290576
   },
   {
     "id": "gl-hawalli",
-    "nameZh": "Ḩawallī",
+    "nameZh": "哈瓦利",
     "nameEn": "Ḩawallī",
     "country": "KW",
     "latitude": 29.3001,
     "longitude": 48.015,
     "isDomestic": false,
-    "waqiSlug": "hawalli"
+    "waqiSlug": "hawalli",
+    "population": 450000
   },
   {
     "id": "gl-saint-denis",
-    "nameZh": "Saint-Denis",
+    "nameZh": "圣但尼",
     "nameEn": "Saint-Denis",
     "country": "RE",
     "latitude": -20.8898,
     "longitude": 55.4691,
     "isDomestic": false,
-    "waqiSlug": "saint-denis"
+    "waqiSlug": "saint-denis",
+    "population": 111000
   },
   {
     "id": "gl-izmit",
-    "nameZh": "İzmit",
+    "nameZh": "伊兹密特",
     "nameEn": "İzmit",
     "country": "TR",
     "latitude": 40.7681,
     "longitude": 29.9381,
     "isDomestic": false,
-    "waqiSlug": "izmit"
+    "waqiSlug": "izmit",
+    "population": 450000
   },
   {
     "id": "gl-bursa",
-    "nameZh": "Bursa",
+    "nameZh": "布尔萨",
     "nameEn": "Bursa",
     "country": "TR",
     "latitude": 40.1957,
     "longitude": 29.0459,
     "isDomestic": false,
-    "waqiSlug": "bursa"
+    "waqiSlug": "bursa",
+    "population": 3101833
   },
   {
     "id": "gl-ankara",
@@ -6565,37 +7183,41 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.9271,
     "longitude": 32.86,
     "isDomestic": false,
-    "waqiSlug": "ankara"
+    "waqiSlug": "ankara",
+    "population": 5663322
   },
   {
     "id": "gl-adana",
-    "nameZh": "Adana",
+    "nameZh": "阿达纳",
     "nameEn": "Adana",
     "country": "TR",
     "latitude": 36.9919,
     "longitude": 35.3261,
     "isDomestic": false,
-    "waqiSlug": "adana"
+    "waqiSlug": "adana",
+    "population": 2258718
   },
   {
     "id": "gl-kayseri",
-    "nameZh": "Kayseri",
+    "nameZh": "开塞利",
     "nameEn": "Kayseri",
     "country": "TR",
     "latitude": 38.7446,
     "longitude": 35.4819,
     "isDomestic": false,
-    "waqiSlug": "kayseri"
+    "waqiSlug": "kayseri",
+    "population": 450000
   },
   {
     "id": "gl-kutahya",
-    "nameZh": "Kütahya",
+    "nameZh": "屈塔希亚",
     "nameEn": "Kütahya",
     "country": "TR",
     "latitude": 39.4235,
     "longitude": 29.9888,
     "isDomestic": false,
-    "waqiSlug": "kutahya"
+    "waqiSlug": "kutahya",
+    "population": 450000
   },
   {
     "id": "gl-balkesir",
@@ -6605,507 +7227,558 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 39.6492,
     "longitude": 27.8861,
     "isDomestic": false,
-    "waqiSlug": "balkesir"
+    "waqiSlug": "balkesir",
+    "population": 450000
   },
   {
     "id": "gl-adapazar",
-    "nameZh": "Adapazarı",
+    "nameZh": "阿达帕扎勒",
     "nameEn": "Adapazarı",
     "country": "TR",
     "latitude": 40.7907,
     "longitude": 30.3969,
     "isDomestic": false,
-    "waqiSlug": "adapazar"
+    "waqiSlug": "adapazar",
+    "population": 450000
   },
   {
     "id": "gl-trabzon",
-    "nameZh": "Trabzon",
+    "nameZh": "特拉布宗",
     "nameEn": "Trabzon",
     "country": "TR",
     "latitude": 41.0046,
     "longitude": 39.7317,
     "isDomestic": false,
-    "waqiSlug": "trabzon"
+    "waqiSlug": "trabzon",
+    "population": 450000
   },
   {
     "id": "gl-antakya",
-    "nameZh": "Antakya",
+    "nameZh": "安塔基亚",
     "nameEn": "Antakya",
     "country": "TR",
     "latitude": 36.2084,
     "longitude": 36.1591,
     "isDomestic": false,
-    "waqiSlug": "antakya"
+    "waqiSlug": "antakya",
+    "population": 450000
   },
   {
     "id": "gl-samsun",
-    "nameZh": "Samsun",
+    "nameZh": "萨姆松",
     "nameEn": "Samsun",
     "country": "TR",
     "latitude": 41.2779,
     "longitude": 36.3381,
     "isDomestic": false,
-    "waqiSlug": "samsun"
+    "waqiSlug": "samsun",
+    "population": 450000
   },
   {
     "id": "gl-izmir",
-    "nameZh": "İzmir",
+    "nameZh": "伊兹密尔",
     "nameEn": "İzmir",
     "country": "TR",
     "latitude": 38.4006,
     "longitude": 27.1508,
     "isDomestic": false,
-    "waqiSlug": "izmir"
+    "waqiSlug": "izmir",
+    "population": 4367251
   },
   {
     "id": "gl-konya",
-    "nameZh": "Konya",
+    "nameZh": "科尼亚",
     "nameEn": "Konya",
     "country": "TR",
     "latitude": 37.8601,
     "longitude": 32.4753,
     "isDomestic": false,
-    "waqiSlug": "konya"
+    "waqiSlug": "konya",
+    "population": 2250020
   },
   {
     "id": "gl-sivas",
-    "nameZh": "Sivas",
+    "nameZh": "锡瓦斯",
     "nameEn": "Sivas",
     "country": "TR",
     "latitude": 39.7473,
     "longitude": 37.0132,
     "isDomestic": false,
-    "waqiSlug": "sivas"
+    "waqiSlug": "sivas",
+    "population": 450000
   },
   {
     "id": "gl-denizli",
-    "nameZh": "Denizli",
+    "nameZh": "代尼兹利",
     "nameEn": "Denizli",
     "country": "TR",
     "latitude": 37.7803,
     "longitude": 29.0805,
     "isDomestic": false,
-    "waqiSlug": "denizli"
+    "waqiSlug": "denizli",
+    "population": 450000
   },
   {
     "id": "gl-erzurum",
-    "nameZh": "Erzurum",
+    "nameZh": "埃尔祖鲁姆",
     "nameEn": "Erzurum",
     "country": "TR",
     "latitude": 39.9083,
     "longitude": 41.2732,
     "isDomestic": false,
-    "waqiSlug": "erzurum"
+    "waqiSlug": "erzurum",
+    "population": 450000
   },
   {
     "id": "gl-pristina",
-    "nameZh": "Pristina",
+    "nameZh": "普里什蒂纳",
     "nameEn": "Pristina",
     "country": "XK",
     "latitude": 42.6597,
     "longitude": 21.1573,
     "isDomestic": false,
-    "waqiSlug": "pristina"
+    "waqiSlug": "pristina",
+    "population": 450000
   },
   {
     "id": "gl-tashkent",
-    "nameZh": "Tashkent",
+    "nameZh": "塔什干",
     "nameEn": "Tashkent",
     "country": "UZ",
     "latitude": 41.3109,
     "longitude": 69.2407,
     "isDomestic": false,
-    "waqiSlug": "tashkent"
+    "waqiSlug": "tashkent",
+    "population": 450000
   },
   {
     "id": "gl-vantaa",
-    "nameZh": "Vantaa",
+    "nameZh": "万塔",
     "nameEn": "Vantaa",
     "country": "FI",
     "latitude": 60.2899,
     "longitude": 25.0395,
     "isDomestic": false,
-    "waqiSlug": "vantaa"
+    "waqiSlug": "vantaa",
+    "population": 450000
   },
   {
     "id": "gl-turku",
-    "nameZh": "Turku",
+    "nameZh": "图尔库",
     "nameEn": "Turku",
     "country": "FI",
     "latitude": 60.4518,
     "longitude": 22.2678,
     "isDomestic": false,
-    "waqiSlug": "turku"
+    "waqiSlug": "turku",
+    "population": 450000
   },
   {
     "id": "gl-oulu",
-    "nameZh": "Oulu",
+    "nameZh": "奥卢",
     "nameEn": "Oulu",
     "country": "FI",
     "latitude": 65.01,
     "longitude": 25.4713,
     "isDomestic": false,
-    "waqiSlug": "oulu"
+    "waqiSlug": "oulu",
+    "population": 450000
   },
   {
     "id": "gl-tampere",
-    "nameZh": "Tampere",
+    "nameZh": "坦佩雷",
     "nameEn": "Tampere",
     "country": "FI",
     "latitude": 61.5,
     "longitude": 23.7667,
     "isDomestic": false,
-    "waqiSlug": "tampere"
+    "waqiSlug": "tampere",
+    "population": 241009
   },
   {
     "id": "gl-kanazawa",
-    "nameZh": "Kanazawa",
+    "nameZh": "金泽",
     "nameEn": "Kanazawa",
     "country": "JP",
     "latitude": 36.5613,
     "longitude": 136.6562,
     "isDomestic": false,
-    "waqiSlug": "kanazawa"
+    "waqiSlug": "kanazawa",
+    "population": 460000
   },
   {
     "id": "gl-kumamoto",
-    "nameZh": "Kumamoto",
+    "nameZh": "熊本",
     "nameEn": "Kumamoto",
     "country": "JP",
     "latitude": 32.8031,
     "longitude": 130.7079,
     "isDomestic": false,
-    "waqiSlug": "kumamoto"
+    "waqiSlug": "kumamoto",
+    "population": 740000
   },
   {
     "id": "gl-akita",
-    "nameZh": "Akita",
+    "nameZh": "秋田",
     "nameEn": "Akita",
     "country": "JP",
     "latitude": 39.704,
     "longitude": 140.1027,
     "isDomestic": false,
-    "waqiSlug": "akita"
+    "waqiSlug": "akita",
+    "population": 300000
   },
   {
     "id": "gl-kochi",
-    "nameZh": "Kochi",
+    "nameZh": "高知",
     "nameEn": "Kochi",
     "country": "JP",
     "latitude": 33.549,
     "longitude": 133.5988,
     "isDomestic": false,
-    "waqiSlug": "kochi"
+    "waqiSlug": "kochi",
+    "population": 320000
   },
   {
     "id": "gl-gifu-shi",
-    "nameZh": "Gifu-shi",
+    "nameZh": "岐阜",
     "nameEn": "Gifu-shi",
     "country": "JP",
     "latitude": 35.4233,
     "longitude": 136.7607,
     "isDomestic": false,
-    "waqiSlug": "gifu-shi"
+    "waqiSlug": "gifu-shi",
+    "population": 450000
   },
   {
     "id": "gl-hiroshima",
-    "nameZh": "Hiroshima",
+    "nameZh": "广岛",
     "nameEn": "Hiroshima",
     "country": "JP",
     "latitude": 34.3852,
     "longitude": 132.4553,
     "isDomestic": false,
-    "waqiSlug": "hiroshima"
+    "waqiSlug": "hiroshima",
+    "population": 1190000
   },
   {
     "id": "gl-shizuoka",
-    "nameZh": "Shizuoka",
+    "nameZh": "静冈",
     "nameEn": "Shizuoka",
     "country": "JP",
     "latitude": 34.9756,
     "longitude": 138.3828,
     "isDomestic": false,
-    "waqiSlug": "shizuoka"
+    "waqiSlug": "shizuoka",
+    "population": 690000
   },
   {
     "id": "gl-chiba",
-    "nameZh": "Chiba",
+    "nameZh": "千叶",
     "nameEn": "Chiba",
     "country": "JP",
     "latitude": 35.6073,
     "longitude": 140.1063,
     "isDomestic": false,
-    "waqiSlug": "chiba"
+    "waqiSlug": "chiba",
+    "population": 450000
   },
   {
     "id": "gl-yokohama",
-    "nameZh": "Yokohama",
+    "nameZh": "横滨",
     "nameEn": "Yokohama",
     "country": "JP",
     "latitude": 35.4437,
     "longitude": 139.638,
     "isDomestic": false,
-    "waqiSlug": "yokohama"
+    "waqiSlug": "yokohama",
+    "population": 3770000
   },
   {
     "id": "gl-saitama",
-    "nameZh": "Saitama",
+    "nameZh": "埼玉",
     "nameEn": "Saitama",
     "country": "JP",
     "latitude": 35.8617,
     "longitude": 139.6455,
     "isDomestic": false,
-    "waqiSlug": "saitama"
+    "waqiSlug": "saitama",
+    "population": 1320000
   },
   {
     "id": "gl-naha",
-    "nameZh": "Naha",
+    "nameZh": "那霸",
     "nameEn": "Naha",
     "country": "JP",
     "latitude": 26.2157,
     "longitude": 127.6857,
     "isDomestic": false,
-    "waqiSlug": "naha"
+    "waqiSlug": "naha",
+    "population": 315000
   },
   {
     "id": "gl-nagasaki",
-    "nameZh": "Nagasaki",
+    "nameZh": "长崎",
     "nameEn": "Nagasaki",
     "country": "JP",
     "latitude": 32.7503,
     "longitude": 129.8777,
     "isDomestic": false,
-    "waqiSlug": "nagasaki"
+    "waqiSlug": "nagasaki",
+    "population": 400000
   },
   {
     "id": "gl-toyama",
-    "nameZh": "Toyama",
+    "nameZh": "富山",
     "nameEn": "Toyama",
     "country": "JP",
     "latitude": 36.6944,
     "longitude": 137.2025,
     "isDomestic": false,
-    "waqiSlug": "toyama"
+    "waqiSlug": "toyama",
+    "population": 410000
   },
   {
     "id": "gl-niigata",
-    "nameZh": "Niigata",
+    "nameZh": "新潟",
     "nameEn": "Niigata",
     "country": "JP",
     "latitude": 37.9162,
     "longitude": 139.0364,
     "isDomestic": false,
-    "waqiSlug": "niigata"
+    "waqiSlug": "niigata",
+    "population": 450000
   },
   {
     "id": "gl-nara-shi",
-    "nameZh": "Nara-shi",
+    "nameZh": "奈良",
     "nameEn": "Nara-shi",
     "country": "JP",
     "latitude": 34.7379,
     "longitude": 135.8262,
     "isDomestic": false,
-    "waqiSlug": "nara-shi"
+    "waqiSlug": "nara-shi",
+    "population": 450000
   },
   {
     "id": "gl-okayama",
-    "nameZh": "Okayama",
+    "nameZh": "冈山",
     "nameEn": "Okayama",
     "country": "JP",
     "latitude": 34.6551,
     "longitude": 133.9195,
     "isDomestic": false,
-    "waqiSlug": "okayama"
+    "waqiSlug": "okayama",
+    "population": 720000
   },
   {
     "id": "gl-sendai",
-    "nameZh": "Sendai",
+    "nameZh": "仙台",
     "nameEn": "Sendai",
     "country": "JP",
     "latitude": 38.2682,
     "longitude": 140.8694,
     "isDomestic": false,
-    "waqiSlug": "sendai"
+    "waqiSlug": "sendai",
+    "population": 1090000
   },
   {
     "id": "gl-miyazaki",
-    "nameZh": "Miyazaki",
+    "nameZh": "宫崎",
     "nameEn": "Miyazaki",
     "country": "JP",
     "latitude": 31.9077,
     "longitude": 131.4202,
     "isDomestic": false,
-    "waqiSlug": "miyazaki"
+    "waqiSlug": "miyazaki",
+    "population": 400000
   },
   {
     "id": "gl-matsuyama",
-    "nameZh": "Matsuyama",
+    "nameZh": "松山",
     "nameEn": "Matsuyama",
     "country": "JP",
     "latitude": 33.8392,
     "longitude": 132.7656,
     "isDomestic": false,
-    "waqiSlug": "matsuyama"
+    "waqiSlug": "matsuyama",
+    "population": 510000
   },
   {
     "id": "gl-wakayama",
-    "nameZh": "Wakayama",
+    "nameZh": "和歌山",
     "nameEn": "Wakayama",
     "country": "JP",
     "latitude": 34.2305,
     "longitude": 135.1708,
     "isDomestic": false,
-    "waqiSlug": "wakayama"
+    "waqiSlug": "wakayama",
+    "population": 350000
   },
   {
     "id": "gl-takamatsu",
-    "nameZh": "Takamatsu",
+    "nameZh": "高松",
     "nameEn": "Takamatsu",
     "country": "JP",
     "latitude": 34.3428,
     "longitude": 134.0466,
     "isDomestic": false,
-    "waqiSlug": "takamatsu"
+    "waqiSlug": "takamatsu",
+    "population": 410000
   },
   {
     "id": "gl-oita",
-    "nameZh": "Ōita",
+    "nameZh": "大分",
     "nameEn": "Ōita",
     "country": "JP",
     "latitude": 33.2396,
     "longitude": 131.6093,
     "isDomestic": false,
-    "waqiSlug": "oita"
+    "waqiSlug": "oita",
+    "population": 470000
   },
   {
     "id": "gl-kobe",
-    "nameZh": "Kobe",
+    "nameZh": "神户",
     "nameEn": "Kobe",
     "country": "JP",
     "latitude": 34.6901,
     "longitude": 135.1955,
     "isDomestic": false,
-    "waqiSlug": "kobe"
+    "waqiSlug": "kobe",
+    "population": 1520000
   },
   {
     "id": "gl-nagano",
-    "nameZh": "Nagano",
+    "nameZh": "长野",
     "nameEn": "Nagano",
     "country": "JP",
     "latitude": 36.6485,
     "longitude": 138.1942,
     "isDomestic": false,
-    "waqiSlug": "nagano"
+    "waqiSlug": "nagano",
+    "population": 370000
   },
   {
     "id": "gl-utsunomiya",
-    "nameZh": "Utsunomiya",
+    "nameZh": "宇都宫",
     "nameEn": "Utsunomiya",
     "country": "JP",
     "latitude": 36.5551,
     "longitude": 139.8828,
     "isDomestic": false,
-    "waqiSlug": "utsunomiya"
+    "waqiSlug": "utsunomiya",
+    "population": 510000
   },
   {
     "id": "gl-kagoshima",
-    "nameZh": "Kagoshima",
+    "nameZh": "鹿儿岛",
     "nameEn": "Kagoshima",
     "country": "JP",
     "latitude": 31.5966,
     "longitude": 130.5571,
     "isDomestic": false,
-    "waqiSlug": "kagoshima"
+    "waqiSlug": "kagoshima",
+    "population": 590000
   },
   {
     "id": "gl-nur-sultan",
-    "nameZh": "Nur-Sultan",
+    "nameZh": "阿斯塔纳",
     "nameEn": "Nur-Sultan",
     "country": "KZ",
     "latitude": 51.1253,
     "longitude": 71.4672,
     "isDomestic": false,
-    "waqiSlug": "nur-sultan"
+    "waqiSlug": "nur-sultan",
+    "population": 450000
   },
   {
     "id": "gl-ploiesti",
-    "nameZh": "Ploieşti",
+    "nameZh": "普洛耶什蒂",
     "nameEn": "Ploieşti",
     "country": "RO",
     "latitude": 44.9392,
     "longitude": 26.0249,
     "isDomestic": false,
-    "waqiSlug": "ploiesti"
+    "waqiSlug": "ploiesti",
+    "population": 209000
   },
   {
     "id": "gl-craiova",
-    "nameZh": "Craiova",
+    "nameZh": "克拉约瓦",
     "nameEn": "Craiova",
     "country": "RO",
     "latitude": 44.3129,
     "longitude": 23.8523,
     "isDomestic": false,
-    "waqiSlug": "craiova"
+    "waqiSlug": "craiova",
+    "population": 269000
   },
   {
     "id": "gl-bacau",
-    "nameZh": "Bacău",
+    "nameZh": "巴克乌",
     "nameEn": "Bacău",
     "country": "RO",
     "latitude": 46.5628,
     "longitude": 26.9106,
     "isDomestic": false,
-    "waqiSlug": "bacau"
+    "waqiSlug": "bacau",
+    "population": 144000
   },
   {
     "id": "gl-ramnicu-valcea",
-    "nameZh": "Râmnicu Vâlcea",
+    "nameZh": "勒姆尼库沃尔恰",
     "nameEn": "Râmnicu Vâlcea",
     "country": "RO",
     "latitude": 45.0827,
     "longitude": 24.3692,
     "isDomestic": false,
-    "waqiSlug": "ramnicu-valcea"
+    "waqiSlug": "ramnicu-valcea",
+    "population": 450000
   },
   {
     "id": "gl-sibiu",
-    "nameZh": "Sibiu",
+    "nameZh": "锡比乌",
     "nameEn": "Sibiu",
     "country": "RO",
     "latitude": 45.7838,
     "longitude": 24.1556,
     "isDomestic": false,
-    "waqiSlug": "sibiu"
+    "waqiSlug": "sibiu",
+    "population": 147000
   },
   {
     "id": "gl-timisoara",
-    "nameZh": "Timişoara",
+    "nameZh": "蒂米什瓦拉",
     "nameEn": "Timişoara",
     "country": "RO",
     "latitude": 45.7575,
     "longitude": 21.2289,
     "isDomestic": false,
-    "waqiSlug": "timisoara"
+    "waqiSlug": "timisoara",
+    "population": 319000
   },
   {
     "id": "gl-pitesti",
-    "nameZh": "Piteşti",
+    "nameZh": "皮特什蒂",
     "nameEn": "Piteşti",
     "country": "RO",
     "latitude": 44.8612,
     "longitude": 24.8674,
     "isDomestic": false,
-    "waqiSlug": "pitesti"
+    "waqiSlug": "pitesti",
+    "population": 155000
   },
   {
     "id": "gl-arad",
-    "nameZh": "Arad",
+    "nameZh": "阿拉德",
     "nameEn": "Arad",
     "country": "RO",
     "latitude": 46.1883,
     "longitude": 21.2971,
     "isDomestic": false,
-    "waqiSlug": "arad"
+    "waqiSlug": "arad",
+    "population": 159000
   },
   {
     "id": "gl-cluj-napoca",
@@ -7115,297 +7788,327 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 46.7667,
     "longitude": 23.6,
     "isDomestic": false,
-    "waqiSlug": "cluj-napoca"
+    "waqiSlug": "cluj-napoca",
+    "population": 324000
   },
   {
     "id": "gl-bucharest",
-    "nameZh": "Bucharest",
+    "nameZh": "布加勒斯特",
     "nameEn": "Bucharest",
     "country": "RO",
     "latitude": 44.435,
     "longitude": 26.0986,
     "isDomestic": false,
-    "waqiSlug": "bucharest"
+    "waqiSlug": "bucharest",
+    "population": 1883425
   },
   {
     "id": "gl-baia-mare",
-    "nameZh": "Baia Mare",
+    "nameZh": "巴亚马雷",
     "nameEn": "Baia Mare",
     "country": "RO",
     "latitude": 47.6515,
     "longitude": 23.5695,
     "isDomestic": false,
-    "waqiSlug": "baia-mare"
+    "waqiSlug": "baia-mare",
+    "population": 123000
   },
   {
     "id": "gl-oradea",
-    "nameZh": "Oradea",
+    "nameZh": "奥拉迪亚",
     "nameEn": "Oradea",
     "country": "RO",
     "latitude": 47.0712,
     "longitude": 21.9196,
     "isDomestic": false,
-    "waqiSlug": "oradea"
+    "waqiSlug": "oradea",
+    "population": 196000
   },
   {
     "id": "gl-galati",
-    "nameZh": "Galaţi",
+    "nameZh": "加拉茨",
     "nameEn": "Galaţi",
     "country": "RO",
     "latitude": 45.4304,
     "longitude": 28.0452,
     "isDomestic": false,
-    "waqiSlug": "galati"
+    "waqiSlug": "galati",
+    "population": 249000
   },
   {
     "id": "gl-brasov",
-    "nameZh": "Braşov",
+    "nameZh": "布拉索夫",
     "nameEn": "Braşov",
     "country": "RO",
     "latitude": 45.6491,
     "longitude": 25.6041,
     "isDomestic": false,
-    "waqiSlug": "brasov"
+    "waqiSlug": "brasov",
+    "population": 253000
   },
   {
     "id": "gl-iasi",
-    "nameZh": "Iaşi",
+    "nameZh": "雅西",
     "nameEn": "Iaşi",
     "country": "RO",
     "latitude": 47.1581,
     "longitude": 27.6135,
     "isDomestic": false,
-    "waqiSlug": "iasi"
+    "waqiSlug": "iasi",
+    "population": 290000
   },
   {
     "id": "gl-constanta",
-    "nameZh": "Constanţa",
+    "nameZh": "康斯坦察",
     "nameEn": "Constanţa",
     "country": "RO",
     "latitude": 44.1739,
     "longitude": 28.6363,
     "isDomestic": false,
-    "waqiSlug": "constanta"
+    "waqiSlug": "constanta",
+    "population": 283000
   },
   {
     "id": "gl-braila",
-    "nameZh": "Brăila",
+    "nameZh": "布勒伊拉",
     "nameEn": "Brăila",
     "country": "RO",
     "latitude": 45.2692,
     "longitude": 27.9575,
     "isDomestic": false,
-    "waqiSlug": "braila"
+    "waqiSlug": "braila",
+    "population": 180000
   },
   {
     "id": "gl-kosice",
-    "nameZh": "Košice",
+    "nameZh": "科希策",
     "nameEn": "Košice",
     "country": "SK",
     "latitude": 48.7245,
     "longitude": 21.2604,
     "isDomestic": false,
-    "waqiSlug": "kosice"
+    "waqiSlug": "kosice",
+    "population": 450000
   },
   {
     "id": "gl-bratislava",
-    "nameZh": "Bratislava",
+    "nameZh": "布拉迪斯拉发",
     "nameEn": "Bratislava",
     "country": "SK",
     "latitude": 48.1449,
     "longitude": 17.1131,
     "isDomestic": false,
-    "waqiSlug": "bratislava"
+    "waqiSlug": "bratislava",
+    "population": 450000
   },
   {
     "id": "gl-las-palmas-de-gran-canaria",
-    "nameZh": "Las Palmas de Gran Canaria",
+    "nameZh": "帕尔马",
     "nameEn": "Las Palmas de Gran Canaria",
     "country": "ES",
     "latitude": 28.1337,
     "longitude": -15.4328,
     "isDomestic": false,
-    "waqiSlug": "las-palmas-de-gran-canaria"
+    "waqiSlug": "las-palmas-de-gran-canaria",
+    "population": 416065
   },
   {
     "id": "gl-salamanca",
-    "nameZh": "Salamanca",
+    "nameZh": "萨拉曼卡",
     "nameEn": "Salamanca",
     "country": "ES",
     "latitude": 20.5652,
     "longitude": -101.1882,
     "isDomestic": false,
-    "waqiSlug": "salamanca"
+    "waqiSlug": "salamanca",
+    "population": 144825
   },
   {
     "id": "gl-donostia-san-sebastian",
-    "nameZh": "Donostia / San Sebastián",
+    "nameZh": "圣塞巴斯蒂安",
     "nameEn": "Donostia / San Sebastián",
     "country": "ES",
     "latitude": 43.3128,
     "longitude": -1.975,
     "isDomestic": false,
-    "waqiSlug": "donostia-san-sebastian"
+    "waqiSlug": "donostia-san-sebastian",
+    "population": 450000
   },
   {
     "id": "gl-gasteiz-vitoria",
-    "nameZh": "Gasteiz / Vitoria",
+    "nameZh": "维多利亚",
     "nameEn": "Gasteiz / Vitoria",
     "country": "ES",
     "latitude": 42.85,
     "longitude": -2.6727,
     "isDomestic": false,
-    "waqiSlug": "gasteiz-vitoria"
+    "waqiSlug": "gasteiz-vitoria",
+    "population": 450000
   },
   {
     "id": "gl-cordoba",
-    "nameZh": "Córdoba",
+    "nameZh": "科尔多瓦",
     "nameEn": "Córdoba",
     "country": "ES",
     "latitude": 37.8926,
     "longitude": -4.7801,
     "isDomestic": false,
-    "waqiSlug": "cordoba"
+    "waqiSlug": "cordoba",
+    "population": 450000
   },
   {
     "id": "gl-santander",
-    "nameZh": "Santander",
+    "nameZh": "桑坦德",
     "nameEn": "Santander",
     "country": "ES",
     "latitude": 43.4606,
     "longitude": -3.8086,
     "isDomestic": false,
-    "waqiSlug": "santander"
+    "waqiSlug": "santander",
+    "population": 172044
   },
   {
     "id": "gl-palma",
-    "nameZh": "Palma",
+    "nameZh": "帕尔马",
     "nameEn": "Palma",
     "country": "ES",
     "latitude": 39.5712,
     "longitude": 2.657,
     "isDomestic": false,
-    "waqiSlug": "palma"
+    "waqiSlug": "palma",
+    "population": 416065
   },
   {
     "id": "gl-malaga",
-    "nameZh": "Málaga",
+    "nameZh": "马拉加",
     "nameEn": "Málaga",
     "country": "ES",
     "latitude": 36.7196,
     "longitude": -4.4475,
     "isDomestic": false,
-    "waqiSlug": "malaga"
+    "waqiSlug": "malaga",
+    "population": 578460
   },
   {
     "id": "gl-sevilla",
-    "nameZh": "Sevilla",
+    "nameZh": "塞维利亚",
     "nameEn": "Sevilla",
     "country": "ES",
     "latitude": 37.3983,
     "longitude": -5.9517,
     "isDomestic": false,
-    "waqiSlug": "sevilla"
+    "waqiSlug": "sevilla",
+    "population": 450000
   },
   {
     "id": "gl-bilbao",
-    "nameZh": "Bilbao",
+    "nameZh": "毕尔巴鄂",
     "nameEn": "Bilbao",
     "country": "ES",
     "latitude": 43.2675,
     "longitude": -2.9352,
     "isDomestic": false,
-    "waqiSlug": "bilbao"
+    "waqiSlug": "bilbao",
+    "population": 345821
   },
   {
     "id": "gl-pamplona",
-    "nameZh": "Pamplona",
+    "nameZh": "潘普洛纳",
     "nameEn": "Pamplona",
     "country": "ES",
     "latitude": 42.8068,
     "longitude": -1.6457,
     "isDomestic": false,
-    "waqiSlug": "pamplona"
+    "waqiSlug": "pamplona",
+    "population": 203944
   },
   {
     "id": "gl-castello-de-la-plana",
-    "nameZh": "Castelló de la Plana",
+    "nameZh": "卡斯特利翁-德拉普拉纳",
     "nameEn": "Castelló de la Plana",
     "country": "ES",
     "latitude": 40.0128,
     "longitude": -0.0572,
     "isDomestic": false,
-    "waqiSlug": "castello-de-la-plana"
+    "waqiSlug": "castello-de-la-plana",
+    "population": 450000
   },
   {
     "id": "gl-huelva",
-    "nameZh": "Huelva",
+    "nameZh": "韦尔瓦",
     "nameEn": "Huelva",
     "country": "ES",
     "latitude": 37.2796,
     "longitude": -6.9381,
     "isDomestic": false,
-    "waqiSlug": "huelva"
+    "waqiSlug": "huelva",
+    "population": 143837
   },
   {
     "id": "gl-granada",
-    "nameZh": "Granada",
+    "nameZh": "格拉纳达",
     "nameEn": "Granada",
     "country": "ES",
     "latitude": 37.1961,
     "longitude": -3.6127,
     "isDomestic": false,
-    "waqiSlug": "granada"
+    "waqiSlug": "granada",
+    "population": 232208
   },
   {
     "id": "gl-valencia",
-    "nameZh": "Valencia",
+    "nameZh": "瓦伦西亚",
     "nameEn": "Valencia",
     "country": "ES",
     "latitude": 39.4561,
     "longitude": -0.3758,
     "isDomestic": false,
-    "waqiSlug": "valencia"
+    "waqiSlug": "valencia",
+    "population": 791413
   },
   {
     "id": "gl-burgos",
-    "nameZh": "Burgos",
+    "nameZh": "布尔戈斯",
     "nameEn": "Burgos",
     "country": "ES",
     "latitude": 42.3361,
     "longitude": -3.6361,
     "isDomestic": false,
-    "waqiSlug": "burgos"
+    "waqiSlug": "burgos",
+    "population": 175821
   },
   {
     "id": "gl-murcia",
-    "nameZh": "Murcia",
+    "nameZh": "穆尔西亚",
     "nameEn": "Murcia",
     "country": "ES",
     "latitude": 37.994,
     "longitude": -1.1446,
     "isDomestic": false,
-    "waqiSlug": "murcia"
+    "waqiSlug": "murcia",
+    "population": 453258
   },
   {
     "id": "gl-santa-cruz-de-tenerife",
-    "nameZh": "Santa Cruz de Tenerife",
+    "nameZh": "圣克鲁斯",
     "nameEn": "Santa Cruz de Tenerife",
     "country": "ES",
     "latitude": 28.4622,
     "longitude": -16.2619,
     "isDomestic": false,
-    "waqiSlug": "santa-cruz-de-tenerife"
+    "waqiSlug": "santa-cruz-de-tenerife",
+    "population": 209194
   },
   {
     "id": "gl-oviedo",
-    "nameZh": "Oviedo",
+    "nameZh": "奥维耶多",
     "nameEn": "Oviedo",
     "country": "ES",
     "latitude": 43.3665,
     "longitude": -5.833,
     "isDomestic": false,
-    "waqiSlug": "oviedo"
+    "waqiSlug": "oviedo",
+    "population": 220111
   },
   {
     "id": "gl-hong-kong",
@@ -7416,7 +8119,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "longitude": 114.1694,
     "isDomestic": true,
     "waqiSlug": "hong-kong",
-    "province": "香港特别行政区"
+    "province": "香港特别行政区",
+    "population": 7413070
   },
   {
     "id": "gl-zagreb",
@@ -7426,87 +8130,96 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 45.815,
     "longitude": 15.9819,
     "isDomestic": false,
-    "waqiSlug": "zagreb"
+    "waqiSlug": "zagreb",
+    "population": 806341
   },
   {
     "id": "gl-rijeka",
-    "nameZh": "Rijeka",
+    "nameZh": "里耶卡",
     "nameEn": "Rijeka",
     "country": "HR",
     "latitude": 45.3317,
     "longitude": 14.4256,
     "isDomestic": false,
-    "waqiSlug": "rijeka"
+    "waqiSlug": "rijeka",
+    "population": 450000
   },
   {
     "id": "gl-split",
-    "nameZh": "Split",
+    "nameZh": "斯普利特",
     "nameEn": "Split",
     "country": "HR",
     "latitude": 43.5107,
     "longitude": 16.4493,
     "isDomestic": false,
-    "waqiSlug": "split"
+    "waqiSlug": "split",
+    "population": 450000
   },
   {
     "id": "gl-chon-buri",
-    "nameZh": "Chon Buri",
+    "nameZh": "春武里",
     "nameEn": "Chon Buri",
     "country": "TH",
     "latitude": 13.3546,
     "longitude": 100.9792,
     "isDomestic": false,
-    "waqiSlug": "chon-buri"
+    "waqiSlug": "chon-buri",
+    "population": 450000
   },
   {
     "id": "gl-rayong",
-    "nameZh": "Rayong",
+    "nameZh": "罗勇",
     "nameEn": "Rayong",
     "country": "TH",
     "latitude": 12.7074,
     "longitude": 101.1474,
     "isDomestic": false,
-    "waqiSlug": "rayong"
+    "waqiSlug": "rayong",
+    "population": 450000
   },
   {
     "id": "gl-lampang",
-    "nameZh": "Lampang",
+    "nameZh": "南邦",
     "nameEn": "Lampang",
     "country": "TH",
     "latitude": 18.2783,
     "longitude": 99.5065,
     "isDomestic": false,
-    "waqiSlug": "lampang"
+    "waqiSlug": "lampang",
+    "population": 450000
   },
   {
     "id": "gl-samut-prakan",
-    "nameZh": "Samut Prakan",
+    "nameZh": "北榄",
     "nameEn": "Samut Prakan",
     "country": "TH",
-    "latitude": 13.6662,
-    "longitude": 100.6057,
+    "latitude": 13.5991,
+    "longitude": 100.5975,
     "isDomestic": false,
-    "waqiSlug": "samut-prakan"
+    "waqiSlug": "samut-prakan",
+    "population": 450000
   },
   {
     "id": "gl-colombo",
-    "nameZh": "Colombo",
+    "nameZh": "科伦坡",
     "nameEn": "Colombo",
     "country": "LK",
     "latitude": 6.913,
     "longitude": 79.8481,
     "isDomestic": false,
-    "waqiSlug": "colombo"
+    "waqiSlug": "colombo",
+    "population": 450000
   },
   {
     "id": "gl-hamilton",
-    "nameZh": "Hamilton",
+    "nameZh": "汉密尔顿",
     "nameEn": "Hamilton",
     "country": "CA",
     "latitude": 43.25,
     "longitude": -79.8661,
     "isDomestic": false,
-    "waqiSlug": "hamilton"
+    "waqiSlug": "hamilton",
+    "population": 450000
   },
   {
     "id": "gl-calgary",
@@ -7516,37 +8229,41 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 51.0472,
     "longitude": -114.0731,
     "isDomestic": false,
-    "waqiSlug": "calgary"
+    "waqiSlug": "calgary",
+    "population": 1306784
   },
   {
     "id": "gl-winnipeg",
-    "nameZh": "Winnipeg",
+    "nameZh": "温尼伯",
     "nameEn": "Winnipeg",
     "country": "CA",
     "latitude": 49.898,
     "longitude": -97.1465,
     "isDomestic": false,
-    "waqiSlug": "winnipeg"
+    "waqiSlug": "winnipeg",
+    "population": 450000
   },
   {
     "id": "gl-halifax",
-    "nameZh": "Halifax",
+    "nameZh": "哈利法克斯",
     "nameEn": "Halifax",
     "country": "CA",
     "latitude": 44.6472,
     "longitude": -63.5737,
     "isDomestic": false,
-    "waqiSlug": "halifax"
+    "waqiSlug": "halifax",
+    "population": 450000
   },
   {
     "id": "gl-kitchener",
-    "nameZh": "Kitchener",
+    "nameZh": "基奇纳",
     "nameEn": "Kitchener",
     "country": "CA",
     "latitude": 43.4438,
     "longitude": -80.5038,
     "isDomestic": false,
-    "waqiSlug": "kitchener"
+    "waqiSlug": "kitchener",
+    "population": 450000
   },
   {
     "id": "gl-edmonton",
@@ -7556,47 +8273,52 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 53.5495,
     "longitude": -113.4859,
     "isDomestic": false,
-    "waqiSlug": "edmonton"
+    "waqiSlug": "edmonton",
+    "population": 1010899
   },
   {
     "id": "gl-surrey",
-    "nameZh": "Surrey",
+    "nameZh": "素里",
     "nameEn": "Surrey",
     "country": "CA",
     "latitude": 49.1583,
     "longitude": -122.9017,
     "isDomestic": false,
-    "waqiSlug": "surrey"
+    "waqiSlug": "surrey",
+    "population": 450000
   },
   {
     "id": "gl-mississauga",
-    "nameZh": "Mississauga",
+    "nameZh": "密西沙加",
     "nameEn": "Mississauga",
     "country": "CA",
     "latitude": 43.547,
     "longitude": -79.6587,
     "isDomestic": false,
-    "waqiSlug": "mississauga"
+    "waqiSlug": "mississauga",
+    "population": 450000
   },
   {
     "id": "gl-quebec",
-    "nameZh": "Québec",
+    "nameZh": "魁北克",
     "nameEn": "Québec",
     "country": "CA",
     "latitude": 46.8123,
     "longitude": -71.2022,
     "isDomestic": false,
-    "waqiSlug": "quebec"
+    "waqiSlug": "quebec",
+    "population": 450000
   },
   {
     "id": "gl-victoria",
-    "nameZh": "Victoria",
+    "nameZh": "维多利亚",
     "nameEn": "Victoria",
     "country": "CA",
     "latitude": 48.4419,
     "longitude": -123.3632,
     "isDomestic": false,
-    "waqiSlug": "victoria"
+    "waqiSlug": "victoria",
+    "population": 450000
   },
   {
     "id": "gl-ottawa",
@@ -7606,287 +8328,316 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 45.4215,
     "longitude": -75.6972,
     "isDomestic": false,
-    "waqiSlug": "ottawa"
+    "waqiSlug": "ottawa",
+    "population": 1017449
   },
   {
     "id": "gl-rancagua",
-    "nameZh": "Rancagua",
+    "nameZh": "兰卡瓜",
     "nameEn": "Rancagua",
     "country": "CL",
     "latitude": -34.1439,
     "longitude": -70.7371,
     "isDomestic": false,
-    "waqiSlug": "rancagua"
+    "waqiSlug": "rancagua",
+    "population": 241000
   },
   {
     "id": "gl-osorno",
-    "nameZh": "Osorno",
+    "nameZh": "奥索尔诺",
     "nameEn": "Osorno",
     "country": "CL",
     "latitude": -40.5845,
     "longitude": -73.1187,
     "isDomestic": false,
-    "waqiSlug": "osorno"
+    "waqiSlug": "osorno",
+    "population": 450000
   },
   {
     "id": "gl-los-angeles",
-    "nameZh": "Los Ángeles",
+    "nameZh": "洛斯安赫莱斯",
     "nameEn": "Los Ángeles",
     "country": "CL",
     "latitude": 34.0665,
     "longitude": -118.2268,
     "isDomestic": false,
-    "waqiSlug": "los-angeles"
+    "waqiSlug": "los-angeles",
+    "population": 450000
   },
   {
     "id": "gl-chillan",
-    "nameZh": "Chillán",
+    "nameZh": "奇扬",
     "nameEn": "Chillán",
     "country": "CL",
     "latitude": -36.6162,
     "longitude": -72.093,
     "isDomestic": false,
-    "waqiSlug": "chillan"
+    "waqiSlug": "chillan",
+    "population": 184000
   },
   {
     "id": "gl-calama",
-    "nameZh": "Calama",
+    "nameZh": "卡拉马",
     "nameEn": "Calama",
     "country": "CL",
     "latitude": -22.4428,
     "longitude": -68.9325,
     "isDomestic": false,
-    "waqiSlug": "calama"
+    "waqiSlug": "calama",
+    "population": 450000
   },
   {
     "id": "gl-puerto-montt",
-    "nameZh": "Puerto Montt",
+    "nameZh": "蒙特港",
     "nameEn": "Puerto Montt",
     "country": "CL",
     "latitude": -41.4795,
     "longitude": -72.9688,
     "isDomestic": false,
-    "waqiSlug": "puerto-montt"
+    "waqiSlug": "puerto-montt",
+    "population": 245000
   },
   {
     "id": "gl-valparaiso",
-    "nameZh": "Valparaíso",
+    "nameZh": "瓦尔帕莱索",
     "nameEn": "Valparaíso",
     "country": "CL",
     "latitude": -33.0497,
     "longitude": -71.6142,
     "isDomestic": false,
-    "waqiSlug": "valparaiso"
+    "waqiSlug": "valparaiso",
+    "population": 296000
   },
   {
     "id": "gl-quilpue",
-    "nameZh": "Quilpué",
+    "nameZh": "基尔普埃",
     "nameEn": "Quilpué",
     "country": "CL",
     "latitude": -33.0475,
     "longitude": -71.4345,
     "isDomestic": false,
-    "waqiSlug": "quilpue"
+    "waqiSlug": "quilpue",
+    "population": 450000
   },
   {
     "id": "gl-talca",
-    "nameZh": "Talca",
+    "nameZh": "塔尔卡",
     "nameEn": "Talca",
     "country": "CL",
     "latitude": -35.4066,
     "longitude": -71.6334,
     "isDomestic": false,
-    "waqiSlug": "talca"
+    "waqiSlug": "talca",
+    "population": 220000
   },
   {
     "id": "gl-concepcion",
-    "nameZh": "Concepción",
+    "nameZh": "康塞普西翁",
     "nameEn": "Concepción",
     "country": "CL",
     "latitude": -36.7847,
     "longitude": -73.0521,
     "isDomestic": false,
-    "waqiSlug": "concepcion"
+    "waqiSlug": "concepcion",
+    "population": 223000
   },
   {
     "id": "gl-temuco",
-    "nameZh": "Temuco",
+    "nameZh": "特木科",
     "nameEn": "Temuco",
     "country": "CL",
     "latitude": -38.7648,
     "longitude": -72.5988,
     "isDomestic": false,
-    "waqiSlug": "temuco"
+    "waqiSlug": "temuco",
+    "population": 282000
   },
   {
     "id": "gl-addis-ababa",
-    "nameZh": "Addis Ababa",
+    "nameZh": "亚的斯亚贝巴",
     "nameEn": "Addis Ababa",
     "country": "ET",
     "latitude": 9.0585,
     "longitude": 38.7616,
     "isDomestic": false,
-    "waqiSlug": "addis-ababa"
+    "waqiSlug": "addis-ababa",
+    "population": 450000
   },
   {
     "id": "gl-bishkek",
-    "nameZh": "Bishkek",
+    "nameZh": "比什凯克",
     "nameEn": "Bishkek",
     "country": "KG",
     "latitude": 42.8276,
     "longitude": 74.5838,
     "isDomestic": false,
-    "waqiSlug": "bishkek"
+    "waqiSlug": "bishkek",
+    "population": 450000
   },
   {
     "id": "gl-willemstad",
-    "nameZh": "Willemstad",
+    "nameZh": "威廉斯塔德",
     "nameEn": "Willemstad",
     "country": "CW",
     "latitude": 12.1696,
     "longitude": -68.99,
     "isDomestic": false,
-    "waqiSlug": "willemstad"
+    "waqiSlug": "willemstad",
+    "population": 450000
   },
   {
     "id": "gl-stuttgart",
-    "nameZh": "Stuttgart",
+    "nameZh": "斯图加特",
     "nameEn": "Stuttgart",
     "country": "DE",
     "latitude": 48.8089,
     "longitude": 9.2299,
     "isDomestic": false,
-    "waqiSlug": "stuttgart"
+    "waqiSlug": "stuttgart",
+    "population": 630305
   },
   {
     "id": "gl-munster",
-    "nameZh": "Münster",
+    "nameZh": "明斯特",
     "nameEn": "Münster",
     "country": "DE",
     "latitude": 51.9365,
     "longitude": 7.6116,
     "isDomestic": false,
-    "waqiSlug": "munster"
+    "waqiSlug": "munster",
+    "population": 317000
   },
   {
     "id": "gl-koln",
-    "nameZh": "Köln",
+    "nameZh": "科隆",
     "nameEn": "Köln",
     "country": "DE",
     "latitude": 50.8899,
     "longitude": 6.9851,
     "isDomestic": false,
-    "waqiSlug": "koln"
+    "waqiSlug": "koln",
+    "population": 450000
   },
   {
     "id": "gl-kassel",
-    "nameZh": "Kassel",
+    "nameZh": "卡塞尔",
     "nameEn": "Kassel",
     "country": "DE",
     "latitude": 51.3131,
     "longitude": 9.4925,
     "isDomestic": false,
-    "waqiSlug": "kassel"
+    "waqiSlug": "kassel",
+    "population": 201000
   },
   {
     "id": "gl-karlsruhe",
-    "nameZh": "Karlsruhe",
+    "nameZh": "卡尔斯鲁厄",
     "nameEn": "Karlsruhe",
     "country": "DE",
     "latitude": 49.008,
     "longitude": 8.3872,
     "isDomestic": false,
-    "waqiSlug": "karlsruhe"
+    "waqiSlug": "karlsruhe",
+    "population": 308000
   },
   {
     "id": "gl-mainz",
-    "nameZh": "Mainz",
+    "nameZh": "美因茨",
     "nameEn": "Mainz",
     "country": "DE",
     "latitude": 49.9938,
     "longitude": 8.2736,
     "isDomestic": false,
-    "waqiSlug": "mainz"
+    "waqiSlug": "mainz",
+    "population": 217000
   },
   {
     "id": "gl-dresden",
-    "nameZh": "Dresden",
+    "nameZh": "德累斯顿",
     "nameEn": "Dresden",
     "country": "DE",
     "latitude": 51.0373,
     "longitude": 13.7304,
     "isDomestic": false,
-    "waqiSlug": "dresden"
+    "waqiSlug": "dresden",
+    "population": 556227
   },
   {
     "id": "gl-dusseldorf",
-    "nameZh": "Düsseldorf",
+    "nameZh": "杜塞尔多夫",
     "nameEn": "Düsseldorf",
     "country": "DE",
     "latitude": 51.2492,
     "longitude": 6.7324,
     "isDomestic": false,
-    "waqiSlug": "dusseldorf"
+    "waqiSlug": "dusseldorf",
+    "population": 619294
   },
   {
     "id": "gl-freiburg",
-    "nameZh": "Freiburg",
+    "nameZh": "弗赖堡",
     "nameEn": "Freiburg",
     "country": "DE",
     "latitude": 47.9888,
     "longitude": 7.8599,
     "isDomestic": false,
-    "waqiSlug": "freiburg"
+    "waqiSlug": "freiburg",
+    "population": 231000
   },
   {
     "id": "gl-wiesbaden",
-    "nameZh": "Wiesbaden",
+    "nameZh": "威斯巴登",
     "nameEn": "Wiesbaden",
     "country": "DE",
     "latitude": 50.0783,
     "longitude": 8.2314,
     "isDomestic": false,
-    "waqiSlug": "wiesbaden"
+    "waqiSlug": "wiesbaden",
+    "population": 278000
   },
   {
     "id": "gl-hannover",
-    "nameZh": "Hannover",
+    "nameZh": "汉诺威",
     "nameEn": "Hannover",
     "country": "DE",
     "latitude": 52.3759,
     "longitude": 9.732,
     "isDomestic": false,
-    "waqiSlug": "hannover"
+    "waqiSlug": "hannover",
+    "population": 535932
   },
   {
     "id": "gl-augsburg",
-    "nameZh": "Augsburg",
+    "nameZh": "奥格斯堡",
     "nameEn": "Augsburg",
     "country": "DE",
     "latitude": 48.3703,
     "longitude": 10.897,
     "isDomestic": false,
-    "waqiSlug": "augsburg"
+    "waqiSlug": "augsburg",
+    "population": 296000
   },
   {
     "id": "gl-darmstadt",
-    "nameZh": "Darmstadt",
+    "nameZh": "达姆施塔特",
     "nameEn": "Darmstadt",
     "country": "DE",
     "latitude": 49.8703,
     "longitude": 8.6544,
     "isDomestic": false,
-    "waqiSlug": "darmstadt"
+    "waqiSlug": "darmstadt",
+    "population": 159000
   },
   {
     "id": "gl-potsdam",
-    "nameZh": "Potsdam",
+    "nameZh": "波茨坦",
     "nameEn": "Potsdam",
     "country": "DE",
     "latitude": 52.4011,
     "longitude": 13.0597,
     "isDomestic": false,
-    "waqiSlug": "potsdam"
+    "waqiSlug": "potsdam",
+    "population": 182000
   },
   {
     "id": "gl-hamburg",
@@ -7896,247 +8647,272 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 53.5924,
     "longitude": 10.0537,
     "isDomestic": false,
-    "waqiSlug": "hamburg"
+    "waqiSlug": "hamburg",
+    "population": 1852478
   },
   {
     "id": "gl-guadalajara",
-    "nameZh": "Guadalajara",
+    "nameZh": "瓜达拉哈拉",
     "nameEn": "Guadalajara",
     "country": "MX",
     "latitude": 20.6805,
     "longitude": -103.3987,
     "isDomestic": false,
-    "waqiSlug": "guadalajara"
+    "waqiSlug": "guadalajara",
+    "population": 1385629
   },
   {
     "id": "gl-cuernavaca",
-    "nameZh": "Cuernavaca",
+    "nameZh": "库埃纳瓦卡",
     "nameEn": "Cuernavaca",
     "country": "MX",
     "latitude": 18.9086,
     "longitude": -99.2117,
     "isDomestic": false,
-    "waqiSlug": "cuernavaca"
+    "waqiSlug": "cuernavaca",
+    "population": 450000
   },
   {
     "id": "gl-puebla",
-    "nameZh": "Puebla",
+    "nameZh": "普埃布拉",
     "nameEn": "Puebla",
     "country": "MX",
     "latitude": 19.1159,
     "longitude": -98.2775,
     "isDomestic": false,
-    "waqiSlug": "puebla"
+    "waqiSlug": "puebla",
+    "population": 1542000
   },
   {
     "id": "gl-morelia",
-    "nameZh": "Morelia",
+    "nameZh": "莫雷利亚",
     "nameEn": "Morelia",
     "country": "MX",
     "latitude": 19.7022,
     "longitude": -101.1909,
     "isDomestic": false,
-    "waqiSlug": "morelia"
+    "waqiSlug": "morelia",
+    "population": 450000
   },
   {
     "id": "gl-merida",
-    "nameZh": "Mérida",
+    "nameZh": "梅里达",
     "nameEn": "Mérida",
     "country": "MX",
     "latitude": 20.9733,
     "longitude": -89.6248,
     "isDomestic": false,
-    "waqiSlug": "merida"
+    "waqiSlug": "merida",
+    "population": 921000
   },
   {
     "id": "gl-san-luis-potosi",
-    "nameZh": "San Luis Potosí",
+    "nameZh": "圣路易斯波托西",
     "nameEn": "San Luis Potosí",
     "country": "MX",
     "latitude": 22.1742,
     "longitude": -100.9931,
     "isDomestic": false,
-    "waqiSlug": "san-luis-potosi"
+    "waqiSlug": "san-luis-potosi",
+    "population": 824000
   },
   {
     "id": "gl-chihuahua",
-    "nameZh": "Chihuahua",
+    "nameZh": "奇瓦瓦",
     "nameEn": "Chihuahua",
     "country": "MX",
     "latitude": 28.6522,
     "longitude": -106.0854,
     "isDomestic": false,
-    "waqiSlug": "chihuahua"
+    "waqiSlug": "chihuahua",
+    "population": 925000
   },
   {
     "id": "gl-monterrey",
-    "nameZh": "Monterrey",
+    "nameZh": "蒙特雷",
     "nameEn": "Monterrey",
     "country": "MX",
     "latitude": 25.73,
     "longitude": -100.3097,
     "isDomestic": false,
-    "waqiSlug": "monterrey"
+    "waqiSlug": "monterrey",
+    "population": 1142994
   },
   {
     "id": "gl-pachuca-de-soto",
-    "nameZh": "Pachuca de Soto",
+    "nameZh": "帕丘卡",
     "nameEn": "Pachuca de Soto",
     "country": "MX",
     "latitude": 20.1202,
     "longitude": -98.74,
     "isDomestic": false,
-    "waqiSlug": "pachuca-de-soto"
+    "waqiSlug": "pachuca-de-soto",
+    "population": 450000
   },
   {
     "id": "gl-tepic",
-    "nameZh": "Tepic",
+    "nameZh": "特皮克",
     "nameEn": "Tepic",
     "country": "MX",
     "latitude": 21.4782,
     "longitude": -104.8677,
     "isDomestic": false,
-    "waqiSlug": "tepic"
+    "waqiSlug": "tepic",
+    "population": 450000
   },
   {
     "id": "gl-toluca",
-    "nameZh": "Toluca",
+    "nameZh": "托卢卡",
     "nameEn": "Toluca",
     "country": "MX",
     "latitude": 19.2943,
     "longitude": -99.6553,
     "isDomestic": false,
-    "waqiSlug": "toluca"
+    "waqiSlug": "toluca",
+    "population": 450000
   },
   {
     "id": "gl-aguascalientes",
-    "nameZh": "Aguascalientes",
+    "nameZh": "阿瓜斯卡连特斯",
     "nameEn": "Aguascalientes",
     "country": "MX",
     "latitude": 21.903,
     "longitude": -102.2846,
     "isDomestic": false,
-    "waqiSlug": "aguascalientes"
+    "waqiSlug": "aguascalientes",
+    "population": 863000
   },
   {
     "id": "gl-oaxaca",
-    "nameZh": "Oaxaca",
+    "nameZh": "瓦哈卡",
     "nameEn": "Oaxaca",
     "country": "MX",
     "latitude": 17.0947,
     "longitude": -96.7522,
     "isDomestic": false,
-    "waqiSlug": "oaxaca"
+    "waqiSlug": "oaxaca",
+    "population": 450000
   },
   {
     "id": "gl-jeddah",
-    "nameZh": "Jeddah",
+    "nameZh": "吉达",
     "nameEn": "Jeddah",
     "country": "SA",
     "latitude": 21.5247,
     "longitude": 39.2031,
     "isDomestic": false,
-    "waqiSlug": "jeddah"
+    "waqiSlug": "jeddah",
+    "population": 4697000
   },
   {
     "id": "gl-abha",
-    "nameZh": "Abha",
+    "nameZh": "艾卜哈",
     "nameEn": "Abha",
     "country": "SA",
     "latitude": 18.214,
     "longitude": 42.4892,
     "isDomestic": false,
-    "waqiSlug": "abha"
+    "waqiSlug": "abha",
+    "population": 450000
   },
   {
     "id": "gl-dammam",
-    "nameZh": "Dammam",
+    "nameZh": "达曼",
     "nameEn": "Dammam",
     "country": "SA",
     "latitude": 26.4911,
     "longitude": 50.1202,
     "isDomestic": false,
-    "waqiSlug": "dammam"
+    "waqiSlug": "dammam",
+    "population": 450000
   },
   {
     "id": "gl-ha-il",
-    "nameZh": "Ha'il",
+    "nameZh": "哈伊勒",
     "nameEn": "Ha'il",
     "country": "SA",
     "latitude": 27.5219,
     "longitude": 41.6907,
     "isDomestic": false,
-    "waqiSlug": "ha-il"
+    "waqiSlug": "ha-il",
+    "population": 450000
   },
   {
     "id": "gl-buraydah",
-    "nameZh": "Buraydah",
+    "nameZh": "布赖代",
     "nameEn": "Buraydah",
     "country": "SA",
     "latitude": 26.3396,
     "longitude": 43.9618,
     "isDomestic": false,
-    "waqiSlug": "buraydah"
+    "waqiSlug": "buraydah",
+    "population": 450000
   },
   {
     "id": "gl-mecca",
-    "nameZh": "Mecca",
+    "nameZh": "麦加",
     "nameEn": "Mecca",
     "country": "SA",
     "latitude": 21.4246,
     "longitude": 39.8292,
     "isDomestic": false,
-    "waqiSlug": "mecca"
+    "waqiSlug": "mecca",
+    "population": 450000
   },
   {
     "id": "gl-kampala",
-    "nameZh": "Kampala",
+    "nameZh": "坎帕拉",
     "nameEn": "Kampala",
     "country": "UG",
     "latitude": 0.3002,
     "longitude": 32.5916,
     "isDomestic": false,
-    "waqiSlug": "kampala"
+    "waqiSlug": "kampala",
+    "population": 450000
   },
   {
     "id": "gl-dhaka",
-    "nameZh": "Dhaka",
+    "nameZh": "达卡",
     "nameEn": "Dhaka",
     "country": "BD",
     "latitude": 23.7964,
     "longitude": 90.4246,
     "isDomestic": false,
-    "waqiSlug": "dhaka"
+    "waqiSlug": "dhaka",
+    "population": 22478000
   },
   {
     "id": "gl-debrecen",
-    "nameZh": "Debrecen",
+    "nameZh": "德布勒森",
     "nameEn": "Debrecen",
     "country": "HU",
     "latitude": 47.531,
     "longitude": 21.6394,
     "isDomestic": false,
-    "waqiSlug": "debrecen"
+    "waqiSlug": "debrecen",
+    "population": 450000
   },
   {
     "id": "gl-gyor",
-    "nameZh": "Győr",
+    "nameZh": "杰尔",
     "nameEn": "Győr",
     "country": "HU",
     "latitude": 47.6854,
     "longitude": 17.6395,
     "isDomestic": false,
-    "waqiSlug": "gyor"
+    "waqiSlug": "gyor",
+    "population": 450000
   },
   {
     "id": "gl-szeged",
-    "nameZh": "Szeged",
+    "nameZh": "塞格德",
     "nameEn": "Szeged",
     "country": "HU",
     "latitude": 46.253,
     "longitude": 20.1482,
     "isDomestic": false,
-    "waqiSlug": "szeged"
+    "waqiSlug": "szeged",
+    "population": 450000
   },
   {
     "id": "gl-pecs",
@@ -8146,17 +8922,19 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 46.0762,
     "longitude": 18.2281,
     "isDomestic": false,
-    "waqiSlug": "pecs"
+    "waqiSlug": "pecs",
+    "population": 450000
   },
   {
     "id": "gl-kecskemet",
-    "nameZh": "Kecskemét",
+    "nameZh": "凯奇凯梅特",
     "nameEn": "Kecskemét",
     "country": "HU",
     "latitude": 46.9023,
     "longitude": 19.6887,
     "isDomestic": false,
-    "waqiSlug": "kecskemet"
+    "waqiSlug": "kecskemet",
+    "population": 450000
   },
   {
     "id": "gl-miskolc",
@@ -8166,27 +8944,30 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 48.1033,
     "longitude": 20.7781,
     "isDomestic": false,
-    "waqiSlug": "miskolc"
+    "waqiSlug": "miskolc",
+    "population": 450000
   },
   {
     "id": "gl-reykjavik",
-    "nameZh": "Reykjavík",
+    "nameZh": "雷克雅未克",
     "nameEn": "Reykjavík",
     "country": "IS",
     "latitude": 64.13,
     "longitude": -21.875,
     "isDomestic": false,
-    "waqiSlug": "reykjavik"
+    "waqiSlug": "reykjavik",
+    "population": 131136
   },
   {
     "id": "gl-baguio",
-    "nameZh": "Baguio",
+    "nameZh": "碧瑶",
     "nameEn": "Baguio",
     "country": "PH",
     "latitude": 16.4095,
     "longitude": 120.5948,
     "isDomestic": false,
-    "waqiSlug": "baguio"
+    "waqiSlug": "baguio",
+    "population": 450000
   },
   {
     "id": "gl-butuan",
@@ -8196,7 +8977,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 8.9492,
     "longitude": 125.5436,
     "isDomestic": false,
-    "waqiSlug": "butuan"
+    "waqiSlug": "butuan",
+    "population": 450000
   },
   {
     "id": "gl-zamboanga",
@@ -8206,7 +8988,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 6.9103,
     "longitude": 122.0739,
     "isDomestic": false,
-    "waqiSlug": "zamboanga"
+    "waqiSlug": "zamboanga",
+    "population": 450000
   },
   {
     "id": "gl-macau",
@@ -8217,97 +9000,107 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "longitude": 113.5439,
     "isDomestic": true,
     "waqiSlug": "macau",
-    "province": "澳门特别行政区"
+    "province": "澳门特别行政区",
+    "population": 682070
   },
   {
     "id": "gl-goteborg",
-    "nameZh": "Göteborg",
+    "nameZh": "哥德堡",
     "nameEn": "Göteborg",
     "country": "SE",
     "latitude": 57.709,
     "longitude": 11.9702,
     "isDomestic": false,
-    "waqiSlug": "goteborg"
+    "waqiSlug": "goteborg",
+    "population": 450000
   },
   {
     "id": "gl-malmo",
-    "nameZh": "Malmö",
+    "nameZh": "马尔默",
     "nameEn": "Malmö",
     "country": "SE",
     "latitude": 55.6064,
     "longitude": 13.002,
     "isDomestic": false,
-    "waqiSlug": "malmo"
+    "waqiSlug": "malmo",
+    "population": 347949
   },
   {
     "id": "gl-uppsala",
-    "nameZh": "Uppsala",
+    "nameZh": "乌普萨拉",
     "nameEn": "Uppsala",
     "country": "SE",
     "latitude": 59.8605,
     "longitude": 17.6376,
     "isDomestic": false,
-    "waqiSlug": "uppsala"
+    "waqiSlug": "uppsala",
+    "population": 450000
   },
   {
     "id": "gl-san-salvador",
-    "nameZh": "San Salvador",
+    "nameZh": "圣萨尔瓦多",
     "nameEn": "San Salvador",
     "country": "SV",
     "latitude": 13.7063,
     "longitude": -89.2001,
     "isDomestic": false,
-    "waqiSlug": "san-salvador"
+    "waqiSlug": "san-salvador",
+    "population": 450000
   },
   {
     "id": "gl-ha-long",
-    "nameZh": "Hạ Long",
+    "nameZh": "下龙",
     "nameEn": "Hạ Long",
     "country": "VN",
     "latitude": 20.9725,
     "longitude": 107.0441,
     "isDomestic": false,
-    "waqiSlug": "ha-long"
+    "waqiSlug": "ha-long",
+    "population": 450000
   },
   {
     "id": "gl-newcastle",
-    "nameZh": "Newcastle",
+    "nameZh": "纽卡斯尔",
     "nameEn": "Newcastle",
     "country": "AU",
     "latitude": -32.9312,
     "longitude": 151.7596,
     "isDomestic": false,
-    "waqiSlug": "newcastle"
+    "waqiSlug": "newcastle",
+    "population": 300196
   },
   {
     "id": "gl-launceston",
-    "nameZh": "Launceston",
+    "nameZh": "朗塞斯顿",
     "nameEn": "Launceston",
     "country": "AU",
     "latitude": -41.419,
     "longitude": 147.124,
     "isDomestic": false,
-    "waqiSlug": "launceston"
+    "waqiSlug": "launceston",
+    "population": 87000
   },
   {
     "id": "gl-hobart",
-    "nameZh": "Hobart",
+    "nameZh": "霍巴特",
     "nameEn": "Hobart",
     "country": "AU",
     "latitude": -42.855,
     "longitude": 147.315,
     "isDomestic": false,
-    "waqiSlug": "hobart"
+    "waqiSlug": "hobart",
+    "population": 247000
   },
   {
     "id": "gl-darwin",
-    "nameZh": "Darwin",
+    "nameZh": "达尔文",
     "nameEn": "Darwin",
     "country": "AU",
     "latitude": -12.467,
     "longitude": 130.8506,
     "isDomestic": false,
-    "waqiSlug": "darwin"
+    "waqiSlug": "darwin",
+    "population": 148000
   },
   {
     "id": "gl-adelaide",
@@ -8317,17 +9110,19 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -34.9289,
     "longitude": 138.6009,
     "isDomestic": false,
-    "waqiSlug": "adelaide"
+    "waqiSlug": "adelaide",
+    "population": 1387290
   },
   {
     "id": "gl-wollongong",
-    "nameZh": "Wollongong",
+    "nameZh": "卧龙岗",
     "nameEn": "Wollongong",
     "country": "AU",
     "latitude": -34.4171,
     "longitude": 150.8873,
     "isDomestic": false,
-    "waqiSlug": "wollongong"
+    "waqiSlug": "wollongong",
+    "population": 305000
   },
   {
     "id": "gl-manama",
@@ -8337,227 +9132,250 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.2279,
     "longitude": 50.5857,
     "isDomestic": false,
-    "waqiSlug": "manama"
+    "waqiSlug": "manama",
+    "population": 450000
   },
   {
     "id": "gl-norwich",
-    "nameZh": "Norwich",
+    "nameZh": "诺里奇",
     "nameEn": "Norwich",
     "country": "GB",
     "latitude": 52.6142,
     "longitude": 1.302,
     "isDomestic": false,
-    "waqiSlug": "norwich"
+    "waqiSlug": "norwich",
+    "population": 450000
   },
   {
     "id": "gl-liverpool",
-    "nameZh": "Liverpool",
+    "nameZh": "利物浦",
     "nameEn": "Liverpool",
     "country": "GB",
     "latitude": 53.3729,
     "longitude": -3.0227,
     "isDomestic": false,
-    "waqiSlug": "liverpool"
+    "waqiSlug": "liverpool",
+    "population": 496784
   },
   {
     "id": "gl-belfast",
-    "nameZh": "Belfast",
+    "nameZh": "贝尔法斯特",
     "nameEn": "Belfast",
     "country": "GB",
     "latitude": 54.5996,
     "longitude": -5.9288,
     "isDomestic": false,
-    "waqiSlug": "belfast"
+    "waqiSlug": "belfast",
+    "population": 450000
   },
   {
     "id": "gl-coventry",
-    "nameZh": "Coventry",
+    "nameZh": "考文垂",
     "nameEn": "Coventry",
     "country": "GB",
     "latitude": 52.4116,
     "longitude": -1.5602,
     "isDomestic": false,
-    "waqiSlug": "coventry"
+    "waqiSlug": "coventry",
+    "population": 450000
   },
   {
     "id": "gl-leeds",
-    "nameZh": "Leeds",
+    "nameZh": "利兹",
     "nameEn": "Leeds",
     "country": "GB",
     "latitude": 53.8038,
     "longitude": -1.5465,
     "isDomestic": false,
-    "waqiSlug": "leeds"
+    "waqiSlug": "leeds",
+    "population": 792525
   },
   {
     "id": "gl-cardiff",
-    "nameZh": "Cardiff",
+    "nameZh": "加的夫",
     "nameEn": "Cardiff",
     "country": "GB",
     "latitude": 51.4818,
     "longitude": -3.1763,
     "isDomestic": false,
-    "waqiSlug": "cardiff"
+    "waqiSlug": "cardiff",
+    "population": 450000
   },
   {
     "id": "gl-bristol",
-    "nameZh": "Bristol",
+    "nameZh": "布里斯托",
     "nameEn": "Bristol",
     "country": "GB",
     "latitude": 51.4628,
     "longitude": -2.5845,
     "isDomestic": false,
-    "waqiSlug": "bristol"
+    "waqiSlug": "bristol",
+    "population": 467099
   },
   {
     "id": "gl-birmingham",
-    "nameZh": "Birmingham",
+    "nameZh": "伯明翰",
     "nameEn": "Birmingham",
     "country": "GB",
     "latitude": 52.4862,
     "longitude": -1.8904,
     "isDomestic": false,
-    "waqiSlug": "birmingham"
+    "waqiSlug": "birmingham",
+    "population": 1149000
   },
   {
     "id": "gl-sheffield",
-    "nameZh": "Sheffield",
+    "nameZh": "谢菲尔德",
     "nameEn": "Sheffield",
     "country": "GB",
     "latitude": 53.3786,
     "longitude": -1.4781,
     "isDomestic": false,
-    "waqiSlug": "sheffield"
+    "waqiSlug": "sheffield",
+    "population": 584853
   },
   {
     "id": "gl-newport",
-    "nameZh": "Newport",
+    "nameZh": "纽波特",
     "nameEn": "Newport",
     "country": "GB",
     "latitude": 51.6012,
     "longitude": -2.9773,
     "isDomestic": false,
-    "waqiSlug": "newport"
+    "waqiSlug": "newport",
+    "population": 450000
   },
   {
     "id": "gl-leicester",
-    "nameZh": "Leicester",
+    "nameZh": "莱斯特",
     "nameEn": "Leicester",
     "country": "GB",
     "latitude": 52.6198,
     "longitude": -1.1273,
     "isDomestic": false,
-    "waqiSlug": "leicester"
+    "waqiSlug": "leicester",
+    "population": 450000
   },
   {
     "id": "gl-reading",
-    "nameZh": "Reading",
+    "nameZh": "雷丁",
     "nameEn": "Reading",
     "country": "GB",
     "latitude": 51.453,
     "longitude": -0.9445,
     "isDomestic": false,
-    "waqiSlug": "reading"
+    "waqiSlug": "reading",
+    "population": 450000
   },
   {
     "id": "gl-plymouth",
-    "nameZh": "Plymouth",
+    "nameZh": "普利茅斯",
     "nameEn": "Plymouth",
     "country": "GB",
     "latitude": 50.3717,
     "longitude": -4.1424,
     "isDomestic": false,
-    "waqiSlug": "plymouth"
+    "waqiSlug": "plymouth",
+    "population": 450000
   },
   {
     "id": "gl-glasgow",
-    "nameZh": "Glasgow",
+    "nameZh": "格拉斯哥",
     "nameEn": "Glasgow",
     "country": "GB",
     "latitude": 55.8592,
     "longitude": -4.2589,
     "isDomestic": false,
-    "waqiSlug": "glasgow"
+    "waqiSlug": "glasgow",
+    "population": 635640
   },
   {
     "id": "gl-preston",
-    "nameZh": "Preston",
+    "nameZh": "普雷斯顿",
     "nameEn": "Preston",
     "country": "GB",
     "latitude": 53.7656,
     "longitude": -2.6804,
     "isDomestic": false,
-    "waqiSlug": "preston"
+    "waqiSlug": "preston",
+    "population": 450000
   },
   {
     "id": "gl-swansea",
-    "nameZh": "Swansea",
+    "nameZh": "斯旺西",
     "nameEn": "Swansea",
     "country": "GB",
     "latitude": 51.6327,
     "longitude": -3.9474,
     "isDomestic": false,
-    "waqiSlug": "swansea"
+    "waqiSlug": "swansea",
+    "population": 450000
   },
   {
     "id": "gl-southend-on-sea",
-    "nameZh": "Southend-on-Sea",
+    "nameZh": "绍森德",
     "nameEn": "Southend-on-Sea",
     "country": "GB",
     "latitude": 51.5442,
     "longitude": 0.6784,
     "isDomestic": false,
-    "waqiSlug": "southend-on-sea"
+    "waqiSlug": "southend-on-sea",
+    "population": 450000
   },
   {
     "id": "gl-vientiane",
-    "nameZh": "Vientiane",
+    "nameZh": "万象",
     "nameEn": "Vientiane",
     "country": "LA",
     "latitude": 17.9631,
     "longitude": 102.6122,
     "isDomestic": false,
-    "waqiSlug": "vientiane"
+    "waqiSlug": "vientiane",
+    "population": 450000
   },
   {
     "id": "gl-kaunas",
-    "nameZh": "Kaunas",
+    "nameZh": "考纳斯",
     "nameEn": "Kaunas",
     "country": "LT",
     "latitude": 54.8878,
     "longitude": 23.846,
     "isDomestic": false,
-    "waqiSlug": "kaunas"
+    "waqiSlug": "kaunas",
+    "population": 450000
   },
   {
     "id": "gl-san-juan",
-    "nameZh": "San Juan",
+    "nameZh": "圣胡安",
     "nameEn": "San Juan",
     "country": "PR",
     "latitude": 18.4284,
     "longitude": -66.1417,
     "isDomestic": false,
-    "waqiSlug": "san-juan"
+    "waqiSlug": "san-juan",
+    "population": 450000
   },
   {
     "id": "gl-funchal",
-    "nameZh": "Funchal",
+    "nameZh": "丰沙尔",
     "nameEn": "Funchal",
     "country": "PT",
     "latitude": 32.6497,
     "longitude": -16.9183,
     "isDomestic": false,
-    "waqiSlug": "funchal"
+    "waqiSlug": "funchal",
+    "population": 450000
   },
   {
     "id": "gl-taitung-city",
-    "nameZh": "Taitung City",
+    "nameZh": "台东",
     "nameEn": "Taitung City",
     "country": "TW",
     "latitude": 22.7554,
     "longitude": 121.1505,
     "isDomestic": false,
-    "waqiSlug": "taitung-city"
+    "waqiSlug": "taitung-city",
+    "population": 450000
   },
   {
     "id": "gl-taichung",
@@ -8568,17 +9386,19 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "longitude": 120.6736,
     "isDomestic": true,
     "waqiSlug": "taichung",
-    "province": "台湾省"
+    "province": "台湾省",
+    "population": 2820000
   },
   {
     "id": "gl-taoyuan-city",
-    "nameZh": "Taoyuan City",
+    "nameZh": "桃园",
     "nameEn": "Taoyuan City",
     "country": "TW",
     "latitude": 25.0273,
     "longitude": 121.3094,
     "isDomestic": false,
-    "waqiSlug": "taoyuan-city"
+    "waqiSlug": "taoyuan-city",
+    "population": 450000
   },
   {
     "id": "gl-taipei",
@@ -8589,7 +9409,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "longitude": 121.5654,
     "isDomestic": true,
     "waqiSlug": "taipei",
-    "province": "台湾省"
+    "province": "台湾省",
+    "population": 2602418
   },
   {
     "id": "gl-hsinchu",
@@ -8600,7 +9421,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "longitude": 120.9675,
     "isDomestic": true,
     "waqiSlug": "hsinchu",
-    "province": "台湾省"
+    "province": "台湾省",
+    "population": 450000
   },
   {
     "id": "gl-keelung",
@@ -8611,7 +9433,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "longitude": 121.7392,
     "isDomestic": true,
     "waqiSlug": "keelung",
-    "province": "台湾省"
+    "province": "台湾省",
+    "population": 360000
   },
   {
     "id": "gl-tainan",
@@ -8622,17 +9445,19 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "longitude": 120.227,
     "isDomestic": true,
     "waqiSlug": "tainan",
-    "province": "台湾省"
+    "province": "台湾省",
+    "population": 1870000
   },
   {
     "id": "gl-douliu",
-    "nameZh": "Douliu",
+    "nameZh": "斗六",
     "nameEn": "Douliu",
     "country": "TW",
     "latitude": 23.7119,
     "longitude": 120.545,
     "isDomestic": false,
-    "waqiSlug": "douliu"
+    "waqiSlug": "douliu",
+    "population": 450000
   },
   {
     "id": "gl-kaohsiung",
@@ -8643,7 +9468,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "longitude": 120.3014,
     "isDomestic": true,
     "waqiSlug": "kaohsiung",
-    "province": "台湾省"
+    "province": "台湾省",
+    "population": 2734000
   },
   {
     "id": "gl-odz",
@@ -8653,97 +9479,107 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 51.7706,
     "longitude": 19.4739,
     "isDomestic": false,
-    "waqiSlug": "odz"
+    "waqiSlug": "odz",
+    "population": 450000
   },
   {
     "id": "gl-tarnow",
-    "nameZh": "Tarnów",
+    "nameZh": "塔尔努夫",
     "nameEn": "Tarnów",
     "country": "PL",
     "latitude": 50.0183,
     "longitude": 20.9926,
     "isDomestic": false,
-    "waqiSlug": "tarnow"
+    "waqiSlug": "tarnow",
+    "population": 450000
   },
   {
     "id": "gl-gdansk",
-    "nameZh": "Gdańsk",
+    "nameZh": "格但斯克",
     "nameEn": "Gdańsk",
     "country": "PL",
     "latitude": 54.3533,
     "longitude": 18.6353,
     "isDomestic": false,
-    "waqiSlug": "gdansk"
+    "waqiSlug": "gdansk",
+    "population": 470907
   },
   {
     "id": "gl-katowice",
-    "nameZh": "Katowice",
+    "nameZh": "卡托维兹",
     "nameEn": "Katowice",
     "country": "PL",
     "latitude": 50.2646,
     "longitude": 18.975,
     "isDomestic": false,
-    "waqiSlug": "katowice"
+    "waqiSlug": "katowice",
+    "population": 292774
   },
   {
     "id": "gl-poznan",
-    "nameZh": "Poznań",
+    "nameZh": "波兹南",
     "nameEn": "Poznań",
     "country": "PL",
     "latitude": 52.4203,
     "longitude": 16.8773,
     "isDomestic": false,
-    "waqiSlug": "poznan"
+    "waqiSlug": "poznan",
+    "population": 534813
   },
   {
     "id": "gl-rybnik",
-    "nameZh": "Rybnik",
+    "nameZh": "雷布尼克",
     "nameEn": "Rybnik",
     "country": "PL",
     "latitude": 50.1112,
     "longitude": 18.5161,
     "isDomestic": false,
-    "waqiSlug": "rybnik"
+    "waqiSlug": "rybnik",
+    "population": 450000
   },
   {
     "id": "gl-szczecin",
-    "nameZh": "Szczecin",
+    "nameZh": "什切青",
     "nameEn": "Szczecin",
     "country": "PL",
     "latitude": 53.4322,
     "longitude": 14.5539,
     "isDomestic": false,
-    "waqiSlug": "szczecin"
+    "waqiSlug": "szczecin",
+    "population": 400990
   },
   {
     "id": "gl-kielce",
-    "nameZh": "Kielce",
+    "nameZh": "凯尔采",
     "nameEn": "Kielce",
     "country": "PL",
     "latitude": 50.879,
     "longitude": 20.6337,
     "isDomestic": false,
-    "waqiSlug": "kielce"
+    "waqiSlug": "kielce",
+    "population": 450000
   },
   {
     "id": "gl-bydgoszcz",
-    "nameZh": "Bydgoszcz",
+    "nameZh": "比得哥什",
     "nameEn": "Bydgoszcz",
     "country": "PL",
     "latitude": 53.1339,
     "longitude": 17.9956,
     "isDomestic": false,
-    "waqiSlug": "bydgoszcz"
+    "waqiSlug": "bydgoszcz",
+    "population": 348190
   },
   {
     "id": "gl-zabrze",
-    "nameZh": "Zabrze",
+    "nameZh": "扎布热",
     "nameEn": "Zabrze",
     "country": "PL",
     "latitude": 50.3165,
     "longitude": 18.7724,
     "isDomestic": false,
-    "waqiSlug": "zabrze"
+    "waqiSlug": "zabrze",
+    "population": 450000
   },
   {
     "id": "gl-wrocaw",
@@ -8753,7 +9589,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 51.1029,
     "longitude": 17.0301,
     "isDomestic": false,
-    "waqiSlug": "wrocaw"
+    "waqiSlug": "wrocaw",
+    "population": 450000
   },
   {
     "id": "gl-pock",
@@ -8763,227 +9600,250 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 52.5468,
     "longitude": 19.7064,
     "isDomestic": false,
-    "waqiSlug": "pock"
+    "waqiSlug": "pock",
+    "population": 450000
   },
   {
     "id": "gl-krakow",
-    "nameZh": "Kraków",
+    "nameZh": "克拉科夫",
     "nameEn": "Kraków",
     "country": "PL",
     "latitude": 50.0577,
     "longitude": 19.9262,
     "isDomestic": false,
-    "waqiSlug": "krakow"
+    "waqiSlug": "krakow",
+    "population": 779115
   },
   {
     "id": "gl-sofia",
-    "nameZh": "Sofia",
+    "nameZh": "索非亚",
     "nameEn": "Sofia",
     "country": "BG",
     "latitude": 42.7325,
     "longitude": 23.2986,
     "isDomestic": false,
-    "waqiSlug": "sofia"
+    "waqiSlug": "sofia",
+    "population": 1242568
   },
   {
     "id": "gl-burgas",
-    "nameZh": "Burgas",
+    "nameZh": "布尔加斯",
     "nameEn": "Burgas",
     "country": "BG",
     "latitude": 42.4746,
     "longitude": 27.3975,
     "isDomestic": false,
-    "waqiSlug": "burgas"
+    "waqiSlug": "burgas",
+    "population": 450000
   },
   {
     "id": "gl-plovdiv",
-    "nameZh": "Plovdiv",
+    "nameZh": "普罗夫迪夫",
     "nameEn": "Plovdiv",
     "country": "BG",
     "latitude": 42.1429,
     "longitude": 24.7652,
     "isDomestic": false,
-    "waqiSlug": "plovdiv"
+    "waqiSlug": "plovdiv",
+    "population": 450000
   },
   {
     "id": "gl-nicosia",
-    "nameZh": "Nicosia",
+    "nameZh": "尼科西亚",
     "nameEn": "Nicosia",
     "country": "CY",
     "latitude": 35.1521,
     "longitude": 33.3477,
     "isDomestic": false,
-    "waqiSlug": "nicosia"
+    "waqiSlug": "nicosia",
+    "population": 450000
   },
   {
     "id": "gl-limassol",
-    "nameZh": "Limassol",
+    "nameZh": "利马索尔",
     "nameEn": "Limassol",
     "country": "CY",
     "latitude": 34.7071,
     "longitude": 33.0226,
     "isDomestic": false,
-    "waqiSlug": "limassol"
+    "waqiSlug": "limassol",
+    "population": 450000
   },
   {
     "id": "gl-baghdad",
-    "nameZh": "Baghdad",
+    "nameZh": "巴格达",
     "nameEn": "Baghdad",
     "country": "IQ",
     "latitude": 33.3128,
     "longitude": 44.3615,
     "isDomestic": false,
-    "waqiSlug": "baghdad"
+    "waqiSlug": "baghdad",
+    "population": 450000
   },
   {
     "id": "gl-skopje",
-    "nameZh": "Skopje",
+    "nameZh": "斯科普里",
     "nameEn": "Skopje",
     "country": "MK",
     "latitude": 41.9925,
     "longitude": 21.4236,
     "isDomestic": false,
-    "waqiSlug": "skopje"
+    "waqiSlug": "skopje",
+    "population": 546824
   },
   {
     "id": "gl-cochabamba",
-    "nameZh": "Cochabamba",
+    "nameZh": "科恰班巴",
     "nameEn": "Cochabamba",
     "country": "BO",
     "latitude": -17.4126,
     "longitude": -66.1584,
     "isDomestic": false,
-    "waqiSlug": "cochabamba"
+    "waqiSlug": "cochabamba",
+    "population": 450000
   },
   {
     "id": "gl-quito",
-    "nameZh": "Quito",
+    "nameZh": "基多",
     "nameEn": "Quito",
     "country": "EC",
     "latitude": -0.2214,
     "longitude": -78.514,
     "isDomestic": false,
-    "waqiSlug": "quito"
+    "waqiSlug": "quito",
+    "population": 2011388
   },
   {
     "id": "gl-middelburg",
-    "nameZh": "Middelburg",
+    "nameZh": "米德尔堡",
     "nameEn": "Middelburg",
     "country": "ZA",
     "latitude": -25.7961,
     "longitude": 29.4628,
     "isDomestic": false,
-    "waqiSlug": "middelburg"
+    "waqiSlug": "middelburg",
+    "population": 450000
   },
   {
     "id": "gl-pretoria",
-    "nameZh": "Pretoria",
+    "nameZh": "比勒陀利亚",
     "nameEn": "Pretoria",
     "country": "ZA",
     "latitude": -25.7137,
     "longitude": 28.1321,
     "isDomestic": false,
-    "waqiSlug": "pretoria"
+    "waqiSlug": "pretoria",
+    "population": 2472000
   },
   {
     "id": "gl-east-london",
-    "nameZh": "East London",
+    "nameZh": "东伦敦",
     "nameEn": "East London",
     "country": "ZA",
     "latitude": -33.0149,
     "longitude": 27.8492,
     "isDomestic": false,
-    "waqiSlug": "east-london"
+    "waqiSlug": "east-london",
+    "population": 267000
   },
   {
     "id": "gl-vereeniging",
-    "nameZh": "Vereeniging",
+    "nameZh": "弗里尼欣",
     "nameEn": "Vereeniging",
     "country": "ZA",
     "latitude": -26.7247,
     "longitude": 27.8848,
     "isDomestic": false,
-    "waqiSlug": "vereeniging"
+    "waqiSlug": "vereeniging",
+    "population": 450000
   },
   {
     "id": "gl-klerksdorp",
-    "nameZh": "Klerksdorp",
+    "nameZh": "克莱克斯多普",
     "nameEn": "Klerksdorp",
     "country": "ZA",
     "latitude": -26.896,
     "longitude": 26.6056,
     "isDomestic": false,
-    "waqiSlug": "klerksdorp"
+    "waqiSlug": "klerksdorp",
+    "population": 450000
   },
   {
     "id": "gl-richards-bay",
-    "nameZh": "Richards Bay",
+    "nameZh": "理查兹湾",
     "nameEn": "Richards Bay",
     "country": "ZA",
     "latitude": -28.787,
     "longitude": 32.0218,
     "isDomestic": false,
-    "waqiSlug": "richards-bay"
+    "waqiSlug": "richards-bay",
+    "population": 450000
   },
   {
     "id": "gl-port-elizabeth",
-    "nameZh": "Port Elizabeth",
+    "nameZh": "伊丽莎白港",
     "nameEn": "Port Elizabeth",
     "country": "ZA",
     "latitude": -33.9856,
     "longitude": 25.5885,
     "isDomestic": false,
-    "waqiSlug": "port-elizabeth"
+    "waqiSlug": "port-elizabeth",
+    "population": 967000
   },
   {
     "id": "gl-worcester",
-    "nameZh": "Worcester",
+    "nameZh": "伍斯特",
     "nameEn": "Worcester",
     "country": "ZA",
     "latitude": 42.2639,
     "longitude": -71.7942,
     "isDomestic": false,
-    "waqiSlug": "worcester"
+    "waqiSlug": "worcester",
+    "population": 450000
   },
   {
     "id": "gl-medellin",
-    "nameZh": "Medellín",
+    "nameZh": "麦德林",
     "nameEn": "Medellín",
     "country": "CO",
     "latitude": 6.2905,
     "longitude": -75.5555,
     "isDomestic": false,
-    "waqiSlug": "medellin"
+    "waqiSlug": "medellin",
+    "population": 450000
   },
   {
     "id": "gl-tallinn",
-    "nameZh": "Tallinn",
+    "nameZh": "塔林",
     "nameEn": "Tallinn",
     "country": "EE",
     "latitude": 59.4311,
     "longitude": 24.7603,
     "isDomestic": false,
-    "waqiSlug": "tallinn"
+    "waqiSlug": "tallinn",
+    "population": 437619
   },
   {
     "id": "gl-bologna",
-    "nameZh": "Bologna",
+    "nameZh": "博洛尼亚",
     "nameEn": "Bologna",
     "country": "IT",
     "latitude": 44.5,
     "longitude": 11.3285,
     "isDomestic": false,
-    "waqiSlug": "bologna"
+    "waqiSlug": "bologna",
+    "population": 394463
   },
   {
     "id": "gl-livorno",
-    "nameZh": "Livorno",
+    "nameZh": "利沃诺",
     "nameEn": "Livorno",
     "country": "IT",
     "latitude": 43.5523,
     "longitude": 10.329,
     "isDomestic": false,
-    "waqiSlug": "livorno"
+    "waqiSlug": "livorno",
+    "population": 157000
   },
   {
     "id": "gl-trieste",
@@ -8993,157 +9853,173 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 45.6495,
     "longitude": 13.7768,
     "isDomestic": false,
-    "waqiSlug": "trieste"
+    "waqiSlug": "trieste",
+    "population": 204000
   },
   {
     "id": "gl-modena",
-    "nameZh": "Modena",
+    "nameZh": "摩德纳",
     "nameEn": "Modena",
     "country": "IT",
     "latitude": 44.6516,
     "longitude": 10.9073,
     "isDomestic": false,
-    "waqiSlug": "modena"
+    "waqiSlug": "modena",
+    "population": 185273
   },
   {
     "id": "gl-prato",
-    "nameZh": "Prato",
+    "nameZh": "普拉托",
     "nameEn": "Prato",
     "country": "IT",
     "latitude": 43.8719,
     "longitude": 11.0926,
     "isDomestic": false,
-    "waqiSlug": "prato"
+    "waqiSlug": "prato",
+    "population": 195086
   },
   {
     "id": "gl-florence",
-    "nameZh": "Florence",
+    "nameZh": "佛罗伦萨",
     "nameEn": "Florence",
     "country": "IT",
     "latitude": 43.7706,
     "longitude": 11.2714,
     "isDomestic": false,
-    "waqiSlug": "florence"
+    "waqiSlug": "florence",
+    "population": 382258
   },
   {
     "id": "gl-naples",
-    "nameZh": "Naples",
+    "nameZh": "那不勒斯",
     "nameEn": "Naples",
     "country": "IT",
     "latitude": 40.8536,
     "longitude": 14.2717,
     "isDomestic": false,
-    "waqiSlug": "naples"
+    "waqiSlug": "naples",
+    "population": 962589
   },
   {
     "id": "gl-turin",
-    "nameZh": "Turin",
+    "nameZh": "都灵",
     "nameEn": "Turin",
     "country": "IT",
     "latitude": 45.1043,
     "longitude": 7.6964,
     "isDomestic": false,
-    "waqiSlug": "turin"
+    "waqiSlug": "turin",
+    "population": 870952
   },
   {
     "id": "gl-brescia",
-    "nameZh": "Brescia",
+    "nameZh": "布雷西亚",
     "nameEn": "Brescia",
     "country": "IT",
     "latitude": 45.5401,
     "longitude": 10.2228,
     "isDomestic": false,
-    "waqiSlug": "brescia"
+    "waqiSlug": "brescia",
+    "population": 196446
   },
   {
     "id": "gl-verona",
-    "nameZh": "Verona",
+    "nameZh": "维罗纳",
     "nameEn": "Verona",
     "country": "IT",
     "latitude": 45.4384,
     "longitude": 10.9916,
     "isDomestic": false,
-    "waqiSlug": "verona"
+    "waqiSlug": "verona",
+    "population": 257275
   },
   {
     "id": "gl-parma",
-    "nameZh": "Parma",
+    "nameZh": "帕尔马",
     "nameEn": "Parma",
     "country": "IT",
     "latitude": 44.7924,
     "longitude": 10.331,
     "isDomestic": false,
-    "waqiSlug": "parma"
+    "waqiSlug": "parma",
+    "population": 198292
   },
   {
     "id": "gl-amman",
-    "nameZh": "Amman",
+    "nameZh": "安曼",
     "nameEn": "Amman",
     "country": "JO",
     "latitude": 31.9354,
     "longitude": 35.9446,
     "isDomestic": false,
-    "waqiSlug": "amman"
+    "waqiSlug": "amman",
+    "population": 450000
   },
   {
     "id": "gl-irbid",
-    "nameZh": "Irbid",
+    "nameZh": "伊尔比德",
     "nameEn": "Irbid",
     "country": "JO",
     "latitude": 32.5578,
     "longitude": 35.845,
     "isDomestic": false,
-    "waqiSlug": "irbid"
+    "waqiSlug": "irbid",
+    "population": 450000
   },
   {
     "id": "gl-zarqa",
-    "nameZh": "Zarqa",
+    "nameZh": "扎尔卡",
     "nameEn": "Zarqa",
     "country": "JO",
     "latitude": 32.0546,
     "longitude": 36.0865,
     "isDomestic": false,
-    "waqiSlug": "zarqa"
+    "waqiSlug": "zarqa",
+    "population": 450000
   },
   {
     "id": "gl-utrecht",
-    "nameZh": "Utrecht",
+    "nameZh": "乌得勒支",
     "nameEn": "Utrecht",
     "country": "NL",
     "latitude": 52.1013,
     "longitude": 5.1282,
     "isDomestic": false,
-    "waqiSlug": "utrecht"
+    "waqiSlug": "utrecht",
+    "population": 359370
   },
   {
     "id": "gl-nijmegen",
-    "nameZh": "Nijmegen",
+    "nameZh": "奈梅亨",
     "nameEn": "Nijmegen",
     "country": "NL",
     "latitude": 51.8414,
     "longitude": 5.8578,
     "isDomestic": false,
-    "waqiSlug": "nijmegen"
+    "waqiSlug": "nijmegen",
+    "population": 177000
   },
   {
     "id": "gl-haarlem",
-    "nameZh": "Haarlem",
+    "nameZh": "哈勒姆",
     "nameEn": "Haarlem",
     "country": "NL",
     "latitude": 52.3705,
     "longitude": 4.6423,
     "isDomestic": false,
-    "waqiSlug": "haarlem"
+    "waqiSlug": "haarlem",
+    "population": 161000
   },
   {
     "id": "gl-eindhoven",
-    "nameZh": "Eindhoven",
+    "nameZh": "埃因霍温",
     "nameEn": "Eindhoven",
     "country": "NL",
     "latitude": 51.4687,
     "longitude": 5.4723,
     "isDomestic": false,
-    "waqiSlug": "eindhoven"
+    "waqiSlug": "eindhoven",
+    "population": 238000
   },
   {
     "id": "gl-rotterdam",
@@ -9153,57 +10029,63 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 51.9308,
     "longitude": 4.4792,
     "isDomestic": false,
-    "waqiSlug": "rotterdam"
+    "waqiSlug": "rotterdam",
+    "population": 651631
   },
   {
     "id": "gl-dordrecht",
-    "nameZh": "Dordrecht",
+    "nameZh": "多德雷赫特",
     "nameEn": "Dordrecht",
     "country": "NL",
     "latitude": 51.8007,
     "longitude": 4.7082,
     "isDomestic": false,
-    "waqiSlug": "dordrecht"
+    "waqiSlug": "dordrecht",
+    "population": 450000
   },
   {
     "id": "gl-breda",
-    "nameZh": "Breda",
+    "nameZh": "布雷达",
     "nameEn": "Breda",
     "country": "NL",
     "latitude": 51.6031,
     "longitude": 4.781,
     "isDomestic": false,
-    "waqiSlug": "breda"
+    "waqiSlug": "breda",
+    "population": 184000
   },
   {
     "id": "gl-groningen",
-    "nameZh": "Groningen",
+    "nameZh": "格罗宁根",
     "nameEn": "Groningen",
     "country": "NL",
     "latitude": 53.2178,
     "longitude": 6.5789,
     "isDomestic": false,
-    "waqiSlug": "groningen"
+    "waqiSlug": "groningen",
+    "population": 233000
   },
   {
     "id": "gl-maastricht",
-    "nameZh": "Maastricht",
+    "nameZh": "马斯特里赫特",
     "nameEn": "Maastricht",
     "country": "NL",
     "latitude": 50.852,
     "longitude": 5.6758,
     "isDomestic": false,
-    "waqiSlug": "maastricht"
+    "waqiSlug": "maastricht",
+    "population": 450000
   },
   {
     "id": "gl-the-hague",
-    "nameZh": "The Hague",
+    "nameZh": "海牙",
     "nameEn": "The Hague",
     "country": "NL",
     "latitude": 52.0771,
     "longitude": 4.2892,
     "isDomestic": false,
-    "waqiSlug": "the-hague"
+    "waqiSlug": "the-hague",
+    "population": 548320
   },
   {
     "id": "gl-novi-sad",
@@ -9213,27 +10095,30 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 45.2517,
     "longitude": 19.8369,
     "isDomestic": false,
-    "waqiSlug": "novi-sad"
+    "waqiSlug": "novi-sad",
+    "population": 450000
   },
   {
     "id": "gl-nis",
-    "nameZh": "Niš",
+    "nameZh": "尼什",
     "nameEn": "Niš",
     "country": "RS",
     "latitude": 43.3167,
     "longitude": 21.9133,
     "isDomestic": false,
-    "waqiSlug": "nis"
+    "waqiSlug": "nis",
+    "population": 450000
   },
   {
     "id": "gl-belgrade",
-    "nameZh": "Belgrade",
+    "nameZh": "贝尔格莱德",
     "nameEn": "Belgrade",
     "country": "RS",
     "latitude": 44.7943,
     "longitude": 20.4632,
     "isDomestic": false,
-    "waqiSlug": "belgrade"
+    "waqiSlug": "belgrade",
+    "population": 1374000
   },
   {
     "id": "gl-karachi",
@@ -9243,7 +10128,8 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 24.8608,
     "longitude": 67.0104,
     "isDomestic": false,
-    "waqiSlug": "karachi"
+    "waqiSlug": "karachi",
+    "population": 450000
   },
   {
     "id": "gl-peshawar",
@@ -9253,17 +10139,19 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 34.008,
     "longitude": 71.5785,
     "isDomestic": false,
-    "waqiSlug": "peshawar"
+    "waqiSlug": "peshawar",
+    "population": 450000
   },
   {
     "id": "gl-islamabad",
-    "nameZh": "Islamabad",
+    "nameZh": "伊斯兰堡",
     "nameEn": "Islamabad",
     "country": "PK",
     "latitude": 33.7235,
     "longitude": 73.1182,
     "isDomestic": false,
-    "waqiSlug": "islamabad"
+    "waqiSlug": "islamabad",
+    "population": 450000
   },
   {
     "id": "gl-lahore",
@@ -9273,17 +10161,19 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 31.558,
     "longitude": 74.3507,
     "isDomestic": false,
-    "waqiSlug": "lahore"
+    "waqiSlug": "lahore",
+    "population": 450000
   },
   {
     "id": "gl-bloemfontein",
-    "nameZh": "Bloemfontein",
+    "nameZh": "布隆方丹",
     "nameEn": "Bloemfontein",
     "country": "ZA",
     "latitude": -29.1385,
     "longitude": 26.2419,
     "isDomestic": false,
-    "waqiSlug": "bloemfontein"
+    "waqiSlug": "bloemfontein",
+    "population": 556000
   },
   {
     "id": "gl-durban",
@@ -9293,97 +10183,107 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": -29.8579,
     "longitude": 31.0292,
     "isDomestic": false,
-    "waqiSlug": "durban"
+    "waqiSlug": "durban",
+    "population": 3120000
   },
   {
     "id": "gl-dushanbe",
-    "nameZh": "Dushanbe",
+    "nameZh": "杜尚别",
     "nameEn": "Dushanbe",
     "country": "TJ",
     "latitude": 38.5577,
     "longitude": 68.7759,
     "isDomestic": false,
-    "waqiSlug": "dushanbe"
+    "waqiSlug": "dushanbe",
+    "population": 450000
   },
   {
     "id": "gl-lviv",
-    "nameZh": "Lviv",
+    "nameZh": "利沃夫",
     "nameEn": "Lviv",
     "country": "UA",
     "latitude": 49.8475,
     "longitude": 24.0155,
     "isDomestic": false,
-    "waqiSlug": "lviv"
+    "waqiSlug": "lviv",
+    "population": 721000
   },
   {
     "id": "gl-valladolid",
-    "nameZh": "Valladolid",
+    "nameZh": "巴利亚多利德",
     "nameEn": "Valladolid",
     "country": "ES",
     "latitude": 41.6456,
     "longitude": -4.7303,
     "isDomestic": false,
-    "waqiSlug": "valladolid"
+    "waqiSlug": "valladolid",
+    "population": 298866
   },
   {
     "id": "gl-yangon",
-    "nameZh": "Yangon",
+    "nameZh": "仰光",
     "nameEn": "Yangon",
     "country": "MM",
     "latitude": 16.8256,
     "longitude": 96.1445,
     "isDomestic": false,
-    "waqiSlug": "yangon"
+    "waqiSlug": "yangon",
+    "population": 450000
   },
   {
     "id": "gl-haiphong",
-    "nameZh": "Haiphong",
+    "nameZh": "海防",
     "nameEn": "Haiphong",
     "country": "VN",
     "latitude": 20.8058,
     "longitude": 106.6298,
     "isDomestic": false,
-    "waqiSlug": "haiphong"
+    "waqiSlug": "haiphong",
+    "population": 450000
   },
   {
     "id": "gl-bandar-abbas",
-    "nameZh": "Bandar Abbas",
+    "nameZh": "阿巴斯港",
     "nameEn": "Bandar Abbas",
     "country": "IR",
     "latitude": 27.196,
     "longitude": 56.3389,
     "isDomestic": false,
-    "waqiSlug": "bandar-abbas"
+    "waqiSlug": "bandar-abbas",
+    "population": 450000
   },
   {
     "id": "gl-thrissur",
-    "nameZh": "Thrissur",
+    "nameZh": "特里苏尔",
     "nameEn": "Thrissur",
     "country": "IN",
     "latitude": 10.5324,
     "longitude": 76.2159,
     "isDomestic": false,
-    "waqiSlug": "thrissur"
+    "waqiSlug": "thrissur",
+    "population": 450000
   },
   {
     "id": "gl-shillong",
-    "nameZh": "Shillong",
+    "nameZh": "锡隆",
     "nameEn": "Shillong",
     "country": "IN",
     "latitude": 25.5803,
     "longitude": 91.8943,
     "isDomestic": false,
-    "waqiSlug": "shillong"
+    "waqiSlug": "shillong",
+    "population": 450000
   },
   {
     "id": "gl-ecatepec-de-morelos",
-    "nameZh": "Ecatepec de Morelos",
+    "nameZh": "埃卡特佩克",
     "nameEn": "Ecatepec de Morelos",
     "country": "MX",
     "latitude": 19.526,
     "longitude": -99.0824,
     "isDomestic": false,
-    "waqiSlug": "ecatepec-de-morelos"
+    "waqiSlug": "ecatepec-de-morelos",
+    "population": 450000
   },
   {
     "id": "gl-biratnagar",
@@ -9393,397 +10293,437 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "latitude": 26.455,
     "longitude": 87.2701,
     "isDomestic": false,
-    "waqiSlug": "biratnagar"
+    "waqiSlug": "biratnagar",
+    "population": 450000
   },
   {
     "id": "gl-algiers",
-    "nameZh": "Algiers",
+    "nameZh": "阿尔及尔",
     "nameEn": "Algiers",
     "country": "DZ",
     "latitude": 36.7558,
     "longitude": 3.0391,
     "isDomestic": false,
-    "waqiSlug": "algiers"
+    "waqiSlug": "algiers",
+    "population": 450000
   },
   {
     "id": "gl-ashgabat",
-    "nameZh": "Ashgabat",
+    "nameZh": "阿什哈巴德",
     "nameEn": "Ashgabat",
     "country": "TM",
     "latitude": 37.9415,
     "longitude": 58.3879,
     "isDomestic": false,
-    "waqiSlug": "ashgabat"
+    "waqiSlug": "ashgabat",
+    "population": 450000
   },
   {
     "id": "gl-zaragoza",
-    "nameZh": "Zaragoza",
+    "nameZh": "萨拉戈萨",
     "nameEn": "Zaragoza",
     "country": "ES",
     "latitude": 41.6703,
     "longitude": -0.8711,
     "isDomestic": false,
-    "waqiSlug": "zaragoza"
+    "waqiSlug": "zaragoza",
+    "population": 666880
   },
   {
     "id": "gl-dunedin",
-    "nameZh": "Dunedin",
+    "nameZh": "达尼丁",
     "nameEn": "Dunedin",
     "country": "NZ",
     "latitude": -45.8691,
     "longitude": 170.5177,
     "isDomestic": false,
-    "waqiSlug": "dunedin"
+    "waqiSlug": "dunedin",
+    "population": 450000
   },
   {
     "id": "gl-dijon",
-    "nameZh": "Dijon",
+    "nameZh": "第戎",
     "nameEn": "Dijon",
     "country": "FR",
     "latitude": 47.3257,
     "longitude": 5.0411,
     "isDomestic": false,
-    "waqiSlug": "dijon"
+    "waqiSlug": "dijon",
+    "population": 156000
   },
   {
     "id": "gl-caen",
-    "nameZh": "Caen",
+    "nameZh": "卡昂",
     "nameEn": "Caen",
     "country": "FR",
     "latitude": 49.1922,
     "longitude": -0.3911,
     "isDomestic": false,
-    "waqiSlug": "caen"
+    "waqiSlug": "caen",
+    "population": 105000
   },
   {
     "id": "gl-kabul",
-    "nameZh": "Kabul",
+    "nameZh": "喀布尔",
     "nameEn": "Kabul",
     "country": "AF",
     "latitude": 34.5544,
     "longitude": 69.2046,
     "isDomestic": false,
-    "waqiSlug": "kabul"
+    "waqiSlug": "kabul",
+    "population": 450000
   },
   {
     "id": "gl-nakhon-pathom",
-    "nameZh": "Nakhon Pathom",
+    "nameZh": "佛统",
     "nameEn": "Nakhon Pathom",
     "country": "TH",
     "latitude": 13.8321,
     "longitude": 100.058,
     "isDomestic": false,
-    "waqiSlug": "nakhon-pathom"
+    "waqiSlug": "nakhon-pathom",
+    "population": 450000
   },
   {
     "id": "gl-nagpur",
-    "nameZh": "Nagpur",
+    "nameZh": "那格浦尔",
     "nameEn": "Nagpur",
     "country": "IN",
     "latitude": 21.1529,
     "longitude": 79.073,
     "isDomestic": false,
-    "waqiSlug": "nagpur"
+    "waqiSlug": "nagpur",
+    "population": 2405000
   },
   {
     "id": "gl-mysore",
-    "nameZh": "Mysore Road Tolgate",
+    "nameZh": "迈索尔",
     "nameEn": "Mysore",
     "country": "IN",
     "latitude": 12.9551,
     "longitude": 77.5529,
     "isDomestic": false,
-    "waqiSlug": "mysore"
+    "waqiSlug": "mysore",
+    "population": 450000
   },
   {
     "id": "gl-canberra",
-    "nameZh": "Canberra",
+    "nameZh": "堪培拉",
     "nameEn": "Canberra",
     "country": "AU",
     "latitude": -35.2853,
     "longitude": 149.1316,
     "isDomestic": false,
-    "waqiSlug": "canberra"
+    "waqiSlug": "canberra",
+    "population": 456652
   },
   {
     "id": "gl-thessaloniki",
-    "nameZh": "Thessaloníki",
+    "nameZh": "塞萨洛尼基",
     "nameEn": "Thessaloníki",
     "country": "GR",
     "latitude": 40.6338,
     "longitude": 22.9453,
     "isDomestic": false,
-    "waqiSlug": "thessaloniki"
+    "waqiSlug": "thessaloniki",
+    "population": 824676
   },
   {
     "id": "gl-hue",
-    "nameZh": "Huế",
+    "nameZh": "顺化",
     "nameEn": "Huế",
     "country": "VN",
     "latitude": 16.4623,
     "longitude": 107.5964,
     "isDomestic": false,
-    "waqiSlug": "hue"
+    "waqiSlug": "hue",
+    "population": 450000
   },
   {
     "id": "gl-chelyabinsk",
-    "nameZh": "Chelyabinsk",
+    "nameZh": "车里雅宾斯克",
     "nameEn": "Chelyabinsk",
     "country": "RU",
     "latitude": 55.1125,
     "longitude": 61.4248,
     "isDomestic": false,
-    "waqiSlug": "chelyabinsk"
+    "waqiSlug": "chelyabinsk",
+    "population": 450000
   },
   {
     "id": "gl-nizhniy-novgorod",
-    "nameZh": "Nizhniy Novgorod",
+    "nameZh": "下诺夫哥罗德",
     "nameEn": "Nizhniy Novgorod",
     "country": "RU",
     "latitude": 56.3044,
     "longitude": 43.9831,
     "isDomestic": false,
-    "waqiSlug": "nizhniy-novgorod"
+    "waqiSlug": "nizhniy-novgorod",
+    "population": 450000
   },
   {
     "id": "gl-krasnoyarsk",
-    "nameZh": "Krasnoyarsk",
+    "nameZh": "克拉斯诺亚尔斯克",
     "nameEn": "Krasnoyarsk",
     "country": "RU",
     "latitude": 56.0259,
     "longitude": 92.8605,
     "isDomestic": false,
-    "waqiSlug": "krasnoyarsk"
+    "waqiSlug": "krasnoyarsk",
+    "population": 450000
   },
   {
     "id": "gl-tomsk",
-    "nameZh": "Tomsk",
+    "nameZh": "托木斯克",
     "nameEn": "Tomsk",
     "country": "RU",
     "latitude": 56.5146,
     "longitude": 85.03,
     "isDomestic": false,
-    "waqiSlug": "tomsk"
+    "waqiSlug": "tomsk",
+    "population": 450000
   },
   {
     "id": "gl-novosibirsk",
-    "nameZh": "Novosibirsk",
+    "nameZh": "新西伯利亚",
     "nameEn": "Novosibirsk",
     "country": "RU",
     "latitude": 55.0768,
     "longitude": 82.938,
     "isDomestic": false,
-    "waqiSlug": "novosibirsk"
+    "waqiSlug": "novosibirsk",
+    "population": 1625631
   },
   {
     "id": "gl-bamako",
-    "nameZh": "Bamako",
+    "nameZh": "巴马科",
     "nameEn": "Bamako",
     "country": "ML",
     "latitude": 12.6325,
     "longitude": -8.0369,
     "isDomestic": false,
-    "waqiSlug": "bamako"
+    "waqiSlug": "bamako",
+    "population": 450000
   },
   {
     "id": "gl-tbilisi",
-    "nameZh": "Tbilisi",
+    "nameZh": "第比利斯",
     "nameEn": "Tbilisi",
     "country": "GE",
     "latitude": 41.7088,
     "longitude": 44.7997,
     "isDomestic": false,
-    "waqiSlug": "tbilisi"
+    "waqiSlug": "tbilisi",
+    "population": 450000
   },
   {
     "id": "gl-guatemala-city",
-    "nameZh": "Guatemala City",
+    "nameZh": "危地马拉城",
     "nameEn": "Guatemala City",
     "country": "GT",
     "latitude": 14.6069,
     "longitude": -90.517,
     "isDomestic": false,
-    "waqiSlug": "guatemala-city"
+    "waqiSlug": "guatemala-city",
+    "population": 450000
   },
   {
     "id": "gl-vitoria",
-    "nameZh": "Vitória",
+    "nameZh": "维多利亚",
     "nameEn": "Vitória",
     "country": "BR",
     "latitude": -20.3206,
     "longitude": -40.3329,
     "isDomestic": false,
-    "waqiSlug": "vitoria"
+    "waqiSlug": "vitoria",
+    "population": 450000
   },
   {
     "id": "gl-eskisehir",
-    "nameZh": "Eskişehir",
+    "nameZh": "埃斯基谢希尔",
     "nameEn": "Eskişehir",
     "country": "TR",
     "latitude": 39.7666,
     "longitude": 30.5259,
     "isDomestic": false,
-    "waqiSlug": "eskisehir"
+    "waqiSlug": "eskisehir",
+    "population": 450000
   },
   {
     "id": "gl-almaty",
-    "nameZh": "Almaty",
+    "nameZh": "阿拉木图",
     "nameEn": "Almaty",
     "country": "KZ",
     "latitude": 43.222,
     "longitude": 76.851,
     "isDomestic": false,
-    "waqiSlug": "almaty"
+    "waqiSlug": "almaty",
+    "population": 450000
   },
   {
     "id": "gl-conakry",
-    "nameZh": "Conakry",
+    "nameZh": "科纳克里",
     "nameEn": "Conakry",
     "country": "GN",
     "latitude": 9.5951,
     "longitude": -13.6364,
     "isDomestic": false,
-    "waqiSlug": "conakry"
+    "waqiSlug": "conakry",
+    "population": 450000
   },
   {
     "id": "gl-abidjan",
-    "nameZh": "Abidjan",
+    "nameZh": "阿比让",
     "nameEn": "Abidjan",
     "country": "CI",
     "latitude": 5.36,
     "longitude": -4.0083,
     "isDomestic": false,
-    "waqiSlug": "abidjan"
+    "waqiSlug": "abidjan",
+    "population": 450000
   },
   {
     "id": "gl-accra",
-    "nameZh": "Accra",
+    "nameZh": "阿克拉",
     "nameEn": "Accra",
     "country": "GH",
     "latitude": 5.5806,
     "longitude": -0.1707,
     "isDomestic": false,
-    "waqiSlug": "accra"
+    "waqiSlug": "accra",
+    "population": 450000
   },
   {
     "id": "gl-kuantan",
-    "nameZh": "Kuantan",
+    "nameZh": "关丹",
     "nameEn": "Kuantan",
     "country": "MY",
     "latitude": 3.8192,
     "longitude": 103.2965,
     "isDomestic": false,
-    "waqiSlug": "kuantan"
+    "waqiSlug": "kuantan",
+    "population": 450000
   },
   {
     "id": "gl-miri",
-    "nameZh": "Miri",
+    "nameZh": "美里",
     "nameEn": "Miri",
     "country": "MY",
     "latitude": 4.3331,
     "longitude": 113.9949,
     "isDomestic": false,
-    "waqiSlug": "miri"
+    "waqiSlug": "miri",
+    "population": 450000
   },
   {
     "id": "gl-george-town",
-    "nameZh": "George Town",
+    "nameZh": "乔治市",
     "nameEn": "George Town",
     "country": "MY",
     "latitude": 5.3844,
     "longitude": 100.3896,
     "isDomestic": false,
-    "waqiSlug": "george-town"
+    "waqiSlug": "george-town",
+    "population": 450000
   },
   {
     "id": "gl-klang",
-    "nameZh": "Klang",
+    "nameZh": "巴生",
     "nameEn": "Klang",
     "country": "MY",
     "latitude": 3.0149,
     "longitude": 101.4131,
     "isDomestic": false,
-    "waqiSlug": "klang"
+    "waqiSlug": "klang",
+    "population": 450000
   },
   {
     "id": "gl-malacca",
-    "nameZh": "Malacca",
+    "nameZh": "马六甲",
     "nameEn": "Malacca",
     "country": "MY",
     "latitude": 2.1909,
     "longitude": 102.2571,
     "isDomestic": false,
-    "waqiSlug": "malacca"
+    "waqiSlug": "malacca",
+    "population": 450000
   },
   {
     "id": "gl-taiping",
-    "nameZh": "Taiping",
+    "nameZh": "太平",
     "nameEn": "Taiping",
     "country": "MY",
     "latitude": 4.8989,
     "longitude": 100.6791,
     "isDomestic": false,
-    "waqiSlug": "taiping"
+    "waqiSlug": "taiping",
+    "population": 450000
   },
   {
     "id": "gl-alor-setar",
-    "nameZh": "Alor Setar",
+    "nameZh": "亚罗士打",
     "nameEn": "Alor Setar",
     "country": "MY",
     "latitude": 6.1372,
     "longitude": 100.3468,
     "isDomestic": false,
-    "waqiSlug": "alor-setar"
+    "waqiSlug": "alor-setar",
+    "population": 450000
   },
   {
     "id": "gl-kota-bharu",
-    "nameZh": "Kota Bharu",
+    "nameZh": "哥打巴鲁",
     "nameEn": "Kota Bharu",
     "country": "MY",
     "latitude": 6.1474,
     "longitude": 102.2492,
     "isDomestic": false,
-    "waqiSlug": "kota-bharu"
+    "waqiSlug": "kota-bharu",
+    "population": 314964
   },
   {
     "id": "gl-kuching",
-    "nameZh": "Kuching",
+    "nameZh": "古晋",
     "nameEn": "Kuching",
     "country": "MY",
     "latitude": 1.5622,
     "longitude": 110.389,
     "isDomestic": false,
-    "waqiSlug": "kuching"
+    "waqiSlug": "kuching",
+    "population": 325132
   },
   {
     "id": "gl-seremban",
-    "nameZh": "Seremban",
+    "nameZh": "芙蓉市",
     "nameEn": "Seremban",
     "country": "MY",
     "latitude": 2.7234,
     "longitude": 101.9685,
     "isDomestic": false,
-    "waqiSlug": "seremban"
+    "waqiSlug": "seremban",
+    "population": 555935
   },
   {
     "id": "gl-ipoh",
-    "nameZh": "Ipoh",
+    "nameZh": "怡保",
     "nameEn": "Ipoh",
     "country": "MY",
     "latitude": 4.6117,
     "longitude": 101.1135,
     "isDomestic": false,
-    "waqiSlug": "ipoh"
+    "waqiSlug": "ipoh",
+    "population": 657892
   },
   {
     "id": "gl-johor-bahru",
-    "nameZh": "Johor Bahru",
+    "nameZh": "新山",
     "nameEn": "Johor Bahru",
     "country": "MY",
     "latitude": 1.4946,
     "longitude": 103.736,
     "isDomestic": false,
-    "waqiSlug": "johor-bahru"
+    "waqiSlug": "johor-bahru",
+    "population": 497067
   }
 ];
 
@@ -9954,4 +10894,23 @@ export function searchCities(
   scored.sort((a, b) => b.score - a.score);
 
   return scored.slice(0, limit).map((s) => s.city);
+}
+
+/**
+ * 格式化人口数值为精炼中文表达 (如 2189万、1.2亿、85万、8.5万)
+ */
+export function formatPopulation(pop?: number): string {
+  if (!pop || pop <= 0) return '';
+  if (pop >= 100_000_000) {
+    const val = pop / 100_000_000;
+    return val % 1 === 0 ? `${val}亿` : `${val.toFixed(1)}亿`;
+  }
+  if (pop >= 10_000) {
+    const val = pop / 10_000;
+    if (val >= 100) {
+      return `${Math.round(val)}万`;
+    }
+    return val % 1 === 0 ? `${val}万` : `${val.toFixed(1)}万`;
+  }
+  return `${pop.toLocaleString()}人`;
 }

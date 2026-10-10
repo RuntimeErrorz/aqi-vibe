@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useStandard } from '@/components/StandardContext';
 import { CITIES_REGISTRY, findCity } from '@/lib/constants/cities';
+import { getCountryInfo } from '@/lib/constants/countries';
 import { CityMeta } from '@/lib/types';
 import {
   getAnnualTrends,
@@ -213,8 +214,8 @@ export default function ComparePage() {
               style={{ backgroundColor: ac.color }}
             >
               <span>{ac.name}</span>
-              <span className="text-[10px] opacity-80 font-normal">
-                ({findCity(ac.id)?.country})
+              <span className="text-[10px] opacity-85 font-normal">
+                ({getCountryInfo(findCity(ac.id)?.country || '').nameZh})
               </span>
               <button
                 type="button"
