@@ -171,6 +171,20 @@ export function evaluateAQI(pollutants: PollutantValues, standard: StandardType 
 }
 
 export function getCNEvaluation(aqi: number, primaryPollutant = 'pm25'): AQIEvaluation {
+  if (isNaN(aqi) || aqi <= 0) {
+    return {
+      aqi: 0,
+      level: '暂无数据',
+      levelEn: 'No Data',
+      color: '#64748b',
+      textColor: '#ffffff',
+      primaryPollutant,
+      primaryPollutantName: '暂无',
+      healthAdvice: '当前站点暂无实时监测数据发布。',
+      standard: 'CN',
+    };
+  }
+
   let level = '优';
   let levelEn = 'Good';
   let color = '#10b981'; // 绿
@@ -223,6 +237,20 @@ export function getCNEvaluation(aqi: number, primaryPollutant = 'pm25'): AQIEval
 }
 
 export function getUSEvaluation(aqi: number, primaryPollutant = 'pm25'): AQIEvaluation {
+  if (isNaN(aqi) || aqi <= 0) {
+    return {
+      aqi: 0,
+      level: '暂无数据',
+      levelEn: 'No Data',
+      color: '#64748b',
+      textColor: '#ffffff',
+      primaryPollutant,
+      primaryPollutantName: '暂无',
+      healthAdvice: '当前站点暂无实时监测数据发布。',
+      standard: 'US',
+    };
+  }
+
   let level = '优';
   let levelEn = 'Good';
   let color = '#10b981';
@@ -240,7 +268,7 @@ export function getUSEvaluation(aqi: number, primaryPollutant = 'pm25'): AQIEval
     color = '#eab308';
     healthAdvice = '空气质量可接受，极少数对空气异常敏感的人群应减少长时间户外剧烈活动。';
   } else if (aqi <= 150) {
-    level = '对敏感人群不健康';
+    level = '敏感不适';
     levelEn = 'Unhealthy for Sensitive Groups';
     color = '#f97316';
     healthAdvice = '易感人群（儿童、老人及心肺疾病患者）应减少长时间高强度户外运动；普通公众暂不受明显影响。';

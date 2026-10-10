@@ -27,9 +27,9 @@ function getStationPinEvaluation(rawAqi: number, standard: StandardType) {
   if (isNaN(rawAqi) || rawAqi <= 0) {
     return {
       displayAqi: '-',
-      boxClass: 'aqi-pin-good',
-      levelText: '优',
-      colorHex: '#25a77b',
+      boxClass: 'aqi-pin-nodata',
+      levelText: '暂无数据',
+      colorHex: '#64748b',
       pm25: undefined as number | undefined,
     };
   }
@@ -233,16 +233,18 @@ export default function AirMap({
 
     layer.clearLayers();
 
-    const evalFocus = standardRef.current === 'CN' ? data.evaluationCN : data.evaluationUS;
-    const aqiNum = evalFocus.aqi;
-    const style = getStationPinEvaluation(aqiNum, standardRef.current);
+    const evalFocus = data ? (standardRef.current === 'CN' ? data.evaluationCN : data.evaluationUS) : null;
+    const aqiNum = evalFocus?.aqi ?? 0;
+    const hasData = Boolean(data && aqiNum > 0 && data.aqi !== '-');
+    const style = getStationPinEvaluation(hasData ? aqiNum : NaN, standardRef.current);
+    const displayNum = hasData ? String(aqiNum) : '-';
 
     const updatedHtml = `
       <div class="aqi-focus-city-pin">
         <div class="aqi-focus-badge ${style.boxClass} shadow-xl ring-2 ring-white">
           <span class="font-black text-xs tracking-tight">${escapeHtml(city.nameZh)}</span>
           <span class="mx-1 opacity-60 font-normal">|</span>
-          <span class="font-black text-xs">${aqiNum}</span>
+          <span class="font-black text-xs">${displayNum}</span>
         </div>
         <div class="aqi-focus-pin-pole"></div>
         <div class="aqi-focus-pulse" style="border-color: ${style.colorHex};"></div>
@@ -266,8 +268,8 @@ export default function AirMap({
 
     onStationCountChange?.(-1, false, {
       name: city.nameZh,
-      aqi: aqiNum,
-      level: evalFocus.level,
+      aqi: hasData ? aqiNum : 0,
+      level: hasData ? (evalFocus?.level || '优') : '暂无数据',
     });
   };
 
@@ -517,6 +519,9 @@ export default function AirMap({
       })
       .catch((err) => {
         console.warn('[AirMap] Failed to load focus city data:', err);
+        if (!isCancelled && layer && mapInstanceRef.current) {
+          renderFocusMarkerRef.current(null, focusCity);
+        }
       });
 
     return () => {

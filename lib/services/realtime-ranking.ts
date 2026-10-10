@@ -81,12 +81,12 @@ const REGION_BOUNDS = [
   '-36,110,-10,138',  // 大洋洲西部/西澳、北领地与达尔文
 ];
 
-// 高性能空间粗筛与最近城市聚类算法 (65km 范围)
+// 高性能空间粗筛与最近城市聚类算法 (标准 30km 都市圈半径，防止跨城远距离误判)
 // 通过纬度/经度矩形快速剔除 99.8% 的无效计算，避免触发边缘 Serverless 50ms CPU 限额
-function findClosestCity(sLat: number, sLon: number, cities: CityMeta[], maxDistKm = 65.0): CityMeta | null {
+function findClosestCity(sLat: number, sLon: number, cities: CityMeta[], maxDistKm = 30.0): CityMeta | null {
   let closest: CityMeta | null = null;
   let minDistSq = maxDistKm * maxDistKm;
-  const maxDegLat = maxDistKm / 111.0; // ~0.585 度
+  const maxDegLat = maxDistKm / 111.0;
 
   for (let i = 0; i < cities.length; i++) {
     const c = cities[i];
@@ -248,33 +248,60 @@ export async function getRealtimeRanking(forceRefresh = false): Promise<RankingA
 
     const uniqueStations = Array.from(stationMap.values());
 
-    // 空间聚类：将站点就近归并至都市圈城市 (65km 范围)
-    const cityCluster = new Map<string, { city: CityMeta; aqis: number[]; pm25s: number[] }>();
+    // 空间聚类：将站点就近归并至都市圈城市 (30km 精准都市圈半径)
+    // 优先采用官方实测站点 (uid > 0)，若存在官方站点则自动忽略民间自建未校准探头
+    interface ClusterBucket {
+      city: CityMeta;
+      officialAqis: number[];
+      officialPm25s: number[];
+      amateurAqis: number[];
+      amateurPm25s: number[];
+    }
+    const cityCluster = new Map<string, ClusterBucket>();
 
     for (const st of uniqueStations) {
       const aqiNum = parseInt(st.aqi, 10);
-      // 标准 AQI 范围为 0 ~ 500，超出 500 的为严重异常或硬件故障脏数据
+      // 标准 AQI 范围为 1 ~ 500，超出 500 的为硬件故障或严重脏数据
       if (isNaN(aqiNum) || aqiNum <= 0 || aqiNum > 500) continue;
+      // 过滤第三方自建/无校准传感器 (负数 uid) 产生的极端零漂假数据 (如室内 HEPA 过滤报 1~2)
+      if (st.uid < 0 && aqiNum <= 2) continue;
 
       const sLat = st.lat;
       const sLon = st.lon;
-      const closestCity = findClosestCity(sLat, sLon, CITIES_REGISTRY, 65.0);
+      const closestCity = findClosestCity(sLat, sLon, CITIES_REGISTRY, 30.0);
 
       if (closestCity) {
         if (!cityCluster.has(closestCity.id)) {
-          cityCluster.set(closestCity.id, { city: closestCity, aqis: [], pm25s: [] });
+          cityCluster.set(closestCity.id, {
+            city: closestCity,
+            officialAqis: [],
+            officialPm25s: [],
+            amateurAqis: [],
+            amateurPm25s: [],
+          });
         }
-        cityCluster.get(closestCity.id)!.aqis.push(aqiNum);
-        // WAQI 的 st.aqi 为原生美标分指数，逆向推导其实际物理微克浓度
+        const bucket = cityCluster.get(closestCity.id)!;
         const pm25Val = convertIAQIToConcentration('pm25', aqiNum, 'US');
-        cityCluster.get(closestCity.id)!.pm25s.push(pm25Val);
+
+        if (st.uid > 0) {
+          bucket.officialAqis.push(aqiNum);
+          bucket.officialPm25s.push(pm25Val);
+        } else {
+          bucket.amateurAqis.push(aqiNum);
+          bucket.amateurPm25s.push(pm25Val);
+        }
       }
     }
 
     // 转换为排名项：分别以国标与美标精确折算 AQI
     const allRanked: RankedCityItem[] = [];
     for (const [_, item] of Array.from(cityCluster.entries())) {
-      const { avgAqiUS, avgPm25 } = aggregateCityData(item.aqis, item.pm25s);
+      // 若该城市有官方正规站点，优先使用官方站点数据；无官方站点时才用民间探头
+      const aqis = item.officialAqis.length > 0 ? item.officialAqis : item.amateurAqis;
+      const pm25s = item.officialPm25s.length > 0 ? item.officialPm25s : item.amateurPm25s;
+      if (aqis.length === 0) continue;
+
+      const { avgAqiUS, avgPm25 } = aggregateCityData(aqis, pm25s);
 
       const evalCN = evaluateAQI({ pm25: avgPm25 }, 'CN');
 
@@ -291,7 +318,7 @@ export async function getRealtimeRanking(forceRefresh = false): Promise<RankingA
         aqiUS: avgAqiUS,
         aqiCN: evalCN.aqi,
         pm25: avgPm25,
-        stationsCount: item.aqis.length,
+        stationsCount: aqis.length,
       });
     }
 

@@ -311,9 +311,12 @@ function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
   let evaluationCN = evaluateAQI(pollutants, 'CN');
   let evaluationUS = evaluateAQI(pollutants, 'US');
 
-  // 严格遵守 AQI 计算公理：AQI = max(IAQI_1, IAQI_2, ...)，首要污染物为 max 对应项目。
-  // 仅在全部实测分项污染物均缺失时，才使用 WAQI 顶层 data.aqi 作为兜底
-  if (evaluationUS.aqi === 0 && typeof data.aqi === 'number' && !isNaN(data.aqi)) {
+  // 若官方明确发布 aqi 为 '-' (或缺失)，说明该站点当前离线/无实时数据发布
+  if (data.aqi === '-' || data.aqi === null || data.aqi === undefined) {
+    evaluationCN = getCNEvaluation(0);
+    evaluationUS = getUSEvaluation(0);
+  } else if (evaluationUS.aqi === 0 && typeof data.aqi === 'number' && !isNaN(data.aqi)) {
+    // 严格遵守 AQI 计算公理：仅在全部实测分项污染物均缺失时，才使用 WAQI 顶层 data.aqi 作为兜底
     const officialAqi = Math.round(data.aqi);
     evaluationUS = getUSEvaluation(officialAqi, evaluationUS.primaryPollutant);
   }

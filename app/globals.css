@@ -160,6 +160,11 @@ body {
   color: #ffffff;
 }
 
+.aqi-pin-nodata {
+  background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+  color: #ffffff;
+}
+
 /* 测站弹出卡片美化 */
 .leaflet-popup-content-wrapper {
   border-radius: 14px !important;

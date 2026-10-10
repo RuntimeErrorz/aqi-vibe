@@ -12,7 +12,7 @@ import { useStandard } from '@/components/StandardContext';
 const AirMap = dynamic(() => import('@/components/AirMap'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full min-h-[460px] sm:min-h-[520px] rounded-2xl bg-white border border-slate-200 flex flex-col items-center justify-center text-slate-500 shadow-sm">
+    <div className="w-full h-[480px] sm:h-[540px] lg:h-[650px] xl:h-[660px] rounded-2xl bg-white border border-slate-200 flex flex-col items-center justify-center text-slate-500 shadow-sm">
       <div className="w-8 h-8 border-2 border-sky-600 border-t-transparent rounded-full animate-spin mb-3"></div>
       <p className="text-xs sm:text-sm font-medium">正在加载全景瓦片底图与监测坐标...</p>
     </div>
@@ -95,10 +95,13 @@ export default function MapPage() {
                 <span>已同步 {stationStatus.count} 个高清测站</span>
               </div>
             ) : focusCityInfo ? (
-              <div className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-sky-50 border border-sky-200 text-sky-700 font-semibold shadow-xs">
-                <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span>
-                <span className="truncate max-w-[200px]">
-                  {focusCityInfo.name} (AQI: {focusCityInfo.aqi})
+              <div className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-semibold shadow-xs">
+                <span className={`w-2 h-2 rounded-full ${focusCityInfo.aqi > 0 ? 'bg-sky-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                <span
+                  title={focusCityInfo.aqi > 0 ? `${focusCityInfo.name} (AQI: ${focusCityInfo.aqi})` : `${focusCityInfo.name} (暂无数据)`}
+                  className="truncate max-w-[200px]"
+                >
+                  {focusCityInfo.name} ({focusCityInfo.aqi > 0 ? `AQI: ${focusCityInfo.aqi}` : '暂无数据'})
                 </span>
               </div>
             ) : (
@@ -122,12 +125,11 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* 左右并列容器：左侧全景地图（占 50%），右侧实时空气质量榜（占 50%），高度自适应完美等高 */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-stretch">
-        {/* 左侧：全景地图 (桌面端 6 列，自适应高度与右侧 10 条榜单卡片完美齐平) */}
-        <div className="lg:col-span-6 flex flex-col">
-          <div className="relative isolate z-10 w-full h-[460px] sm:h-[520px] lg:h-full min-h-[460px] sm:min-h-[520px] lg:min-h-0 rounded-2xl overflow-hidden border border-slate-200 shadow-md flex flex-col">
-            <AirMap
+      {/* 左右并列容器：左侧全景地图（占 50%），右侧实时排行榜（占 50%），左侧固定高度独立呈现 */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+        {/* 左侧：全景地图 (桌面端 6 列，独立固定高度，随滚动保持 sticky 悬浮) */}
+        <div className="lg:col-span-6 relative isolate z-10 w-full h-[480px] sm:h-[540px] lg:h-[650px] xl:h-[660px] rounded-2xl overflow-hidden border border-slate-200 shadow-md lg:sticky lg:top-20">
+          <AirMap
               center={mapCenter}
               zoom={mapZoom}
               focusCity={focusCity}
@@ -150,10 +152,11 @@ export default function MapPage() {
                   {[
                     { name: standard === 'CN' ? '优' : '优', range: '0-50', bg: '#25a77b', text: '#fff' },
                     { name: standard === 'CN' ? '良' : '良', range: '51-100', bg: '#fee24f', text: '#1a1a1a' },
-                    { name: standard === 'CN' ? '轻度' : '敏感不健康', range: '101-150', bg: '#fea74f', text: '#fff' },
+                    { name: standard === 'CN' ? '轻度' : '敏感不适', range: '101-150', bg: '#fea74f', text: '#fff' },
                     { name: standard === 'CN' ? '中度' : '不健康', range: '151-200', bg: '#d3254f', text: '#fff' },
                     { name: standard === 'CN' ? '重度' : '非常不健康', range: '201-300', bg: '#8f3f97', text: '#fff' },
                     { name: standard === 'CN' ? '严重' : '严重危害', range: '>300', bg: '#7e0023', text: '#fff' },
+                    { name: '无数据', range: '-', bg: '#64748b', text: '#fff' },
                   ].map((lvl) => (
                     <div
                       key={lvl.name}
@@ -171,9 +174,8 @@ export default function MapPage() {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* 右侧：实时空气质量榜 (桌面端 6 列) */}
+        {/* 右侧：实时排行榜 (桌面端 6 列) */}
         <div className="lg:col-span-6 flex flex-col">
           <RealtimeRankingPanel onSelectCity={handleRankingSelectCity} />
         </div>

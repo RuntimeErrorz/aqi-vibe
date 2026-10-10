@@ -9056,6 +9056,16 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "waqiSlug": "brescia"
   },
   {
+    "id": "gl-verona",
+    "nameZh": "Verona",
+    "nameEn": "Verona",
+    "country": "IT",
+    "latitude": 45.4384,
+    "longitude": 10.9916,
+    "isDomestic": false,
+    "waqiSlug": "verona"
+  },
+  {
     "id": "gl-parma",
     "nameZh": "Parma",
     "nameEn": "Parma",
