@@ -1,6 +1,8 @@
 import { CITIES_REGISTRY } from '../constants/cities';
 import { CityMeta } from '../types';
 import { convertIAQIToConcentration, evaluateAQI } from '../aqi-calculator';
+import { extractCleanStationName } from './waqi';
+import { iso1A2Code } from '@rapideditor/country-coder';
 
 export interface RankedCityItem {
   id: string;
@@ -16,6 +18,12 @@ export interface RankedCityItem {
   aqiCN: number;
   pm25: number;
   stationsCount: number;
+  population?: number;
+  repAqiUS?: number;
+  repAqiCN?: number;
+  repPm25?: number;
+  repStationName?: string;
+  repStationUid?: number;
 }
 
 export interface RankingApiResponse {
@@ -35,61 +43,89 @@ export interface RankingApiResponse {
 
 const WAQI_TOKEN = process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48';
 
-// 高密度全球与国内全量系统化分片视口 (无特判、全大洲标准化细分网格，100% 覆盖在册 939 城市)
-const REGION_BOUNDS = [
-  // 1. 中国国内高密度四区分片 (覆盖 383 城市与三沙/港澳台)
-  '35,108,54,135',    // 中国北方/华北与东北
-  '15,108,35,125',    // 中国南方/华东与华南
-  '20,95,35,110',     // 中国西南/成渝云贵
-  '26,73,50,108',     // 中国西部/西北与青藏
+/**
+ * 纯数据驱动的全球城市全量高清无抽稀网格生成器 (彻底消除任何手工硬编码维护)
+ * 直接以 CITIES_REGISTRY 在册城市为基准点，为每个城市生成专属高清采样窗 (跨度 <= 2.4°)
+ * 远低于 WAQI 4.0° 抽稀阈值，100% 绝对在 WAQI 服务端不抽稀的安全阈值内
+ * 空间相邻都市圈自动去重合并，彻底消灭任何人工特判，所有在册城市 100% 自动对齐中心站点
+ */
+function buildDynamicHighResBounds(cities: CityMeta[]): string[] {
+  const MAX_SPAN = 1.8; // 严格控制在 1.8° (约 200km)，远低于 WAQI 4.0° 抽稀阈值，兼顾超高分辨率与网络请求数
+  const PADDING = 0.22; // 边缘缓冲 0.22° (约 25km)
 
-  // 2. 亚洲与欧亚大陆
-  '24,120,46,146',    // 东亚/日本全境(含冲绳)、韩国与蒙古
-  '4,95,25,126',      // 东南亚大陆与群岛/中南半岛与菲律宾
-  '-11,95,10,130',    // 东南亚海岛/印尼、马来西亚与新加坡
-  '5,60,38,95',       // 南亚/印度、巴基斯坦、孟加拉与斯里兰卡
-  '15,25,43,65',      // 中东与小亚细亚/土耳其、海湾六国、伊朗与黎凡特
-  '36,45,55,85',      // 中亚与高加索/哈萨克斯坦、乌兹别克斯坦等
-  '50,40,68,135',     // 俄罗斯欧亚与西伯利亚
+  // 空间网格排序：相邻经纬度的城市排在一起，最大化空间无缝合并率
+  const sorted = [...cities].sort((a, b) => {
+    const latDiff = Math.floor(a.latitude / MAX_SPAN) - Math.floor(b.latitude / MAX_SPAN);
+    if (latDiff !== 0) return latDiff;
+    return a.longitude - b.longitude;
+  });
 
-  // 3. 欧洲全域精细五区
-  '42,-12,62,10',     // 西欧/英国、爱尔兰、法国、比荷卢
-  '44,5,56,25',       // 中欧/德国、瑞士、奥地利、捷克、波兰、匈牙利
-  '34,-10,45,30',     // 南欧/西班牙、葡萄牙、意大利、希腊、巴尔干
-  '44,20,62,45',      // 东欧与黑海/乌克兰、罗马尼亚、摩尔多瓦与俄欧西部
-  '54,-25,72,32',     // 北欧/冰岛、挪威、瑞典、芬兰与波罗的海
+  const bounds: Array<{ minLat: number; maxLat: number; minLon: number; maxLon: number }> = [];
 
-  // 4. 北美洲与中美洲
-  '34,-85,55,-55',    // 北美东部/美东与加拿大东部
-  '25,-100,50,-78',   // 北美中部/五大湖、中西部与美南
-  '28,-130,60,-100',  // 北美西部/美西与加拿大西部
-  '18,-162,24,-153',  // 北美太平洋/夏威夷群岛
-  '8,-118,33,-60',    // 中美洲与加勒比/墨西哥、波多黎各与巴拿马
+  for (const c of sorted) {
+    if (typeof c.latitude !== 'number' || typeof c.longitude !== 'number') continue;
+    let merged = false;
+    for (const b of bounds) {
+      const minLat = Math.min(b.minLat, c.latitude - PADDING);
+      const maxLat = Math.max(b.maxLat, c.latitude + PADDING);
+      const minLon = Math.min(b.minLon, c.longitude - PADDING);
+      const maxLon = Math.max(b.maxLon, c.longitude + PADDING);
 
-  // 5. 南美洲全域
-  '-15,-85,14,-34',   // 南美洲北部/哥伦比亚、秘鲁、委内瑞拉、亚马逊
-  '-56,-78,-15,-34',  // 南美洲南部/智利、阿根廷、巴西东南部
+      if (maxLat - minLat <= MAX_SPAN && maxLon - minLon <= MAX_SPAN) {
+        b.minLat = minLat;
+        b.maxLat = maxLat;
+        b.minLon = minLon;
+        b.maxLon = maxLon;
+        merged = true;
+        break;
+      }
+    }
+    if (!merged) {
+      bounds.push({
+        minLat: c.latitude - PADDING,
+        maxLat: c.latitude + PADDING,
+        minLon: c.longitude - PADDING,
+        maxLon: c.longitude + PADDING,
+      });
+    }
+  }
 
-  // 6. 非洲全域精细四区
-  '15,-20,38,40',     // 北非/埃及、阿尔及利亚、摩洛哥等
-  '3,-20,16,15',      // 西非/几内亚湾沿岸与撒哈拉以南
-  '-25,25,15,58',     // 东非与印度洋/肯尼亚、埃塞俄比亚、留尼汪等
-  '-36,10,-15,40',    // 南部非洲/南非、纳米比亚等
+  return bounds.map(
+    (b) => `${b.minLat.toFixed(2)},${b.minLon.toFixed(2)},${b.maxLat.toFixed(2)},${b.maxLon.toFixed(2)}`
+  );
+}
 
-  // 7. 大洋洲
-  '-48,135,-10,180',  // 大洋洲东部/澳洲东岸与新西兰
-  '-36,110,-10,138',  // 大洋洲西部/西澳、北领地与达尔文
-];
+// 模块初始化时由 CITIES_REGISTRY 单次自动衍生，0 人工维护特判，100% 覆盖全部在册城市
+const DYNAMIC_HIGH_RES_BOUNDS = buildDynamicHighResBounds(CITIES_REGISTRY);
 
-// 高性能空间粗筛与最近城市聚类算法 (标准 30km 都市圈半径，防止跨城远距离误判)
-// 通过纬度/经度矩形快速剔除 99.8% 的无效计算，避免触发边缘 Serverless 50ms CPU 限额
-function findClosestCity(sLat: number, sLon: number, cities: CityMeta[], maxDistKm = 30.0): CityMeta | null {
+
+/**
+ * 纯几何经纬度最近城市空间归属：
+ * 1. 纯经纬度主权判定：由经纬度坐标通过本地矢量逆地理编码确定测站所在主权国家 (ISO-2)
+ * 2. 空间距离排他归属：在同国城市中，严格选取到城市中心几何物理距离最短的唯一归属
+ * 零字符串正则、零国别猜测、零启发式特判，完全由客观物理地理决定。
+ */
+function findClosestCity(
+  sLat: number,
+  sLon: number,
+  cities: CityMeta[],
+  maxDistKm = 30.0
+): CityMeta | null {
+  // 直接通过坐标判定测站所属主权国家代码 (例如 "MY", "SG", "CN", "US")
+  const stationCountry = iso1A2Code([sLon, sLat]);
+
   let closest: CityMeta | null = null;
   let minDistSq = maxDistKm * maxDistKm;
   const maxDegLat = maxDistKm / 111.0;
 
   for (let i = 0; i < cities.length; i++) {
     const c = cities[i];
+
+    // 纯经纬度主权排他：若测站经纬度所属国家与候选城市不符，纯空间几何排他
+    if (stationCountry && c.country && c.country !== stationCountry) {
+      continue;
+    }
+
     const dLat = Math.abs(sLat - c.latitude);
     if (dLat > maxDegLat) continue;
 
@@ -111,6 +147,7 @@ function findClosestCity(sLat: number, sLon: number, cities: CityMeta[], maxDist
   return closest;
 }
 
+
 // 客户端超时信号兼容
 function getTimeoutSignal(ms: number): AbortSignal {
   if (typeof AbortSignal !== 'undefined' && typeof (AbortSignal as any).timeout === 'function') {
@@ -121,150 +158,177 @@ function getTimeoutSignal(ms: number): AbortSignal {
   return controller.signal;
 }
 
-// 内存单例缓存
+// 方案 1 & 2：服务端内存 SWR 缓存与请求单例控制器
 let memoryRankingCache: RankingApiResponse | null = null;
 let lastFetchTimestamp = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 分钟常规缓存
-const MIN_REFRESH_INTERVAL_MS = 15 * 1000; // 手动刷新保护间隔 15 秒，防止突发连续快速点击
-const STORAGE_CACHE_KEY = 'aqi_vibe_realtime_ranking_v2';
+let inFlightFetchPromise: Promise<RankingApiResponse> | null = null;
+
+// 全局在册测站累积池：跨请求持久保留有效测站，新值覆盖旧值，彻底杜绝单次网络抖动导致的城市消失
+const cumulativeStationMap = new Map<number, any>();
+
+// 缓存与防抖规范 (方案 1 & 2)
+const FRESH_TTL_MS = 8 * 60 * 1000; // 8 分钟内视为绝对保鲜，直接 0ms 返回快照
+const STALE_TTL_MS = 25 * 60 * 1000; // 8 ~ 25 分钟处于 SWR 窗口，直接先行返回快照，后台异步静默刷新
+const MIN_REFRESH_INTERVAL_MS = 30 * 1000; // 方案 2：手动刷新 30 秒物理防抖，防止高频狂点击穿
 
 /**
- * 从浏览器端本地缓存恢复
- */
-function tryLoadFromClientStorage(): RankingApiResponse | null {
-  if (typeof window === 'undefined' || !window.sessionStorage) return null;
-  try {
-    const raw = window.sessionStorage.getItem(STORAGE_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed && parsed.data && typeof parsed.timestamp === 'number') {
-      if (Date.now() - parsed.timestamp < CACHE_TTL_MS) {
-        return parsed.data;
-      }
-    }
-  } catch {}
-  return null;
-}
-
-/**
- * 写入浏览器端本地缓存
- */
-function saveToClientStorage(data: RankingApiResponse): void {
-  if (typeof window === 'undefined' || !window.sessionStorage) return;
-  try {
-    window.sessionStorage.setItem(
-      STORAGE_CACHE_KEY,
-      JSON.stringify({ timestamp: Date.now(), data })
-    );
-  } catch {}
-}
-
-/**
- * 计算城市聚合 AQI 与 PM2.5 (具有离群值防御与加权中位数平滑，防止单个故障探头污染整个城市)
+ * 计算城市聚合 AQI 与 PM2.5 (算术平均值，零启发式加权或离群过滤)
  */
 function aggregateCityData(aqis: number[], pm25s: number[]): { avgAqiUS: number; avgPm25: number } {
   if (aqis.length === 0) return { avgAqiUS: 0, avgPm25: 0 };
-  if (aqis.length <= 2) {
-    const avgAqiUS = Math.round(aqis.reduce((a, b) => a + b, 0) / aqis.length);
-    const avgPm25 = Number((pm25s.reduce((a, b) => a + b, 0) / pm25s.length).toFixed(1));
-    return { avgAqiUS, avgPm25 };
-  }
-
-  // 3个及以上站点时，计算中位数并过滤偏离中位数过大的极端异常点 (如单站故障)
-  const sortedAqis = [...aqis].sort((a, b) => a - b);
-  const median = sortedAqis[Math.floor(sortedAqis.length / 2)];
-
-  const validIndices: number[] = [];
-  for (let i = 0; i < aqis.length; i++) {
-    // 允许偏离中位数最多 180 点，过滤因激光雷达堵塞或雨雾造成的异常跳点
-    if (Math.abs(aqis[i] - median) <= 180) {
-      validIndices.push(i);
-    }
-  }
-
-  const effectiveIndices = validIndices.length > 0 ? validIndices : aqis.map((_, i) => i);
-  const effectiveAqis = effectiveIndices.map((i) => aqis[i]);
-  const effectivePm25s = effectiveIndices.map((i) => pm25s[i]);
-
-  const avgAqiUS = Math.round(effectiveAqis.reduce((a, b) => a + b, 0) / effectiveAqis.length);
-  const avgPm25 = Number((effectivePm25s.reduce((a, b) => a + b, 0) / effectivePm25s.length).toFixed(1));
-
+  const avgAqiUS = Math.round(aqis.reduce((a, b) => a + b, 0) / aqis.length);
+  const avgPm25 = Number((pm25s.reduce((a, b) => a + b, 0) / pm25s.length).toFixed(1));
   return { avgAqiUS, avgPm25 };
 }
 
 /**
- * 实时获取全球与国内空气质量排行榜数据 (支持浏览器端本地极速计算与并发请求)
- * @param forceRefresh 是否强制向 WAQI 发起最新拉取
+ * 实时获取全球与国内空气质量排行榜数据 (遵循方案 1 & 2：8分钟 SWR 内存快照 + 30秒防抖穿透)
+ * @param forceRefresh 是否为用户手动点击刷新 (触发方案 2 穿透逻辑)
  */
 export async function getRealtimeRanking(forceRefresh = false): Promise<RankingApiResponse> {
   const now = Date.now();
 
-  // 1. 尝试使用内存单例缓存
+  // 1. 若已有内存快照
   if (memoryRankingCache) {
-    if (!forceRefresh && now - lastFetchTimestamp < CACHE_TTL_MS) {
+    const age = now - lastFetchTimestamp;
+
+    // 方案 2：用户手动点击刷新 (forceRefresh === true)
+    if (forceRefresh) {
+      if (age < MIN_REFRESH_INTERVAL_MS) {
+        // 30 秒内物理防抖，直接返回现有快照
+        return memoryRankingCache;
+      }
+      // 超过 30 秒，发起穿透拉取并等待完成
+      return triggerFetch();
+    }
+
+    // 方案 1：页面正常访问与轮询 (forceRefresh === false)
+    if (age < FRESH_TTL_MS) {
+      // 8 分钟保鲜期内，直接秒回快照 (0ms，0 请求)
       return memoryRankingCache;
     }
-    if (forceRefresh && now - lastFetchTimestamp < MIN_REFRESH_INTERVAL_MS) {
+
+    if (age < STALE_TTL_MS) {
+      // 8 ~ 25 分钟处于 SWR 窗口：立即返回当前快照，同时在后台异步静默拉取
+      triggerFetch().catch((err) => {
+        console.warn('[RealtimeRanking] Background SWR refresh failed:', err);
+      });
       return memoryRankingCache;
     }
   }
 
-  // 2. 尝试从浏览器 sessionStorage 恢复
-  if (!forceRefresh) {
-    const stored = tryLoadFromClientStorage();
-    if (stored) {
-      memoryRankingCache = stored;
-      lastFetchTimestamp = now;
-      return stored;
-    }
+  // 2. 无缓存（首次冷启动）或快照已超过 25 分钟：同步等待拉取
+  return triggerFetch();
+}
+
+/**
+ * 全局单例拉取调度器：保证全站同一时刻最多只有一个正在向 WAQI 执行拉取的任务，杜绝并发风暴
+ */
+function triggerFetch(): Promise<RankingApiResponse> {
+  if (inFlightFetchPromise) {
+    return inFlightFetchPromise;
   }
+
+  inFlightFetchPromise = performFetchAndAggregate().finally(() => {
+    inFlightFetchPromise = null;
+  });
+
+  return inFlightFetchPromise;
+}
+
+/**
+ * 实际执行全网切片抓取与聚合的核心引擎
+ */
+async function performFetchAndAggregate(): Promise<RankingApiResponse> {
+  const now = Date.now();
 
   try {
-    // 并发拉取全球多区域高清测站 (7秒超时保护，防止个别偏远地区网络慢阻塞整体)
-    const fetchPromises = REGION_BOUNDS.map(async (bounds) => {
-      const url = `https://api.waqi.info/v2/map/bounds/?latlng=${bounds}&token=${WAQI_TOKEN}`;
-      try {
-        const res = await fetch(url, { signal: getTimeoutSignal(7000) });
-        if (!res.ok) return [];
-        const json = (await res.json()) as any;
-        return (json.data || []) as any[];
-      } catch {
-        return [];
-      }
-    });
+    const isClient = typeof window !== 'undefined';
+    // 服务端采用 10 并发（温和稳定，绝不触发 WAQI 429 拦截），客户端采用 6 并发
+    const CONCURRENCY = isClient ? 6 : 10;
+    let nextIndex = 0;
+    const currentBatchMap = new Map<number, any>();
 
-    const results = await Promise.allSettled(fetchPromises);
-    const stationMap = new Map<number, any>();
+    const fetchWorker = async () => {
+      while (nextIndex < DYNAMIC_HIGH_RES_BOUNDS.length) {
+        const idx = nextIndex++;
+        const bounds = DYNAMIC_HIGH_RES_BOUNDS[idx];
+        const url = `https://api.waqi.info/v2/map/bounds/?latlng=${bounds}&token=${WAQI_TOKEN}`;
+        let attempts = 3;
 
-    for (const r of results) {
-      if (r.status === 'fulfilled' && Array.isArray(r.value)) {
-        for (const st of r.value) {
-          if (st && st.uid && !stationMap.has(st.uid)) {
-            stationMap.set(st.uid, st);
+        while (attempts > 0) {
+          try {
+            // 微小延迟 15ms，平滑流量削峰，杜绝瞬时突发
+            await new Promise((r) => setTimeout(r, 15));
+
+            const res = await fetch(url, { signal: getTimeoutSignal(10000), cache: 'no-store' });
+
+            if (res.status === 429) {
+              attempts--;
+              // 遭遇 429 频控退避：等待 800ms ~ 1600ms 后重试
+              const waitMs = 800 * (4 - attempts);
+              await new Promise((r) => setTimeout(r, waitMs));
+              continue;
+            }
+
+            if (!res.ok) {
+              attempts--;
+              await new Promise((r) => setTimeout(r, 200));
+              continue;
+            }
+
+            const json = (await res.json()) as any;
+            const items = json?.data;
+            if (Array.isArray(items)) {
+              for (const st of items) {
+                if (st && st.uid) {
+                  currentBatchMap.set(st.uid, st);
+                  cumulativeStationMap.set(st.uid, st);
+                }
+              }
+            }
+            break;
+          } catch {
+            attempts--;
+            await new Promise((r) => setTimeout(r, 200));
           }
         }
       }
-    }
+    };
 
-    const uniqueStations = Array.from(stationMap.values());
+    const workers = Array.from({ length: CONCURRENCY }, () => fetchWorker());
+    await Promise.all(workers);
+
+    // 测站池：优先使用累积测站池（新值覆盖旧值，且网络偶发抖动不丢失测站）
+    const uniqueStations = Array.from(
+      cumulativeStationMap.size > 0 ? cumulativeStationMap.values() : currentBatchMap.values()
+    );
 
     // 空间聚类：将站点就近归并至都市圈城市 (30km 精准都市圈半径)
-    // 优先采用官方实测站点 (uid > 0)，若存在官方站点则自动忽略民间自建未校准探头
+    interface StationCandidate {
+      uid: number;
+      name: string;
+      aqi: number;
+      pm25: number;
+      distKm: number;
+    }
+
     interface ClusterBucket {
       city: CityMeta;
-      officialAqis: number[];
-      officialPm25s: number[];
-      amateurAqis: number[];
-      amateurPm25s: number[];
+      aqis: number[];
+      pm25s: number[];
+      stations: StationCandidate[];
     }
     const cityCluster = new Map<string, ClusterBucket>();
 
     for (const st of uniqueStations) {
       const aqiNum = parseInt(st.aqi, 10);
       // 标准 AQI 范围为 1 ~ 500，超出 500 的为硬件故障或严重脏数据
-      if (isNaN(aqiNum) || aqiNum <= 0 || aqiNum > 500) continue;
-      // 过滤第三方自建/无校准传感器 (负数 uid) 产生的极端零漂假数据 (如室内 HEPA 过滤报 1~2)
-      if (st.uid < 0 && aqiNum <= 2) continue;
+      // 自然室外环境空气中即使在极洁净极地/海岛，PM2.5 也极少低于 0.8 μg/m³ (对应 AQI 2~3)；
+      // AQI <= 2 绝大多数属于传感器物理断开零漂、硬件通讯故障或室内密闭滤网测试，必须予以过滤防伪
+      if (isNaN(aqiNum) || aqiNum <= 2 || aqiNum > 500) continue;
+      // 过滤未校准探头低于 6 的假读数 (如室内净化器旁)
+      if (st.uid < 0 && aqiNum <= 6) continue;
 
       const sLat = st.lat;
       const sLon = st.lon;
@@ -274,36 +338,62 @@ export async function getRealtimeRanking(forceRefresh = false): Promise<RankingA
         if (!cityCluster.has(closestCity.id)) {
           cityCluster.set(closestCity.id, {
             city: closestCity,
-            officialAqis: [],
-            officialPm25s: [],
-            amateurAqis: [],
-            amateurPm25s: [],
+            aqis: [],
+            pm25s: [],
+            stations: [],
           });
         }
         const bucket = cityCluster.get(closestCity.id)!;
         const pm25Val = convertIAQIToConcentration('pm25', aqiNum, 'US');
 
-        if (st.uid > 0) {
-          bucket.officialAqis.push(aqiNum);
-          bucket.officialPm25s.push(pm25Val);
-        } else {
-          bucket.amateurAqis.push(aqiNum);
-          bucket.amateurPm25s.push(pm25Val);
-        }
+        // 计算测站到市中心基准点的实际物理球面距离
+        const dLat = (sLat - closestCity.latitude) * 111.0;
+        const avgLatRad = ((sLat + closestCity.latitude) * 0.5 * Math.PI) / 180.0;
+        const dLon = (sLon - closestCity.longitude) * 111.0 * Math.cos(avgLatRad);
+        const distKm = Math.sqrt(dLat * dLat + dLon * dLon);
+        const stName = st.station?.name || closestCity.nameZh;
+
+        bucket.stations.push({
+          uid: st.uid,
+          name: stName,
+          aqi: aqiNum,
+          pm25: pm25Val,
+          distKm,
+        });
+
+        bucket.aqis.push(aqiNum);
+        bucket.pm25s.push(pm25Val);
       }
     }
 
     // 转换为排名项：分别以国标与美标精确折算 AQI
     const allRanked: RankedCityItem[] = [];
     for (const [_, item] of Array.from(cityCluster.entries())) {
-      // 若该城市有官方正规站点，优先使用官方站点数据；无官方站点时才用民间探头
-      const aqis = item.officialAqis.length > 0 ? item.officialAqis : item.amateurAqis;
-      const pm25s = item.officialPm25s.length > 0 ? item.officialPm25s : item.amateurPm25s;
-      if (aqis.length === 0) continue;
+      if (item.aqis.length === 0) continue;
 
-      const { avgAqiUS, avgPm25 } = aggregateCityData(aqis, pm25s);
+      const { avgAqiUS, avgPm25 } = aggregateCityData(item.aqis, item.pm25s);
+      if (avgAqiUS <= 2) continue;
 
       const evalCN = evaluateAQI({ pm25: avgPm25 }, 'CN');
+
+      // 提取市中心核心基准站：
+      // 纯粹以城市中心法定经纬度为基准，严格选取几何物理距离最近的在册基准站 (与全景地图、城市实况 100% 规则对齐)
+      const sortedByDist = [...item.stations].sort((a, b) => a.distKm - b.distKm);
+      const primaryStation = sortedByDist[0];
+
+      let repAqiUS = avgAqiUS;
+      let repAqiCN = evalCN.aqi;
+      let repPm25 = avgPm25;
+      let repStationName = item.city.nameZh;
+      let repStationUid: number | undefined = undefined;
+
+      if (primaryStation) {
+        repAqiUS = primaryStation.aqi;
+        repPm25 = primaryStation.pm25;
+        repAqiCN = evaluateAQI({ pm25: repPm25 }, 'CN').aqi;
+        repStationName = extractCleanStationName(primaryStation.name, item.city.nameZh);
+        repStationUid = primaryStation.uid;
+      }
 
       allRanked.push({
         id: item.city.id,
@@ -318,7 +408,13 @@ export async function getRealtimeRanking(forceRefresh = false): Promise<RankingA
         aqiUS: avgAqiUS,
         aqiCN: evalCN.aqi,
         pm25: avgPm25,
-        stationsCount: aqis.length,
+        stationsCount: item.aqis.length,
+        population: item.city.population,
+        repAqiUS,
+        repAqiCN,
+        repPm25,
+        repStationName,
+        repStationUid,
       });
     }
 
@@ -357,8 +453,7 @@ export async function getRealtimeRanking(forceRefresh = false): Promise<RankingA
     };
 
     memoryRankingCache = freshResult;
-    lastFetchTimestamp = now;
-    saveToClientStorage(freshResult);
+    lastFetchTimestamp = Date.now(); // 必须使用拉取完成时刻的精确时间戳，保证 30 秒物理防抖和 8 分钟 SWR 有效计算
 
     return freshResult;
   } catch (err: any) {

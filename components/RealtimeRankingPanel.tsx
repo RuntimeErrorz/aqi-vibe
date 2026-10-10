@@ -14,8 +14,20 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Users,
 } from 'lucide-react';
-import { getRealtimeRanking } from '@/lib/services/realtime-ranking';
+import { formatPopulation } from '@/lib/constants/cities';
+import { getCountryInfo } from '@/lib/constants/countries';
+
+export type PopulationTier = 'all' | '1000w' | '500w' | '100w' | '10w';
+
+const POPULATION_THRESHOLDS: Record<PopulationTier, number> = {
+  all: 0,
+  '1000w': 10_000_000,
+  '500w': 5_000_000,
+  '100w': 1_000_000,
+  '10w': 100_000,
+};
 
 export interface RankedCityItem {
   id: string;
@@ -31,6 +43,12 @@ export interface RankedCityItem {
   aqiCN?: number;
   pm25?: number;
   stationsCount: number;
+  population?: number;
+  repAqiUS?: number;
+  repAqiCN?: number;
+  repPm25?: number;
+  repStationName?: string;
+  repStationUid?: number;
 }
 
 export interface RankedCityWithOrder extends RankedCityItem {
@@ -54,14 +72,8 @@ interface RankingData {
 }
 
 interface RealtimeRankingPanelProps {
-  onSelectCity: (city: {
-    id: string;
-    nameZh: string;
-    nameEn: string;
-    country: string;
-    latitude: number;
-    longitude: number;
-  }) => void;
+  onSelectCity: (city: RankedCityItem) => void;
+  className?: string;
 }
 
 /**
@@ -128,7 +140,7 @@ const PageJumper: React.FC<{
   );
 };
 
-export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSelectCity }) => {
+export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSelectCity, className }) => {
   const { standard } = useStandard();
   const [scope, setScope] = useState<'global' | 'domestic'>('global');
   const [data, setData] = useState<RankingData | null>(null);
@@ -140,25 +152,41 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  // 分页状态
+  // 分页状态与测站统计口径
   const [cleanPage, setCleanPage] = useState(1);
   const [pollutedPage, setPollutedPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(10);
+  const [populationTier, setPopulationTier] = useState<PopulationTier>('all');
+  const [metricMode, setMetricMode] = useState<'avg' | 'rep'>('avg'); // 'avg' = 全市多站均值, 'rep' = 官方代表站
 
   const fetchRankings = async (isManual?: boolean | unknown) => {
     setLoading(true);
     setError(null);
     try {
-      // 在浏览器客户端直接并发拉取 WAQI 并进行 16ms 本地空间聚类计算 (随刷随新)
-      const clientResult = await getRealtimeRanking(isManual === true);
-      if (clientResult && clientResult.success && clientResult.totalCities > 0) {
-        setData(clientResult);
+      // 直连同源服务端聚合接口 (Node.js 24 并发池 + 60s 极短防抖打闸，支持手动刷新直接穿透)
+      const apiUrl = `/api/ranking/realtime${isManual === true ? '?refresh=true' : ''}`;
+      const apiRes = await fetch(apiUrl);
+      if (!apiRes.ok) {
+        if (apiRes.status === 404) {
+          // 纯静态站点导出托管兜底 (如 GitHub Pages 静态导出无 Node.js API 时动态按需加载)
+          const { getRealtimeRanking } = await import('@/lib/services/realtime-ranking');
+          const clientData = await getRealtimeRanking(isManual === true);
+          if (clientData && clientData.success && clientData.totalCities > 0) {
+            setData(clientData);
+            return;
+          }
+        }
+        throw new Error(`排行榜服务响应异常 (${apiRes.status})`);
+      }
+      const apiJson = (await apiRes.json()) as RankingData;
+      if (apiJson && apiJson.success && apiJson.totalCities > 0) {
+        setData(apiJson);
         return;
       }
       throw new Error('未获取到有效排行数据');
-    } catch (clientErr: any) {
-      console.error('实时排行拉取或计算失败:', clientErr);
-      setError(clientErr?.message || '获取实时排行失败，请检查网络后重试');
+    } catch (err: any) {
+      console.error('实时排行拉取或计算失败:', err);
+      setError(err?.message || '获取实时排行失败，请检查网络后重试');
     } finally {
       setLoading(false);
     }
@@ -183,57 +211,74 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
   useEffect(() => {
     setCleanPage(1);
     setPollutedPage(1);
-  }, [scope, searchQuery, pageSize]);
+  }, [scope, searchQuery, pageSize, populationTier, metricMode]);
 
   const activeCategory = scope === 'global' ? data?.global : data?.domestic;
 
-  // 为当前所有城市赋予真实、固定的绝对名次 (1 .. N)，依据选定标准动态排序
+  // 为当前所有城市赋予真实、固定的绝对名次 (1 .. N)，依据选定标准与测站口径(全市均值 vs 官方代表站)动态排序
   const allCitiesWithRank = useMemo<RankedCityWithOrder[]>(() => {
     const cleanest = activeCategory?.cleanest || [];
+    const getVal = (c: RankedCityItem) => {
+      if (metricMode === 'rep') {
+        return standard === 'CN' ? (c.repAqiCN ?? c.aqiCN ?? c.aqi) : (c.repAqiUS ?? c.aqiUS ?? c.aqi);
+      }
+      return standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi);
+    };
+
     // 依据选定标准进行升序排序 (AQI 越低越清新)
-    const sorted = [...cleanest].sort((a, b) => {
-      const valA = standard === 'CN' ? (a.aqiCN ?? a.aqi) : (a.aqiUS ?? a.aqi);
-      const valB = standard === 'CN' ? (b.aqiCN ?? b.aqi) : (b.aqiUS ?? b.aqi);
-      return valA - valB;
-    });
+    const sorted = [...cleanest].sort((a, b) => getVal(a) - getVal(b));
     const total = sorted.length;
     return sorted.map((c, idx) => ({
       ...c,
       cleanRank: idx + 1,
       pollutedRank: total - idx,
     }));
-  }, [activeCategory, standard]);
+  }, [activeCategory, standard, metricMode]);
+
+  // 人口规模阶梯过滤 (全部 / 1000万+ / 500万+ / 100万+ / 10万+)
+  const populationFilteredCities = useMemo(() => {
+    const threshold = POPULATION_THRESHOLDS[populationTier];
+    if (threshold <= 0) return allCitiesWithRank;
+    return allCitiesWithRank.filter((c) => (c.population ?? 0) >= threshold);
+  }, [allCitiesWithRank, populationTier]);
 
   // 即时搜索匹配列表（携带保留的绝对名次）
   const searchMatchedCities = useMemo(() => {
-    if (!searchQuery.trim()) return [];
+    if (!searchQuery.trim()) return populationFilteredCities;
     const q = searchQuery.trim().toLowerCase();
-    return allCitiesWithRank.filter(
+    return populationFilteredCities.filter(
       (c) =>
         c.nameZh.toLowerCase().includes(q) ||
         c.nameEn.toLowerCase().includes(q) ||
         c.country.toLowerCase().includes(q) ||
         (c.province && c.province.toLowerCase().includes(q))
     );
-  }, [allCitiesWithRank, searchQuery]);
+  }, [populationFilteredCities, searchQuery]);
 
   // 页面列表过滤后的数据
   const filteredCleanest = useMemo(() => {
-    if (!searchQuery.trim()) return allCitiesWithRank;
     return searchMatchedCities;
-  }, [allCitiesWithRank, searchMatchedCities, searchQuery]);
+  }, [searchMatchedCities]);
+
+  const currentFilteredStations = useMemo(() => {
+    return filteredCleanest.reduce((sum, c) => sum + (c.stationsCount || 1), 0);
+  }, [filteredCleanest]);
 
   const filteredPolluted = useMemo(() => {
-    if (!searchQuery.trim()) {
+    const getVal = (c: RankedCityItem) => {
+      if (metricMode === 'rep') {
+        return standard === 'CN' ? (c.repAqiCN ?? c.aqiCN ?? c.aqi) : (c.repAqiUS ?? c.aqiUS ?? c.aqi);
+      }
+      return standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi);
+    };
+
+    if (!searchQuery.trim() && populationTier === 'all') {
       return [...allCitiesWithRank].reverse();
     }
-    // 搜索时按当前标准下的污染程度降序排
-    return [...searchMatchedCities].sort((a, b) => {
-      const valA = standard === 'CN' ? (a.aqiCN ?? a.aqi) : (a.aqiUS ?? a.aqi);
-      const valB = standard === 'CN' ? (b.aqiCN ?? b.aqi) : (b.aqiUS ?? b.aqi);
-      return valB - valA;
-    });
-  }, [allCitiesWithRank, searchMatchedCities, searchQuery, standard]);
+    // 搜索或人口筛选时按当前标准下的污染程度降序排
+    return [...searchMatchedCities].sort((a, b) => getVal(b) - getVal(a));
+  }, [allCitiesWithRank, searchMatchedCities, searchQuery, populationTier, standard, metricMode]);
+
 
   // 双栏分页总页数与当前切片
   const cleanTotalPages = Math.max(1, Math.ceil(filteredCleanest.length / pageSize));
@@ -294,27 +339,98 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
   };
 
   return (
-    <div id="realtime-ranking-section" className="glass-panel rounded-2xl p-4 sm:p-4.5 lg:p-5 space-y-3.5">
-      {/* 头部控制栏：标题、更新时间、搜索带预览、范围 Tab、每页数量、刷新 */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 pb-3.5 border-b border-slate-100">
-        <div className="flex flex-col justify-center space-y-0.5 shrink-0">
-          <div className="flex items-center space-x-2">
-            <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight whitespace-nowrap">
-              实时排行榜
-            </h2>
+    <div id="realtime-ranking-section" className={`glass-panel rounded-2xl p-4 sm:p-4.5 lg:p-5 flex flex-col ${className || 'space-y-3.5'}`}>
+      {/* 头部区域：第一行（标题 + 更新时间 + 快捷刷新），第二行（搜索 + 范围Tab + 人口筛选 + 分页大小） */}
+      <div className="space-y-3 pb-3 border-b border-slate-100 shrink-0">
+        {/* 第一行：标题与更新时间 */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-2xs shrink-0">
+              <Trophy className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight whitespace-nowrap">
+                  实时排行
+                </h2>
+                {data && (
+                  <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80 hidden xs:inline-block">
+                    {metricMode === 'rep'
+                      ? (populationTier !== 'all' || searchQuery.trim()
+                          ? `筛选 ${filteredCleanest.length} 官方代表站`
+                          : `在测 ${activeCategory?.cleanest.length || 0} 官方代表站`)
+                      : (populationTier !== 'all' || searchQuery.trim()
+                          ? `筛选 ${filteredCleanest.length} 城 · ${currentFilteredStations} 站`
+                          : `在测 ${activeCategory?.cleanest.length || 0} 城 · ${data.totalStations} 站`)}
+                  </span>
+                )}
+              </div>
+              {data?.updatedAt && (
+                <p className="text-[11px] text-slate-400 font-normal">
+                  更新于 {new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              )}
+            </div>
           </div>
-          {data?.updatedAt && (
-            <p className="text-[11px] sm:text-xs text-slate-400 font-normal whitespace-nowrap pl-7">
-              更新于 {new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </p>
-          )}
+
+          <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+            {/* 测站口径切换开关：全市多站均值 vs 市中心基准站 */}
+            <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200/80 text-xs font-semibold shrink-0">
+              <button
+                type="button"
+                onClick={() => setMetricMode('avg')}
+                className={`px-2 py-1 rounded-lg transition-all flex items-center space-x-1 cursor-pointer text-[11px] sm:text-xs ${
+                  metricMode === 'avg'
+                    ? 'bg-white text-sky-700 shadow-2xs font-bold'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="全市均值：统计都会区全域所有在册监测站的综合加权均值"
+              >
+                <span>全市均值</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMetricMode('rep')}
+                className={`px-2 py-1 rounded-lg transition-all flex items-center space-x-1 cursor-pointer text-[11px] sm:text-xs ${
+                  metricMode === 'rep'
+                    ? 'bg-white text-indigo-700 shadow-2xs font-bold'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="市中心站：选取离市中心法定经纬度最近的在册核心基准站"
+              >
+                <span>市中心站</span>
+              </button>
+            </div>
+
+            {/* 每页条数选择 */}
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:border-sky-500 shadow-2xs cursor-pointer shrink-0 transition-colors"
+              title="设置每页显示数量"
+            >
+              <option value={10}>10条/页</option>
+              <option value={20}>20条/页</option>
+              <option value={50}>50条/页</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={() => fetchRankings(true)}
+              disabled={loading}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer text-xs font-semibold shrink-0"
+              title="手动刷新实时榜单"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-sky-600' : ''}`} />
+              <span className="hidden sm:inline">刷新</span>
+            </button>
+          </div>
         </div>
 
-        {/* 右侧工具栏：即时搜索带预览 + 范围Tab + 每页条数 + 刷新 */}
-        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-between lg:justify-end shrink-0">
+        {/* 第二行：操作筛选工具栏 (换行呈现，杜绝横向挤压与溢出) */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-0.5">
           {/* 即时搜索框与智能下拉预览面板 */}
-          <div ref={searchContainerRef} className="relative w-full sm:w-52 shrink-0">
+          <div ref={searchContainerRef} className="relative flex-1 min-w-[180px]">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             <input
               type="text"
@@ -363,10 +479,19 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                     </div>
                   ) : (
                     searchMatchedCities.slice(0, 8).map((c) => {
-                      const currentAqi = standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi);
+                      const currentAqi = metricMode === 'rep'
+                        ? (standard === 'CN' ? (c.repAqiCN ?? c.aqiCN ?? c.aqi) : (c.repAqiUS ?? c.aqiUS ?? c.aqi))
+                        : (standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi));
+                      const currentPm25 = metricMode === 'rep' ? (c.repPm25 ?? c.pm25) : c.pm25;
                       const evaluation = standard === 'CN' ? getCNEvaluation(currentAqi) : getUSEvaluation(currentAqi);
-                      const infoSubtitle = `${c.province ? `${c.province} · ` : ''}${c.stationsCount} 站${c.pm25 !== undefined ? ` · PM2.5: ${c.pm25} μg/m³` : ''}`;
-                      const fullTooltip = `${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${c.country}${c.province ? ` · ${c.province}` : ''} · ${c.stationsCount} 个监测站 · PM2.5: ${c.pm25 !== undefined ? `${c.pm25} μg/m³` : '暂无'} · 实时 AQI: ${currentAqi} (${evaluation.level})`;
+                      const showProvince = !c.isDomestic && c.country !== 'CN' && Boolean(c.province);
+                      const popPrefix = c.population ? `👥 ${formatPopulation(c.population)} · ` : '';
+                      const stationDesc = metricMode === 'rep'
+                        ? (c.repStationName ? `市中心站: ${c.repStationName}` : '市中心最近站')
+                        : `${c.stationsCount} 站均值`;
+                      const infoSubtitle = `${popPrefix}${showProvince ? `${c.province} · ` : ''}${stationDesc}${currentPm25 !== undefined ? ` · PM2.5: ${currentPm25} μg/m³` : ''}`;
+                      const popFull = c.population ? ` · 常住人口: ${c.population.toLocaleString()} 人 (${formatPopulation(c.population)})` : '';
+                      const fullTooltip = `${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${getCountryInfo(c.country).nameZh}${showProvince ? ` · ${c.province}` : ''}${popFull} · ${stationDesc} · PM2.5: ${currentPm25 !== undefined ? `${currentPm25} μg/m³` : '暂无'} · 实时 AQI: ${currentAqi} (${evaluation.level})`;
                       return (
                         <div
                           key={c.id}
@@ -381,8 +506,8 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                             >
                               #{c.cleanRank}
                             </span>
-                            <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[9px] font-extrabold border border-slate-200 uppercase shrink-0">
-                              {c.country}
+                            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200/90 shrink-0 select-none">
+                              {getCountryInfo(c.country).nameZh}
                             </span>
                             <div className="min-w-0">
                               <div className="flex items-center space-x-1">
@@ -455,33 +580,34 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
             </button>
           </div>
 
-          {/* 每页条数选择 */}
-          <select
-            value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
-            className="px-2 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:border-sky-500 shadow-2xs cursor-pointer shrink-0"
-          >
-            <option value={10}>10条/页</option>
-            <option value={20}>20条/页</option>
-            <option value={50}>50条/页</option>
-          </select>
-
-          {/* 刷新按钮 */}
-          <button
-            type="button"
-            onClick={() => fetchRankings(true)}
-            disabled={loading}
-            className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer shrink-0"
-            title="手动刷新实时榜单"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-sky-600' : ''}`} />
-          </button>
+          {/* 人口规模手动筛选 */}
+          <div className="flex items-center shrink-0">
+            <div className="relative flex items-center">
+              <Users className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+              <select
+                value={populationTier}
+                onChange={(e) => setPopulationTier(e.target.value as PopulationTier)}
+                className={`pl-7 pr-2.5 py-1.5 rounded-xl border text-xs font-semibold focus:outline-none focus:border-sky-500 shadow-2xs cursor-pointer transition-colors ${
+                  populationTier !== 'all'
+                    ? 'bg-sky-50/90 text-sky-700 border-sky-300 font-bold ring-1 ring-sky-300/60'
+                    : 'bg-slate-50 text-slate-700 border-slate-200'
+                }`}
+                title="按常住人口规模筛选城市"
+              >
+                <option value="all">不限人口</option>
+                <option value="1000w">≥1000万 (超大城市)</option>
+                <option value="500w">≥500万 (特大城市)</option>
+                <option value="100w">≥100万 (重点都会)</option>
+                <option value="10w">≥10万 (中等城市)</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* 内容区域 */}
+      {/* 内容区域 (支持在大屏下 flex-1 独立平滑纵向滚动) */}
       {loading && !data ? (
-        <div className="grid grid-cols-1 xl:grid-cols-2 divide-y xl:divide-y-0 xl:divide-x divide-slate-100 py-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 divide-y xl:divide-y-0 xl:divide-x divide-slate-100 py-4 flex-1 min-h-0 overflow-y-auto mt-3">
           {[1, 2].map((i) => (
             <div key={i} className={`space-y-2.5 ${i === 1 ? 'xl:pr-4 pb-4 xl:pb-0' : 'xl:pl-4 pt-4 xl:pt-0'}`}>
               <div className="h-4 w-36 bg-slate-200 rounded animate-pulse" />
@@ -492,7 +618,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
           ))}
         </div>
       ) : error ? (
-        <div className="p-8 text-center space-y-2 text-slate-500 text-xs">
+        <div className="p-8 text-center space-y-2 text-slate-500 text-xs flex-1 flex flex-col items-center justify-center">
           <p className="text-rose-500 font-semibold">{error}</p>
           <button
             onClick={() => fetchRankings(true)}
@@ -502,8 +628,8 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
           </button>
         </div>
       ) : (
-        /* ========= 优雅微渐变双榜并列 ========= */
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5 sm:gap-3">
+        /* ========= 优雅微渐变双榜并列 (flex-1 独立内部平滑滚动) ========= */
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5 sm:gap-3 flex-1 min-h-0 overflow-y-auto pr-0.5 custom-scrollbar mt-3">
           {/* 左半区：空气最清新榜 */}
           <div className="flex flex-col justify-between rounded-2xl bg-gradient-to-b from-emerald-50/60 via-emerald-50/20 to-white/95 p-2.5 sm:p-3 border border-emerald-100/90 shadow-2xs space-y-2">
             <div>
@@ -527,10 +653,19 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                   <div className="py-8 text-center text-xs text-slate-400">未找到匹配的城市</div>
                 ) : (
                   currentCleanList.map((c) => {
-                    const currentAqi = standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi);
+                    const currentAqi = metricMode === 'rep'
+                      ? (standard === 'CN' ? (c.repAqiCN ?? c.aqiCN ?? c.aqi) : (c.repAqiUS ?? c.aqiUS ?? c.aqi))
+                      : (standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi));
+                    const currentPm25 = metricMode === 'rep' ? (c.repPm25 ?? c.pm25) : c.pm25;
                     const evaluation = standard === 'CN' ? getCNEvaluation(currentAqi) : getUSEvaluation(currentAqi);
-                    const infoSubtitle = `${c.province ? `${c.province} · ` : ''}${c.stationsCount} 站${c.pm25 !== undefined ? ` · PM2.5: ${c.pm25} μg/m³` : ''}`;
-                    const fullTooltip = `${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${c.country}${c.province ? ` · ${c.province}` : ''} · ${c.stationsCount} 个监测站 · PM2.5: ${c.pm25 !== undefined ? `${c.pm25} μg/m³` : '暂无'} · 实时 AQI: ${currentAqi} (${evaluation.level})`;
+                    const showProvince = !c.isDomestic && c.country !== 'CN' && Boolean(c.province);
+                    const popPrefix = c.population ? `👥 ${formatPopulation(c.population)} · ` : '';
+                    const stationDesc = metricMode === 'rep'
+                      ? (c.repStationName ? `市中心站: ${c.repStationName}` : '市中心最近站')
+                      : `${c.stationsCount} 站均值`;
+                    const infoSubtitle = `${popPrefix}${showProvince ? `${c.province} · ` : ''}${stationDesc}${currentPm25 !== undefined ? ` · PM2.5: ${currentPm25} μg/m³` : ''}`;
+                    const popFull = c.population ? ` · 常住人口: ${c.population.toLocaleString()} 人 (${formatPopulation(c.population)})` : '';
+                    const fullTooltip = `${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${getCountryInfo(c.country).nameZh}${showProvince ? ` · ${c.province}` : ''}${popFull} · ${stationDesc} · PM2.5: ${currentPm25 !== undefined ? `${currentPm25} μg/m³` : '暂无'} · 实时 AQI: ${currentAqi} (${evaluation.level})`;
                     return (
                       <div
                         key={c.id}
@@ -541,15 +676,15 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                         <div className="flex items-center space-x-2 flex-1 min-w-0 pr-2">
                           {renderRankBadge(c.cleanRank, true)}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-1.5">
+                            <div className="flex items-center space-x-1.5 flex-wrap">
                               <span
-                                title={`${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${c.country}`}
+                                title={`${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${getCountryInfo(c.country).nameZh}`}
                                 className="font-semibold text-xs sm:text-[13.5px] text-slate-800 group-hover:text-emerald-700 transition-colors truncate"
                               >
                                 {c.nameZh}
                               </span>
-                              <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[9px] font-extrabold border border-slate-200 uppercase shrink-0">
-                                {c.country}
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200/90 shrink-0 select-none">
+                                {getCountryInfo(c.country).nameZh}
                               </span>
                             </div>
                             <p
@@ -622,10 +757,19 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                   <div className="py-8 text-center text-xs text-slate-400">未找到匹配的城市</div>
                 ) : (
                   currentPollutedList.map((c) => {
-                    const currentAqi = standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi);
+                    const currentAqi = metricMode === 'rep'
+                      ? (standard === 'CN' ? (c.repAqiCN ?? c.aqiCN ?? c.aqi) : (c.repAqiUS ?? c.aqiUS ?? c.aqi))
+                      : (standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi));
+                    const currentPm25 = metricMode === 'rep' ? (c.repPm25 ?? c.pm25) : c.pm25;
                     const evaluation = standard === 'CN' ? getCNEvaluation(currentAqi) : getUSEvaluation(currentAqi);
-                    const infoSubtitle = `${c.province ? `${c.province} · ` : ''}${c.stationsCount} 站${c.pm25 !== undefined ? ` · PM2.5: ${c.pm25} μg/m³` : ''}`;
-                    const fullTooltip = `${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${c.country}${c.province ? ` · ${c.province}` : ''} · ${c.stationsCount} 个监测站 · PM2.5: ${c.pm25 !== undefined ? `${c.pm25} μg/m³` : '暂无'} · 实时 AQI: ${currentAqi} (${evaluation.level})`;
+                    const showProvince = !c.isDomestic && c.country !== 'CN' && Boolean(c.province);
+                    const popPrefix = c.population ? `👥 ${formatPopulation(c.population)} · ` : '';
+                    const stationDesc = metricMode === 'rep'
+                      ? (c.repStationName ? `市中心站: ${c.repStationName}` : '市中心最近站')
+                      : `${c.stationsCount} 站均值`;
+                    const infoSubtitle = `${popPrefix}${showProvince ? `${c.province} · ` : ''}${stationDesc}${currentPm25 !== undefined ? ` · PM2.5: ${currentPm25} μg/m³` : ''}`;
+                    const popFull = c.population ? ` · 常住人口: ${c.population.toLocaleString()} 人 (${formatPopulation(c.population)})` : '';
+                    const fullTooltip = `${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${getCountryInfo(c.country).nameZh}${showProvince ? ` · ${c.province}` : ''}${popFull} · ${stationDesc} · PM2.5: ${currentPm25 !== undefined ? `${currentPm25} μg/m³` : '暂无'} · 实时 AQI: ${currentAqi} (${evaluation.level})`;
                     return (
                       <div
                         key={c.id}
@@ -636,15 +780,15 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                         <div className="flex items-center space-x-2 flex-1 min-w-0 pr-2">
                           {renderRankBadge(c.pollutedRank, false)}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-1.5">
+                            <div className="flex items-center space-x-1.5 flex-wrap">
                               <span
-                                title={`${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${c.country}`}
+                                title={`${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${getCountryInfo(c.country).nameZh}`}
                                 className="font-semibold text-xs sm:text-[13.5px] text-slate-800 group-hover:text-rose-700 transition-colors truncate"
                               >
                                 {c.nameZh}
                               </span>
-                              <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[9px] font-extrabold border border-slate-200 uppercase shrink-0">
-                                {c.country}
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200/90 shrink-0 select-none">
+                                {getCountryInfo(c.country).nameZh}
                               </span>
                             </div>
                             <p

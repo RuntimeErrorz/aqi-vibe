@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getRealtimeRanking } from '@/lib/services/realtime-ranking';
 
 export const runtime = 'nodejs';
-export const revalidate = 600; // 10 分钟缓存
+export const revalidate = 60; // 60 秒极短打闸，与静态导出模式完全兼容
 
 export async function GET(request: Request) {
   try {
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       headers: {
         'Cache-Control': forceRefresh
           ? 'no-cache, no-store, must-revalidate'
-          : 'public, max-age=120, stale-while-revalidate=300',
+          : 'public, max-age=60, stale-while-revalidate=120',
         'Access-Control-Allow-Origin': '*',
       },
     });
