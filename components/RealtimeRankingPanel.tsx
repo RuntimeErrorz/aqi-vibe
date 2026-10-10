@@ -297,22 +297,24 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
     <div id="realtime-ranking-section" className="glass-panel rounded-2xl p-4 sm:p-4.5 lg:p-5 space-y-3.5">
       {/* 头部控制栏：标题、更新时间、搜索带预览、范围 Tab、每页数量、刷新 */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 pb-3.5 border-b border-slate-100">
-        <div className="flex items-center space-x-2 min-w-0">
-          <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight whitespace-nowrap">
-            实时空气质量榜
-          </h2>
+        <div className="flex flex-col justify-center space-y-0.5 shrink-0">
+          <div className="flex items-center space-x-2">
+            <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight whitespace-nowrap">
+              实时排行榜
+            </h2>
+          </div>
           {data?.updatedAt && (
-            <span className="text-xs text-slate-400 font-normal hidden sm:inline whitespace-nowrap">
-              · 更新于 {new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
+            <p className="text-[11px] sm:text-xs text-slate-400 font-normal whitespace-nowrap pl-7">
+              更新于 {new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
           )}
         </div>
 
         {/* 右侧工具栏：即时搜索带预览 + 范围Tab + 每页条数 + 刷新 */}
         <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-between lg:justify-end shrink-0">
           {/* 即时搜索框与智能下拉预览面板 */}
-          <div ref={searchContainerRef} className="relative w-full sm:w-44 md:w-52 lg:w-56 shrink-0">
+          <div ref={searchContainerRef} className="relative w-full sm:w-52 shrink-0">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             <input
               type="text"
@@ -346,7 +348,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
 
             {/* 即时搜索下拉预览卡片：保留真实排位 + 实时指数 + 一键直达 */}
             {isPreviewOpen && searchQuery.trim() && (
-              <div className="absolute left-0 right-0 sm:right-auto sm:w-[360px] max-w-[calc(100vw-2rem)] top-full mt-1.5 z-50 bg-white rounded-2xl border border-slate-200/95 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="absolute left-0 right-0 sm:right-auto sm:w-[320px] max-w-[calc(100vw-2rem)] top-full mt-1.5 z-50 bg-white rounded-2xl border border-slate-200/95 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
                 <div className="px-3.5 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                   <span>
                     匹配到 <b className="text-slate-900">{searchMatchedCities.length}</b> 座城市
@@ -363,10 +365,13 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                     searchMatchedCities.slice(0, 8).map((c) => {
                       const currentAqi = standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi);
                       const evaluation = standard === 'CN' ? getCNEvaluation(currentAqi) : getUSEvaluation(currentAqi);
+                      const infoSubtitle = `${c.province ? `${c.province} · ` : ''}${c.stationsCount} 站${c.pm25 !== undefined ? ` · PM2.5: ${c.pm25} μg/m³` : ''}`;
+                      const fullTooltip = `${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${c.country}${c.province ? ` · ${c.province}` : ''} · ${c.stationsCount} 个监测站 · PM2.5: ${c.pm25 !== undefined ? `${c.pm25} μg/m³` : '暂无'} · 实时 AQI: ${currentAqi} (${evaluation.level})`;
                       return (
                         <div
                           key={c.id}
                           onClick={() => handleSelectAndFly(c)}
+                          title={fullTooltip}
                           className="px-3 py-2 flex items-center justify-between hover:bg-sky-50/80 cursor-pointer transition-colors group"
                         >
                           <div className="flex items-center space-x-2.5 min-w-0 pr-2">
@@ -381,16 +386,18 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                             </span>
                             <div className="min-w-0">
                               <div className="flex items-center space-x-1">
-                                <span className="font-bold text-xs text-slate-900 group-hover:text-sky-600 transition-colors truncate">
+                                <span
+                                  title={`${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''}`}
+                                  className="font-bold text-xs text-slate-900 group-hover:text-sky-600 transition-colors truncate"
+                                >
                                   {c.nameZh}
                                 </span>
                                 <span className="text-[10px] text-slate-400 font-mono truncate hidden sm:inline">
                                   ({c.nameEn})
                                 </span>
                               </div>
-                              <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                                {c.province ? `${c.province} · ` : ''}{c.stationsCount} 站
-                                {c.pm25 !== undefined ? ` · PM2.5: ${c.pm25} μg/m³` : ''}
+                              <p title={fullTooltip} className="text-[10px] text-slate-400 truncate mt-0.5">
+                                {infoSubtitle}
                               </p>
                             </div>
                           </div>
@@ -522,26 +529,34 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                   currentCleanList.map((c) => {
                     const currentAqi = standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi);
                     const evaluation = standard === 'CN' ? getCNEvaluation(currentAqi) : getUSEvaluation(currentAqi);
+                    const infoSubtitle = `${c.province ? `${c.province} · ` : ''}${c.stationsCount} 站${c.pm25 !== undefined ? ` · PM2.5: ${c.pm25} μg/m³` : ''}`;
+                    const fullTooltip = `${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${c.country}${c.province ? ` · ${c.province}` : ''} · ${c.stationsCount} 个监测站 · PM2.5: ${c.pm25 !== undefined ? `${c.pm25} μg/m³` : '暂无'} · 实时 AQI: ${currentAqi} (${evaluation.level})`;
                     return (
                       <div
                         key={c.id}
                         onClick={() => handleSelectAndFly(c)}
+                        title={fullTooltip}
                         className="group flex items-center justify-between py-1.5 px-1 sm:px-1.5 rounded-xl hover:bg-white hover:shadow-xs border border-transparent hover:border-emerald-200/80 transition-all cursor-pointer"
                       >
-                        <div className="flex items-center space-x-2 flex-1 min-w-0 pr-2.5">
+                        <div className="flex items-center space-x-2 flex-1 min-w-0 pr-2">
                           {renderRankBadge(c.cleanRank, true)}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center space-x-1.5">
-                              <span className="font-semibold text-xs sm:text-[13.5px] text-slate-800 group-hover:text-emerald-700 transition-colors truncate">
+                              <span
+                                title={`${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${c.country}`}
+                                className="font-semibold text-xs sm:text-[13.5px] text-slate-800 group-hover:text-emerald-700 transition-colors truncate"
+                              >
                                 {c.nameZh}
                               </span>
                               <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[9px] font-extrabold border border-slate-200 uppercase shrink-0">
                                 {c.country}
                               </span>
                             </div>
-                            <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                              {c.province ? `${c.province} · ` : ''}{c.stationsCount} 站
-                              {c.pm25 !== undefined ? ` · PM2.5: ${c.pm25} μg/m³` : ''}
+                            <p
+                              title={fullTooltip}
+                              className="text-[11px] text-slate-400 mt-0.5 truncate"
+                            >
+                              {infoSubtitle}
                             </p>
                           </div>
                         </div>
@@ -609,26 +624,34 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                   currentPollutedList.map((c) => {
                     const currentAqi = standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi);
                     const evaluation = standard === 'CN' ? getCNEvaluation(currentAqi) : getUSEvaluation(currentAqi);
+                    const infoSubtitle = `${c.province ? `${c.province} · ` : ''}${c.stationsCount} 站${c.pm25 !== undefined ? ` · PM2.5: ${c.pm25} μg/m³` : ''}`;
+                    const fullTooltip = `${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${c.country}${c.province ? ` · ${c.province}` : ''} · ${c.stationsCount} 个监测站 · PM2.5: ${c.pm25 !== undefined ? `${c.pm25} μg/m³` : '暂无'} · 实时 AQI: ${currentAqi} (${evaluation.level})`;
                     return (
                       <div
                         key={c.id}
                         onClick={() => handleSelectAndFly(c)}
+                        title={fullTooltip}
                         className="group flex items-center justify-between py-1.5 px-1 sm:px-1.5 rounded-xl hover:bg-white hover:shadow-xs border border-transparent hover:border-rose-200/80 transition-all cursor-pointer"
                       >
-                        <div className="flex items-center space-x-2 flex-1 min-w-0 pr-2.5">
+                        <div className="flex items-center space-x-2 flex-1 min-w-0 pr-2">
                           {renderRankBadge(c.pollutedRank, false)}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center space-x-1.5">
-                              <span className="font-semibold text-xs sm:text-[13.5px] text-slate-800 group-hover:text-rose-700 transition-colors truncate">
+                              <span
+                                title={`${c.nameZh}${c.nameEn ? ` (${c.nameEn})` : ''} · ${c.country}`}
+                                className="font-semibold text-xs sm:text-[13.5px] text-slate-800 group-hover:text-rose-700 transition-colors truncate"
+                              >
                                 {c.nameZh}
                               </span>
                               <span className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[9px] font-extrabold border border-slate-200 uppercase shrink-0">
                                 {c.country}
                               </span>
                             </div>
-                            <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                              {c.province ? `${c.province} · ` : ''}{c.stationsCount} 站
-                              {c.pm25 !== undefined ? ` · PM2.5: ${c.pm25} μg/m³` : ''}
+                            <p
+                              title={fullTooltip}
+                              className="text-[11px] text-slate-400 mt-0.5 truncate"
+                            >
+                              {infoSubtitle}
                             </p>
                           </div>
                         </div>
