@@ -3,13 +3,23 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { fetchWAQIMapBounds, fetchWAQICityData, WaqiBoundStation } from '@/lib/services/waqi';
+import { fetchWAQIMapBounds, WaqiBoundStation, getDistanceKm, extractCleanStationName } from '@/lib/services/waqi';
 import { CityMeta, StandardType } from '@/lib/types';
 import { useStandard } from '@/components/StandardContext';
 import { convertIAQIToConcentration, evaluateAQI, getCNEvaluation, getUSEvaluation } from '@/lib/aqi-calculator';
+import { iso1A2Code } from '@rapideditor/country-coder';
 
 const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_KEY || 'cb1_4bl6_1_dc1bbfd8426369beb577afe4';
 const WAQI_TOKEN = process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48';
+
+export interface FocusCityInfo {
+  name: string;
+  aqi: number;
+  level: string;
+  stationName: string;
+  stationUid: number;
+  distKm?: number;
+}
 
 interface AirMapProps {
   showStations?: boolean;
@@ -19,7 +29,7 @@ interface AirMapProps {
   onStationCountChange?: (
     count: number,
     loading: boolean,
-    focusInfo?: { name: string; aqi: number; level: string }
+    focusInfo?: FocusCityInfo
   ) => void;
 }
 
@@ -126,6 +136,34 @@ function filterVisibleStationsByGrid(
   return filtered;
 }
 
+/**
+ * 纯几何物理球面距离选取离市中心最近的在册核心基准站：
+ * 规则与排行榜 (realtime-ranking.ts) 100% 同源对齐
+ */
+function findNearestStationForCity(
+  city: CityMeta,
+  stationPool: WaqiBoundStation[]
+): (WaqiBoundStation & { distKm: number }) | null {
+  const valid = stationPool
+    .filter((s) => {
+      const a = parseInt(s.aqi, 10);
+      if (isNaN(a) || a <= 0 || a > 500) return false;
+      // 纯经纬度主权国家排他：防止紧邻国境线双子城出现跨国抢站
+      const stCountry = iso1A2Code([s.lon, s.lat]);
+      if (stCountry && city.country && city.country !== stCountry) return false;
+      return true;
+    })
+    .map((s) => ({
+      ...s,
+      distKm: getDistanceKm(city.latitude, city.longitude, s.lat, s.lon),
+    }))
+    .filter((s) => s.distKm <= 35);
+
+  // 严格按距城市中心物理几何球面距离升序排序，第一名为市中心核心基准站 (与排行榜、城市实况 100% 规则对齐)
+  const sorted = [...valid].sort((a, b) => a.distKm - b.distKm);
+  return sorted[0] || null;
+}
+
 export default function AirMap({
   showStations = true,
   center = [35.0, 105.0],
@@ -142,7 +180,7 @@ export default function AirMap({
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stationCacheRef = useRef<Map<number, WaqiBoundStation>>(new Map());
   const showStationsRef = useRef(showStations);
-  const focusCityDataRef = useRef<any>(null);
+  const nearestStationRef = useRef<(WaqiBoundStation & { distKm: number }) | null>(null);
 
   useEffect(() => {
     standardRef.current = standard;
@@ -226,25 +264,69 @@ export default function AirMap({
     onStationCountChange?.(displayStations.length, false);
   };
 
-  // 渲染焦点城市地标（支持国标/美标自适应）
-  const renderFocusMarker = (data: any, city: CityMeta) => {
+  // 渲染市中心核心基准站地标（纯几何最短距离同源计算）
+  const renderFocusMarker = (
+    station: (WaqiBoundStation & { distKm: number }) | null,
+    city: CityMeta
+  ) => {
     const layer = focusMarkerLayerRef.current;
     if (!layer || !mapInstanceRef.current) return;
 
     layer.clearLayers();
 
-    const evalFocus = data ? (standardRef.current === 'CN' ? data.evaluationCN : data.evaluationUS) : null;
-    const aqiNum = evalFocus?.aqi ?? 0;
-    const hasData = Boolean(data && aqiNum > 0 && data.aqi !== '-');
-    const style = getStationPinEvaluation(hasData ? aqiNum : NaN, standardRef.current);
-    const displayNum = hasData ? String(aqiNum) : '-';
+    if (!station) {
+      const style = {
+        displayAqi: '-',
+        boxClass: 'aqi-pin-nodata',
+        levelText: '暂无测站',
+        colorHex: '#64748b',
+      };
+      const initialHtml = `
+        <div class="aqi-focus-city-pin">
+          <div class="aqi-focus-badge ${style.boxClass} shadow-xl ring-2 ring-white">
+            <span class="font-black text-xs tracking-tight">${escapeHtml(city.nameZh)}</span>
+            <span class="mx-1 opacity-60 font-normal">|</span>
+            <span class="font-black text-xs">-</span>
+          </div>
+          <div class="aqi-focus-pin-pole"></div>
+        </div>
+      `;
+      const marker = L.marker([city.latitude, city.longitude], {
+        icon: L.divIcon({
+          className: 'aqi-focus-container',
+          html: initialHtml,
+          iconSize: [96, 42],
+          iconAnchor: [48, 42],
+          popupAnchor: [0, -44],
+        }),
+        zIndexOffset: 3000,
+      });
+      layer.addLayer(marker);
+      onStationCountChange?.(-1, false, {
+        name: city.nameZh,
+        aqi: 0,
+        level: '暂无测站',
+        stationName: '暂无在册测站',
+        stationUid: 0,
+      });
+      return;
+    }
+
+    const rawAqi = parseInt(station.aqi, 10);
+    const pm25 = convertIAQIToConcentration('pm25', rawAqi, 'US');
+    const aqiNum = standardRef.current === 'CN'
+      ? evaluateAQI({ pm25 }, 'CN').aqi
+      : rawAqi;
+    const style = getStationPinEvaluation(aqiNum, standardRef.current);
+    const cleanName = extractCleanStationName(station.station?.name || '', city.nameZh);
+    const distText = station.distKm < 1 ? '<1km' : `${station.distKm.toFixed(1)}km`;
 
     const updatedHtml = `
       <div class="aqi-focus-city-pin">
         <div class="aqi-focus-badge ${style.boxClass} shadow-xl ring-2 ring-white">
           <span class="font-black text-xs tracking-tight">${escapeHtml(city.nameZh)}</span>
           <span class="mx-1 opacity-60 font-normal">|</span>
-          <span class="font-black text-xs">${displayNum}</span>
+          <span class="font-black text-xs">${aqiNum}</span>
         </div>
         <div class="aqi-focus-pin-pole"></div>
         <div class="aqi-focus-pulse" style="border-color: ${style.colorHex};"></div>
@@ -264,12 +346,46 @@ export default function AirMap({
       zIndexOffset: 3000,
     });
 
+    const formattedTime = station.station?.time
+      ? new Date(station.station.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : '刚刚';
+
+    activeMarker.bindPopup(`
+      <div class="p-3 text-slate-800 min-w-[240px]">
+        <div class="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100">
+          <div class="font-black text-sm text-slate-900">${escapeHtml(city.nameZh)} (${escapeHtml(city.nameEn)})</div>
+          <span class="text-xs font-mono font-bold px-1.5 py-0.5 rounded text-white" style="background-color: ${style.colorHex};">AQI ${aqiNum}</span>
+        </div>
+        <div class="mt-2 text-xs space-y-1">
+          <div class="flex items-center justify-between text-slate-600">
+            <span class="text-slate-400">市中心基准站:</span>
+            <span class="font-bold text-slate-800">${escapeHtml(cleanName)} (${distText})</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-600">
+            <span class="text-slate-400">综合级别:</span>
+            <span class="font-bold" style="color: ${style.colorHex}">${style.levelText}</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-600">
+            <span class="text-slate-400">实测 PM2.5:</span>
+            <span class="font-mono font-bold text-slate-800">${pm25} μg/m³</span>
+          </div>
+          <div class="flex items-center justify-between text-slate-400 text-[10px] pt-1 border-t border-slate-100">
+            <span>更新时间: ${formattedTime}</span>
+            <span>站号 #${station.uid}</span>
+          </div>
+        </div>
+      </div>
+    `, { maxWidth: 280, closeButton: false });
+
     layer.addLayer(activeMarker);
 
     onStationCountChange?.(-1, false, {
       name: city.nameZh,
-      aqi: hasData ? aqiNum : 0,
-      level: hasData ? (evalFocus?.level || '优') : '暂无数据',
+      aqi: aqiNum,
+      level: style.levelText,
+      stationName: cleanName,
+      stationUid: station.uid,
+      distKm: station.distKm,
     });
   };
 
@@ -470,56 +586,77 @@ export default function AirMap({
       renderStationsRef.current(inView);
     }
 
-    if (focusCityDataRef.current && focusCity) {
-      renderFocusMarkerRef.current(focusCityDataRef.current, focusCity);
+    if (nearestStationRef.current && focusCity) {
+      renderFocusMarkerRef.current(nearestStationRef.current, focusCity);
     }
   }, [standard, focusCity]);
 
-  // 响应焦点城市变更：在地图正中央渲染专属主城市实测微标并异步加载官方数据
+  // 响应焦点城市变更：计算距该城市市中心经纬度最近的在册核心站点并渲染地标
   useEffect(() => {
     const map = mapInstanceRef.current;
     const layer = focusMarkerLayerRef.current;
     if (!map || !layer || !focusCity) return;
 
     layer.clearLayers();
-    focusCityDataRef.current = null;
+    nearestStationRef.current = null;
 
-    // 1. 初始渲染占位微标 (高 z-index 确保置顶)
-    const initialHtml = `
-      <div class="aqi-focus-city-pin">
-        <div class="aqi-focus-badge bg-sky-600 text-white shadow-xl">
-          <span class="font-extrabold text-xs tracking-tight">${escapeHtml(focusCity.nameZh)}</span>
-          <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping ml-1"></span>
+    // 1. 优先从已有在册站点缓存中查找市中心最近站立即渲染 (0 毫秒即时展示)
+    const cachedNearest = findNearestStationForCity(
+      focusCity,
+      Array.from(stationCacheRef.current.values())
+    );
+
+    if (cachedNearest) {
+      nearestStationRef.current = cachedNearest;
+      renderFocusMarkerRef.current(cachedNearest, focusCity);
+    } else {
+      const initialHtml = `
+        <div class="aqi-focus-city-pin">
+          <div class="aqi-focus-badge bg-sky-600 text-white shadow-xl">
+            <span class="font-extrabold text-xs tracking-tight">${escapeHtml(focusCity.nameZh)}</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping ml-1"></span>
+          </div>
+          <div class="aqi-focus-pin-pole"></div>
         </div>
-        <div class="aqi-focus-pin-pole"></div>
-      </div>
-    `;
+      `;
 
-    const initialIcon = L.divIcon({
-      className: 'aqi-focus-container',
-      html: initialHtml,
-      iconSize: [88, 38],
-      iconAnchor: [44, 38],
-      popupAnchor: [0, -40],
-    });
+      const initialIcon = L.divIcon({
+        className: 'aqi-focus-container',
+        html: initialHtml,
+        iconSize: [88, 38],
+        iconAnchor: [44, 38],
+        popupAnchor: [0, -40],
+      });
 
-    const tempMarker = L.marker([focusCity.latitude, focusCity.longitude], {
-      icon: initialIcon,
-      zIndexOffset: 3000,
-    });
-    layer.addLayer(tempMarker);
+      const tempMarker = L.marker([focusCity.latitude, focusCity.longitude], {
+        icon: initialIcon,
+        zIndexOffset: 3000,
+      });
+      layer.addLayer(tempMarker);
+    }
 
-    // 2. 异步请求官方单点实测数据
+    // 2. 异步向 bounds 网格切片接口请求该城市中心周边 ±0.35° 范围站点，精准补全最近站
     let isCancelled = false;
-    fetchWAQICityData(focusCity.id)
-      .then((data) => {
+    fetchWAQIMapBounds(
+      focusCity.latitude - 0.35,
+      focusCity.longitude - 0.35,
+      focusCity.latitude + 0.35,
+      focusCity.longitude + 0.35
+    )
+      .then((stations) => {
         if (isCancelled || !layer || !mapInstanceRef.current) return;
-        focusCityDataRef.current = data;
-        renderFocusMarkerRef.current(data, focusCity);
+        stations.forEach((st) => stationCacheRef.current.set(st.uid, st));
+
+        const freshNearest = findNearestStationForCity(
+          focusCity,
+          Array.from(stationCacheRef.current.values())
+        );
+        nearestStationRef.current = freshNearest;
+        renderFocusMarkerRef.current(freshNearest, focusCity);
       })
       .catch((err) => {
-        console.warn('[AirMap] Failed to load focus city data:', err);
-        if (!isCancelled && layer && mapInstanceRef.current) {
+        console.warn('[AirMap] Failed to sync focus city nearest station:', err);
+        if (!isCancelled && !cachedNearest) {
           renderFocusMarkerRef.current(null, focusCity);
         }
       });

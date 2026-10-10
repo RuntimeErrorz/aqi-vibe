@@ -12,6 +12,7 @@ import {
   fetchWAQICityStations,
   WaqiBoundStation,
   extractCleanStationName,
+  getDistanceKm,
 } from '@/lib/services/waqi';
 import { fetch24HourHourlyTrend, fetch5DayForecast, HourlyTrendResult } from '@/lib/services/history-data';
 import {
@@ -561,6 +562,8 @@ export default function DashboardPage() {
                           ? 'bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 border-emerald-200'
                           : selectedStationMode !== 'default'
                           ? 'bg-indigo-50 hover:bg-indigo-100/80 text-indigo-800 border-indigo-200'
+                          : (evaluation.isOffline || record?.isOffline)
+                          ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
                           : 'bg-sky-50 hover:bg-sky-100/80 text-sky-800 border-sky-200'
                       }`}
                     >
@@ -570,6 +573,8 @@ export default function DashboardPage() {
                         <Layers className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       ) : selectedStationMode !== 'default' ? (
                         <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                      ) : (evaluation.isOffline || record?.isOffline) ? (
+                        <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                       ) : (
                         <Building2 className="w-3.5 h-3.5 text-sky-600 shrink-0" />
                       )}
@@ -584,6 +589,8 @@ export default function DashboardPage() {
                               const stEval = found ? getStationEval(found.aqi) : null;
                               return `${clean}${stEval ? ` · AQI ${stEval.aqi}` : ''}`;
                             })()
+                          : (evaluation.isOffline || record?.isOffline)
+                          ? '官方代表站 (暂无实时)'
                           : '官方核心代表站'}
                       </span>
 
@@ -697,37 +704,52 @@ export default function DashboardPage() {
                               <span className="text-[10px] text-slate-400 font-normal">单站独立实测</span>
                             </div>
                             <div className="max-h-52 overflow-y-auto space-y-0.5 pr-1 mt-1 custom-scrollbar">
-                              {cityStations.map((st) => {
-                                const cleanName = extractCleanStationName(st.station?.name || '', selectedCity.nameZh);
-                                const stEval = getStationEval(st.aqi);
-                                const isSelected = selectedStationMode === String(st.uid);
-                                return (
-                                  <button
-                                    key={st.uid}
-                                    type="button"
-                                    onClick={() => handleStationChange(String(st.uid))}
-                                    className={`w-full text-left px-2.5 py-1.5 rounded-xl flex items-center justify-between transition-colors ${
-                                      isSelected
-                                        ? 'bg-indigo-50 text-indigo-900 font-semibold border border-indigo-200/80 shadow-2xs'
-                                        : 'hover:bg-slate-50 text-slate-700'
-                                    }`}
-                                  >
-                                    <div className="flex items-center space-x-2 truncate min-w-0">
-                                      <MapPin className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-indigo-600' : 'text-slate-400'}`} />
-                                      <span className="truncate text-xs">{cleanName}</span>
-                                    </div>
-                                    <span
-                                      className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0 ml-2"
-                                      style={{
-                                        backgroundColor: stEval.color + '18',
-                                        color: stEval.color,
-                                      }}
+                              {(() => {
+                                const stationsWithDist = cityStations
+                                  .map((st) => ({
+                                    ...st,
+                                    distKm: getDistanceKm(selectedCity.latitude, selectedCity.longitude, st.lat, st.lon),
+                                  }))
+                                  .sort((a, b) => a.distKm - b.distKm);
+
+                                return stationsWithDist.map((st, idx) => {
+                                  const cleanName = extractCleanStationName(st.station?.name || '', selectedCity.nameZh);
+                                  const stEval = getStationEval(st.aqi);
+                                  const isSelected = selectedStationMode === String(st.uid);
+                                  const isCenter = idx === 0 && st.distKm <= 35;
+                                  return (
+                                    <button
+                                      key={st.uid}
+                                      type="button"
+                                      onClick={() => handleStationChange(String(st.uid))}
+                                      className={`w-full text-left px-2.5 py-1.5 rounded-xl flex items-center justify-between transition-colors ${
+                                        isSelected
+                                          ? 'bg-indigo-50 text-indigo-900 font-semibold border border-indigo-200/80 shadow-2xs'
+                                          : 'hover:bg-slate-50 text-slate-700'
+                                      }`}
                                     >
-                                      AQI {stEval.aqi}
-                                    </span>
-                                  </button>
-                                );
-                              })}
+                                      <div className="flex items-center space-x-1.5 truncate min-w-0">
+                                        <MapPin className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                        <span className="truncate text-xs">{cleanName}</span>
+                                        {isCenter && (
+                                          <span className="text-[9px] px-1 py-0.5 rounded bg-sky-100 text-sky-700 font-bold shrink-0">
+                                            市中心站
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span
+                                        className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0 ml-2"
+                                        style={{
+                                          backgroundColor: stEval.color + '18',
+                                          color: stEval.color,
+                                        }}
+                                      >
+                                        AQI {stEval.aqi}
+                                      </span>
+                                    </button>
+                                  );
+                                });
+                              })()}
                             </div>
                           </div>
                         )}
@@ -741,6 +763,15 @@ export default function DashboardPage() {
                   <span>{selectedCity.nameEn}</span>
                   <span>·</span>
                   <span>更新时间: {record.updateTime}</span>
+                  {(record.isOffline || evaluation.isOffline) && (
+                    <>
+                      <span>·</span>
+                      <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200/80 text-amber-800 font-medium text-[11px]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        <span>站点停更 · 历史实测</span>
+                      </span>
+                    </>
+                  )}
                   {selectedStationMode !== 'default' && selectedStationMode !== 'composite' && (
                     <>
                       <span>·</span>
@@ -780,7 +811,7 @@ export default function DashboardPage() {
                   className="text-6xl sm:text-7xl font-black tracking-tight"
                   style={{ color: evaluation.color }}
                 >
-                  {evaluation.aqi}
+                  {evaluation.aqi > 0 ? evaluation.aqi : '-'}
                 </span>
                 <span className="text-slate-500 text-sm font-bold uppercase">AQI</span>
               </div>

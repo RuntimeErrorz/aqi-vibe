@@ -1,17 +1,47 @@
 import { AirQualityRecord, PollutantValues, IAQIValues, CityMeta } from '../types';
 import { evaluateAQI, getCNEvaluation, getUSEvaluation, convertIAQIToConcentration, calculateCNIAQI } from '../aqi-calculator';
 import { findCity, CITIES_REGISTRY } from '../constants/cities';
+import { iso1A2Code } from '@rapideditor/country-coder';
 
 const WAQI_TOKEN = process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48';
 
 export async function fetchWAQICityData(cityIdentifier: string): Promise<AirQualityRecord> {
   const cityMeta = findCity(cityIdentifier);
-  const targetSlug = cityMeta?.waqiSlug || cityIdentifier;
 
+  // 核心原则：城市实况全面采用“市中心法定经纬度核心基准站”
+  // 1. 优先从该城市在册实测站池中，严格选取距离市中心最近的在册活跃基准站 (Center Station)
+  // 彻底告别对个别城市 slug 的依赖，杜绝停更一年的死站残留数据 (如达卡)
+  if (cityMeta && typeof cityMeta.latitude === 'number' && typeof cityMeta.longitude === 'number') {
+    try {
+      const stations = await fetchWAQICityStations(cityMeta);
+      if (stations.length > 0 && stations[0].uid) {
+        return await fetchWAQIStationByUid(stations[0].uid, cityMeta, stations[0].station?.name);
+      }
+    } catch {
+      // 容灾继续往下探测
+    }
+
+    // 2. 若无活跃实测站 (例如全城测站暂时停更或维护)，优先检查官方 slug 并如实展示其离线/停更状态
+    if (cityMeta.waqiSlug) {
+      try {
+        const url = `https://api.waqi.info/feed/${encodeURIComponent(cityMeta.waqiSlug)}/?token=${WAQI_TOKEN}`;
+        const res = await fetch(url, { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.status === 'ok' && json.data) {
+            return parseWAQIResponse(json.data, cityMeta);
+          }
+        }
+      } catch {}
+    }
+  }
+
+  // 兼容直接传入 slug 或非注册标识符的兜底场景
+  const targetSlug = cityMeta?.waqiSlug || cityIdentifier;
   const url = `https://api.waqi.info/feed/${encodeURIComponent(targetSlug)}/?token=${WAQI_TOKEN}`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: 600 } }); // 缓存10分钟
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) {
       throw new Error(`WAQI HTTP status ${res.status}`);
     }
@@ -20,44 +50,31 @@ export async function fetchWAQICityData(cityIdentifier: string): Promise<AirQual
       throw new Error(`WAQI API error: ${json.data || 'Unknown error'}`);
     }
 
-    const parsed = parseWAQIResponse(json.data, cityMeta);
-
-    // 智能自愈：若当前 slug 返回的数据停更已久（> 48小时）或污染物严重残缺（<= 1项），自动使用该城市经纬度重定向至活跃基准监测站
-    const recordTime = new Date(parsed.updateTime).getTime();
-    const isStale = isNaN(recordTime) || (Date.now() - recordTime > 48 * 3600 * 1000);
-    const validPollutantCount = Object.values(parsed.pollutants).filter((v) => v !== undefined && v !== null && v > 0).length;
-
-    if ((isStale || validPollutantCount <= 1) && cityMeta?.latitude && cityMeta?.longitude) {
-      try {
-        const geoRecord = await fetchWAQIGeoData(cityMeta.latitude, cityMeta.longitude);
-        const geoTime = new Date(geoRecord.updateTime).getTime();
-        if (!isNaN(geoTime) && (isNaN(recordTime) || geoTime > recordTime)) {
-          return {
-            ...geoRecord,
-            name: cityMeta.nameZh || geoRecord.name,
-            nameEn: cityMeta.nameEn || geoRecord.nameEn,
-          };
-        }
-      } catch {
-        // 忽略自愈微抖
-      }
-    }
-
-    return parsed;
+    return parseWAQIResponse(json.data, cityMeta);
   } catch (err: any) {
     console.warn(`[WAQI] Fetch failed for ${cityIdentifier}:`, err?.message || err);
     throw new Error(err?.message || `WAQI 暂未收录该站点或当前无数据发布`);
   }
 }
 
-export async function fetchWAQIGeoData(lat: number, lng: number): Promise<AirQualityRecord> {
+export async function fetchWAQIGeoData(lat: number, lng: number, maxDistKm = 35): Promise<AirQualityRecord> {
   const url = `https://api.waqi.info/feed/geo:${lat};${lng}/?token=${WAQI_TOKEN}`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: 600 } });
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error(`WAQI HTTP status ${res.status}`);
     const json = await res.json();
     if (json.status !== 'ok' || !json.data) throw new Error('该坐标附近暂无有效 WAQI 测站');
+
+    // 严密距离校验：WAQI 的 geo 接口在本地无测站时会自动向外扩大数百公里搜索 (例如成都跳到200km外的重庆)
+    // 超过设定阈值必须坚决抛出异常拒绝跨城抢站
+    const stGeo = json.data.city?.geo;
+    if (Array.isArray(stGeo) && stGeo.length >= 2) {
+      const dist = getDistanceKm(lat, lng, stGeo[0], stGeo[1]);
+      if (dist > maxDistKm) {
+        throw new Error(`最近测站距离市中心过远 (${dist.toFixed(1)}km)，不属于目标城市范围`);
+      }
+    }
 
     return parseWAQIResponse(json.data);
   } catch (err: any) {
@@ -88,7 +105,7 @@ export async function fetchWAQIStationByUid(
   const url = `https://api.waqi.info/feed/@${uid}/?token=${WAQI_TOKEN}`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: 300 } });
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error(`WAQI HTTP status ${res.status}`);
     const json = await res.json();
     if (json.status !== 'ok' || !json.data) throw new Error('该测站暂无最新数据发布');
@@ -131,7 +148,7 @@ export async function fetchWAQIMapBounds(
 ): Promise<WaqiBoundStation[]> {
   const url = `https://api.waqi.info/v2/map/bounds?latlng=${minLat},${minLng},${maxLat},${maxLng}&token=${WAQI_TOKEN}`;
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) {
       throw new Error(`WAQI bounds HTTP error ${res.status}`);
     }
@@ -174,64 +191,34 @@ export function filterStationsForCity(
 ): WaqiBoundStation[] {
   if (!stations || stations.length === 0) return [];
 
-  // 1. 获取目标城市周围 160 公里内的临近其他在册城市作为排除参考
+  // 目标城市周围 160 公里内的在册城市作为 Voronoi 空间排他排他仲裁参考
   const neighborCities = allCities.filter((c) => {
     if (c.id === targetCity.id) return false;
     const dist = getDistanceKm(c.latitude, c.longitude, targetCity.latitude, targetCity.longitude);
     return dist <= 160;
   });
 
-  const targetZh = targetCity.nameZh.replace(/市$/, '');
-  const targetEn = targetCity.nameEn.toLowerCase();
-
   return stations.filter((s) => {
-    const rawName = s.station?.name || '';
-    const lowerName = rawName.toLowerCase();
-
-    // 2. 检查是否显式标记为其他邻近城市（如 "Chengdu", "成都", "绵阳", "广州", "江门" 等）
-    let belongsToNeighbor = false;
-    for (const neighbor of neighborCities) {
-      const neighborZh = neighbor.nameZh.replace(/市$/, '');
-      const neighborEn = neighbor.nameEn.toLowerCase();
-
-      const hasNeighborZh = neighborZh.length >= 2 && rawName.includes(neighborZh);
-      const hasNeighborEn = neighborEn.length >= 3 && lowerName.includes(neighborEn);
-
-      if (hasNeighborZh || hasNeighborEn) {
-        // 如果测站同时包含目标城市名，以目标城市为准；否则判定归属邻城
-        const hasTargetZh = targetZh.length >= 2 && rawName.includes(targetZh);
-        const hasTargetEn = targetEn.length >= 3 && lowerName.includes(targetEn);
-        if (!hasTargetZh && !hasTargetEn) {
-          belongsToNeighbor = true;
-          break;
-        }
-      }
-    }
-
-    if (belongsToNeighbor) {
+    // 0. 纯经纬度主权国家排他：若测站经纬度所属国家与目标城市不符，直接排除
+    const stCountry = iso1A2Code([s.lon, s.lat]);
+    if (stCountry && targetCity.country && targetCity.country !== stCountry) {
       return false;
     }
 
-    // 3. 正向强匹配：如果测站显式包含当前城市名
-    const matchesTargetZh = targetZh.length >= 2 && rawName.includes(targetZh);
-    const matchesTargetEn = targetEn.length >= 3 && lowerName.includes(targetEn);
-    if (matchesTargetZh || matchesTargetEn) {
-      return true;
-    }
-
-    // 4. 若名称未显式提及任何城市：通过空间距离与最近城市归属（Voronoi 邻近仲裁）
+    // 1. 严格物理几何距离门槛：测站必须在城市中心城区 35km 物理范围内
     const distToTarget = getDistanceKm(s.lat, s.lon, targetCity.latitude, targetCity.longitude);
+    if (distToTarget > 35) return false;
 
-    // 检查是否有其他邻近城市距离该测站更近
+    // 2. 纯客观物理几何 Voronoi 空间排他仲裁 (0 字符串正则与名称猜测)：
+    // 若有其他邻近城市距离该测站更近，则该测站归属邻城
     for (const neighbor of neighborCities) {
       const distToNeighbor = getDistanceKm(s.lat, s.lon, neighbor.latitude, neighbor.longitude);
       if (distToNeighbor < distToTarget) {
-        return false; // 该测站离邻近城市更近，不属于当前城市
+        return false;
       }
     }
 
-    // 测站到目标城市中心的距离上限门槛（常规地级市中心城区测站通常在 35km 范围内）
-    return distToTarget <= 35;
+    return true;
   });
 }
 
@@ -253,21 +240,6 @@ export async function fetchWAQICityStations(city: CityMeta): Promise<WaqiBoundSt
   });
 
   let cityOnly = filterStationsForCity(valid, city);
-
-  // 若较小范围未搜寻到测站（个别地广人稀城市），自适应扩大至 ±0.50 度并再次过滤
-  if (cityOnly.length === 0) {
-    stations = await fetchWAQIMapBounds(
-      city.latitude - 0.50,
-      city.longitude - 0.50,
-      city.latitude + 0.50,
-      city.longitude + 0.50
-    );
-    valid = stations.filter((s) => {
-      const a = parseInt(s.aqi, 10);
-      return !isNaN(a) && a > 0 && a <= 500;
-    });
-    cityOnly = filterStationsForCity(valid, city);
-  }
 
   // 按距市中心距离由近及远排序
   return cityOnly.sort((a, b) => {
@@ -308,13 +280,35 @@ function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
   const geo = data.city?.geo || (cityMeta ? [cityMeta.latitude, cityMeta.longitude] : [39.9, 116.4]);
   const isDomestic = cityMeta ? cityMeta.isDomestic : (data.city?.name?.includes('China') || false);
 
+  const isNoLiveData = data.aqi === '-' || data.aqi === null || data.aqi === undefined;
+
   let evaluationCN = evaluateAQI(pollutants, 'CN');
   let evaluationUS = evaluateAQI(pollutants, 'US');
 
-  // 若官方明确发布 aqi 为 '-' (或缺失)，说明该站点当前离线/无实时数据发布
-  if (data.aqi === '-' || data.aqi === null || data.aqi === undefined) {
-    evaluationCN = getCNEvaluation(0);
-    evaluationUS = getUSEvaluation(0);
+  // 若官方明确发布 aqi 为 '-' (或缺失)：保留基于最后实测浓度的计算值，使用沉稳灰指示停更，但保持等级与健康建议的纯净语义
+  if (isNoLiveData) {
+    const lastAqiCN = evaluationCN.aqi || 0;
+    const lastAqiUS = evaluationUS.aqi || 0;
+
+    evaluationCN = {
+      ...evaluationCN,
+      aqi: lastAqiCN,
+      level: lastAqiCN > 0 ? evaluationCN.level : '暂无数据',
+      levelEn: lastAqiCN > 0 ? evaluationCN.levelEn : 'No Data',
+      color: '#64748b', // 灰色指示停更
+      textColor: '#ffffff',
+      isOffline: true,
+    };
+
+    evaluationUS = {
+      ...evaluationUS,
+      aqi: lastAqiUS,
+      level: lastAqiUS > 0 ? evaluationUS.level : 'No Data',
+      levelEn: lastAqiUS > 0 ? evaluationUS.levelEn : 'No Data',
+      color: '#64748b', // 灰色指示停更
+      textColor: '#ffffff',
+      isOffline: true,
+    };
   } else if (evaluationUS.aqi === 0 && typeof data.aqi === 'number' && !isNaN(data.aqi)) {
     // 严格遵守 AQI 计算公理：仅在全部实测分项污染物均缺失时，才使用 WAQI 顶层 data.aqi 作为兜底
     const officialAqi = Math.round(data.aqi);
@@ -327,6 +321,7 @@ function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
     nameEn: cityMeta?.nameEn || data.city?.name || 'Unknown Location',
     country: cityMeta?.country || (isDomestic ? 'CN' : 'GLOBAL'),
     isDomestic,
+    isOffline: isNoLiveData,
     stationIdx: typeof data.idx === 'number' ? data.idx : undefined,
     latitude: geo[0] || 0,
     longitude: geo[1] || 0,

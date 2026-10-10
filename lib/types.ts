@@ -28,6 +28,7 @@ export interface AQIEvaluation {
   primaryPollutantName: string;
   healthAdvice: string;
   standard: StandardType;
+  isOffline?: boolean;
 }
 
 export interface WeatherInfo {
@@ -73,6 +74,7 @@ export interface AirQualityRecord {
     name: string;
     url?: string;
   }[];
+  isOffline?: boolean;
 }
 
 export interface CityMeta {
@@ -85,6 +87,7 @@ export interface CityMeta {
   longitude: number;
   isDomestic: boolean;
   waqiSlug?: string;
+  population?: number;
 }
 
 export interface StationMeta {
