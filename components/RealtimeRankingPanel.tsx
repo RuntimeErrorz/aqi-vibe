@@ -395,13 +395,14 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
             </div>
           </div>
 
+          {/* 顶部右侧控制区 (sm及以上展示完整口径与分页，移动端只保留极简刷新按钮防止挤压) */}
           <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
-            {/* 测站口径切换开关：全市多站均值 vs 市中心基准站 */}
-            <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200/80 text-xs font-semibold shrink-0">
+            {/* 测站口径切换开关：桌面端常驻第一行 */}
+            <div className="hidden sm:flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200/80 text-xs font-semibold shrink-0">
               <button
                 type="button"
                 onClick={() => setMetricMode('avg')}
-                className={`px-2 py-1 rounded-lg transition-all flex items-center space-x-1 cursor-pointer text-[11px] sm:text-xs ${
+                className={`px-2 py-1 rounded-lg transition-all flex items-center space-x-1 cursor-pointer text-xs ${
                   metricMode === 'avg'
                     ? 'bg-white text-sky-700 shadow-2xs font-bold'
                     : 'text-slate-500 hover:text-slate-900'
@@ -413,7 +414,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
               <button
                 type="button"
                 onClick={() => setMetricMode('rep')}
-                className={`px-2 py-1 rounded-lg transition-all flex items-center space-x-1 cursor-pointer text-[11px] sm:text-xs ${
+                className={`px-2 py-1 rounded-lg transition-all flex items-center space-x-1 cursor-pointer text-xs ${
                   metricMode === 'rep'
                     ? 'bg-white text-indigo-700 shadow-2xs font-bold'
                     : 'text-slate-500 hover:text-slate-900'
@@ -424,11 +425,11 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
               </button>
             </div>
 
-            {/* 每页条数选择 */}
+            {/* 每页条数选择：桌面端常驻第一行 */}
             <select
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:border-sky-500 shadow-2xs cursor-pointer shrink-0 transition-colors"
+              className="hidden sm:block px-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:border-slate-300 shadow-2xs cursor-pointer shrink-0 transition-colors"
               title="设置每页显示数量"
             >
               <option value={10}>10条/页</option>
@@ -436,11 +437,12 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
               <option value={50}>50条/页</option>
             </select>
 
+            {/* 刷新按钮：全尺寸响应式 (移动端纯图标极简按钮，桌面端带文字提示) */}
             <button
               type="button"
               onClick={() => fetchRankings(true)}
               disabled={isSyncing}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors shadow-2xs disabled:opacity-75 cursor-pointer text-xs font-semibold shrink-0"
+              className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors shadow-2xs disabled:opacity-75 cursor-pointer text-xs font-semibold shrink-0"
               title={isSyncing ? "正在后台同步最新全网数据..." : "手动刷新实时榜单"}
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-sky-600' : ''}`} />
@@ -448,6 +450,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
             </button>
           </div>
         </div>
+
 
         {/* 第二行：操作筛选工具栏 (换行呈现，杜绝横向挤压与溢出) */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-0.5">
@@ -621,8 +624,52 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
             </div>
           </div>
 
+          {/* 移动端专属控制组 (< sm 时展示，流式融入工具栏，整齐排布绝不挤压) */}
+          <div className="flex sm:hidden items-center space-x-1.5 shrink-0">
+
+            {/* 测站口径切换开关 */}
+            <div className="flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200/80 text-xs font-semibold shrink-0">
+              <button
+                type="button"
+                onClick={() => setMetricMode('avg')}
+                className={`px-2 py-1 rounded-lg transition-all flex items-center space-x-1 cursor-pointer text-xs ${
+                  metricMode === 'avg'
+                    ? 'bg-white text-sky-700 shadow-2xs font-bold'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="全市均值：统计都会区全域所有在册监测站的综合加权均值"
+              >
+                <span>全市均值</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMetricMode('rep')}
+                className={`px-2 py-1 rounded-lg transition-all flex items-center space-x-1 cursor-pointer text-xs ${
+                  metricMode === 'rep'
+                    ? 'bg-white text-indigo-700 shadow-2xs font-bold'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="市中心站：选取离市中心法定经纬度最近的在册核心基准站"
+              >
+                <span>市中心站</span>
+              </button>
+            </div>
+
+            {/* 每页条数选择 */}
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:border-slate-300 shadow-2xs cursor-pointer shrink-0 transition-colors"
+              title="设置每页显示数量"
+            >
+              <option value={10}>10条/页</option>
+              <option value={20}>20条/页</option>
+              <option value={50}>50条/页</option>
+            </select>
+          </div>
         </div>
       </div>
+
 
       {/* 内容区域 (支持在大屏下 flex-1 独立平滑纵向滚动) */}
       {loading && !data ? (

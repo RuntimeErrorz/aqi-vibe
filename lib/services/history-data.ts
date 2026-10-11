@@ -340,6 +340,7 @@ export interface CityRankingItem {
   countryZh: string;
   countryFlag: string;
   province?: string;
+  population?: number;
   isDomestic: boolean;
   year: number;
   pm25Avg: number;
@@ -396,6 +397,7 @@ export function getAllCitiesRanking(year = 2025, standard: StandardType = 'US'):
       countryZh: countryMeta.nameZh,
       countryFlag: countryMeta.flag,
       province: city.province,
+      population: city.population,
       isDomestic: city.isDomestic,
       year: yearObj.year,
       pm25Avg: yearObj.pm25Avg,

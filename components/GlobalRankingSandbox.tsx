@@ -29,7 +29,9 @@ import {
   X,
   Leaf,
   Flame,
+  Users,
 } from 'lucide-react';
+import { formatPopulation } from '@/lib/constants/cities';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -43,6 +45,15 @@ type TabType = 'cities' | 'countries';
 type GeoScope = 'all' | 'domestic' | 'international';
 type SortMetric = 'aqi' | 'pm25' | 'pm10' | 'goodRatio' | 'heavyDays' | 'improved';
 type SortOrder = 'asc' | 'desc';
+export type PopulationTier = 'all' | '1000w' | '500w' | '100w' | '10w';
+
+const POPULATION_THRESHOLDS: Record<PopulationTier, number> = {
+  all: 0,
+  '1000w': 10_000_000,
+  '500w': 5_000_000,
+  '100w': 1_000_000,
+  '10w': 100_000,
+};
 
 const AVAILABLE_YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019];
 
@@ -127,6 +138,7 @@ export function GlobalRankingSandbox({
   const [selectedYear, setSelectedYear] = useState<number>(2025);
   const [geoScope, setGeoScope] = useState<GeoScope>('all');
   const [selectedCountry, setSelectedCountry] = useState<string>('ALL');
+  const [populationTier, setPopulationTier] = useState<PopulationTier>('all');
   const [sortMetric, setSortMetric] = useState<SortMetric>('aqi');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
@@ -219,6 +231,12 @@ export function GlobalRankingSandbox({
       list = list.filter((c) => c.country === selectedCountry);
     }
 
+    // 常住人口规模过滤（仅在城市榜有效）
+    const popThreshold = POPULATION_THRESHOLDS[populationTier];
+    if (popThreshold > 0) {
+      list = list.filter((c) => (c.population ?? 0) >= popThreshold);
+    }
+
     // 权威排序逻辑
     list.sort((a, b) => {
       let diff = 0;
@@ -247,7 +265,7 @@ export function GlobalRankingSandbox({
       ...item,
       rank: index + 1,
     }));
-  }, [rawCities, geoScope, selectedCountry, sortMetric, sortOrder]);
+  }, [rawCities, geoScope, selectedCountry, populationTier, sortMetric, sortOrder]);
 
   // 4. 应用关键词搜索过滤城市（保留城市既有权威排名，不重置为1）
   const filteredCities = useMemo(() => {
@@ -487,6 +505,28 @@ export function GlobalRankingSandbox({
             </div>
           )}
 
+          {/* 常住人口规模快捷筛选下拉（仅城市榜有效） */}
+          {activeTab === 'cities' && (
+            <div className="flex items-center space-x-1 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+              <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <select
+                value={populationTier}
+                onChange={(e) => {
+                  setPopulationTier(e.target.value as PopulationTier);
+                  handleFilterChange();
+                }}
+                className="bg-transparent font-semibold text-slate-700 focus:outline-none cursor-pointer"
+                title="常住人口规模筛选"
+              >
+                <option value="all">不限人口规模</option>
+                <option value="1000w">≥1000万 (超大都会)</option>
+                <option value="500w">≥500万 (特大城市)</option>
+                <option value="100w">≥100万 (重点都会)</option>
+                <option value="10w">≥10万 (中等城市)</option>
+              </select>
+            </div>
+          )}
+
           {/* 归档年份单选 */}
           <div className="flex items-center space-x-1 bg-white px-2.5 py-1 rounded-lg border border-slate-200 ml-auto">
             <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -641,6 +681,11 @@ export function GlobalRankingSandbox({
                                 <span className="text-[10px] text-slate-400 font-mono truncate">
                                   ({c.nameEn})
                                 </span>
+                                {c.population ? (
+                                  <span className="text-[10px] text-slate-400 truncate">
+                                    · {formatPopulation(c.population)}
+                                  </span>
+                                ) : null}
                               </div>
                               {!c.isDomestic && c.country !== 'CN' && c.province && (
                                 <div className="text-[10px] text-slate-500 truncate">
@@ -820,6 +865,14 @@ export function GlobalRankingSandbox({
                                 <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-600 transition-colors" />
                               </span>
                               <span className="text-xs text-slate-500 whitespace-nowrap">({item.nameEn})</span>
+                              {item.population ? (
+                                <span
+                                  className="text-[11px] text-slate-400 font-normal whitespace-nowrap"
+                                  title={`常住人口: ${item.population.toLocaleString()} 人`}
+                                >
+                                  · 👥 {formatPopulation(item.population)}
+                                </span>
+                              ) : null}
                             </div>
                             {!item.isDomestic && item.country !== 'CN' && item.province && (
                               <div className="text-xs text-slate-500 truncate whitespace-nowrap font-medium">
