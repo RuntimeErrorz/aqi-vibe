@@ -148,9 +148,6 @@ export const Navbar: React.FC = () => {
                 <p className="text-[11px] text-slate-600 leading-relaxed">
                   开启后，全站实时指数、365 天日历热力图、历史统计与城市排行榜将<b>仅以 PM2.5 单项指标</b>计算 AQI 等级与颜色，过滤掉臭氧 (O₃) 或扬沙 (PM10) 的复合拉升影响。
                 </p>
-                <div className="text-[10px] text-slate-400 pt-1 flex items-center justify-between border-t border-slate-100">
-                  <span>💡 点击此按钮即可随时开启或关闭</span>
-                </div>
               </div>
             </div>
           </div>

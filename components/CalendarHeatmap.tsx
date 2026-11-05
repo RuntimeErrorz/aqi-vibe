@@ -167,7 +167,9 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
 }) => {
   const [mounted, setMounted] = useState(false);
   const [filterRange, setFilterRange] = useState<[number, number]>([0, 300]);
+  const [activeThumb, setActiveThumb] = useState<'min' | 'max' | null>(null);
   const echartsRef = useRef<ReactECharts>(null);
+  const sliderTrackRef = useRef<HTMLDivElement>(null);
 
   const [pageSize, setPageSize] = useState<number>(5);
   const [bestPage, setBestPage] = useState<number>(1);
@@ -315,21 +317,95 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
     }
   }, []);
 
-  // 重置筛选区间为全量 0 ~ 300
-  const handleResetRange = useCallback(() => {
-    setFilterRange([0, 300]);
+  // 向 ECharts 实例派发范围高亮/过滤动作
+  const dispatchRangeToEcharts = useCallback((range: [number, number]) => {
     const chartInstance = echartsRef.current?.getEchartsInstance();
     if (chartInstance) {
       try {
         chartInstance.dispatchAction({
           type: 'selectDataRange',
-          selected: [0, 300],
+          selected: range,
         });
       } catch {
         // ignore
       }
     }
   }, []);
+
+  // 重置筛选区间为全量 0 ~ 300
+  const handleResetRange = useCallback(() => {
+    setFilterRange([0, 300]);
+    dispatchRangeToEcharts([0, 300]);
+  }, [dispatchRangeToEcharts]);
+
+  // 根据数值更新区间并通知 ECharts
+  const updateRangeByVal = useCallback((val: number, thumb: 'min' | 'max') => {
+    setFilterRange((prev) => {
+      let next: [number, number];
+      if (thumb === 'min') {
+        next = [Math.min(val, prev[1]), prev[1]];
+      } else {
+        next = [prev[0], Math.max(val, prev[0])];
+      }
+      dispatchRangeToEcharts(next);
+      return next;
+    });
+  }, [dispatchRangeToEcharts]);
+
+  // 点击轨道任意位置，智能就近吸附手柄 (告别点不到)
+  const handleTrackPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!sliderTrackRef.current) return;
+    const rect = sliderTrackRef.current.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const val = Math.round(ratio * 300);
+    const distMin = Math.abs(val - filterRange[0]);
+    const distMax = Math.abs(val - filterRange[1]);
+    const thumb = distMin <= distMax ? 'min' : 'max';
+    setActiveThumb(thumb);
+    updateRangeByVal(val, thumb);
+  }, [filterRange, updateRangeByVal]);
+
+  // 拖动手柄手势处理 (Pointer Capture 全局捕获，28px 极大点击热区，100% 灵敏不脱手)
+  const handleThumbPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>, thumb: 'min' | 'max') => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveThumb(thumb);
+    const target = e.currentTarget;
+    try {
+      target.setPointerCapture(e.pointerId);
+    } catch {}
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      if (!sliderTrackRef.current) return;
+      const rect = sliderTrackRef.current.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (moveEvent.clientX - rect.left) / rect.width));
+      const val = Math.round(ratio * 300);
+      updateRangeByVal(val, thumb);
+    };
+
+    const onPointerUp = (upEvent: PointerEvent) => {
+      try {
+        target.releasePointerCapture(upEvent.pointerId);
+      } catch {}
+      target.removeEventListener('pointermove', onPointerMove);
+      target.removeEventListener('pointerup', onPointerUp);
+      target.removeEventListener('pointercancel', onPointerUp);
+      setActiveThumb(null);
+    };
+
+    target.addEventListener('pointermove', onPointerMove);
+    target.addEventListener('pointerup', onPointerUp);
+    target.addEventListener('pointercancel', onPointerUp);
+  }, [updateRangeByVal]);
+
+  const getAqiColor = (aqi: number) => {
+    if (aqi <= 50) return '#10b981';
+    if (aqi <= 100) return '#eab308';
+    if (aqi <= 150) return '#f97316';
+    if (aqi <= 200) return '#ef4444';
+    if (aqi <= 300) return '#8b5cf6';
+    return '#7f1d1d';
+  };
 
   const onEvents = useMemo(
     () => ({
@@ -349,8 +425,9 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
       tooltip: {
         show: true,
         trigger: 'item',
-        confine: true,
-        extraCssText: 'z-index: 50;',
+        appendToBody: true,
+        confine: false,
+        extraCssText: 'pointer-events: none; z-index: 99999; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border-radius: 8px;',
         position: (
           point: [number, number],
           params: any,
@@ -359,31 +436,26 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
           size: { contentSize: [number, number]; viewSize: [number, number] }
         ) => {
           const [x, y] = point;
-          const [boxWidth, boxHeight] = size?.contentSize || [240, 150];
-          const [viewWidth, viewHeight] = size?.viewSize || [760, 272];
+          const [boxWidth, boxHeight] = size?.contentSize || [220, 135];
 
-          // 1. 水平居中，防止左右超出可视容器边界
+          // 1. 水平居中于鼠标悬停的方格
           let posX = x - boxWidth / 2;
-          if (posX < 8) posX = 8;
-          if (posX + boxWidth > viewWidth - 8) {
-            posX = viewWidth - boxWidth - 8;
-          }
 
-          // 2. 垂直空间自适应：
-          // 日历周一靠近顶部(y ≈ 45)，周日靠近底部(y ≈ 145)
-          const spaceAbove = y;
-          const spaceBelow = viewHeight - y;
-          let posY: number;
+          // 2. 垂直方向：按用户要求整体往上移动，浮于方格正上方 12px，彻底避免遮挡鼠标与方格
+          let posY = y - boxHeight - 12;
 
-          // 日历周一至周四(y < 115)一律向下展开，绝不冲出顶部被卡片截断
-          if (y < 115 || spaceAbove < boxHeight + 20) {
-            posY = y + 18;
-          } else if (spaceBelow < boxHeight + 14 && spaceAbove >= boxHeight + 14) {
-            posY = y - boxHeight - 12;
-          } else {
-            posY = y + 18;
+          // 若页面滚动至极端顶部（上方视口空间不足），则平滑降级至方格下方 22px
+          if (typeof window !== 'undefined') {
+            try {
+              const chartDom = echartsRef.current?.getEchartsInstance()?.getDom();
+              if (chartDom) {
+                const chartTop = chartDom.getBoundingClientRect().top;
+                if (chartTop + posY < 8) {
+                  posY = y + 22;
+                }
+              }
+            } catch {}
           }
-          posY = Math.max(6, Math.min(posY, viewHeight - boxHeight - 6));
 
           return [posX, posY];
         },
@@ -458,8 +530,10 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
         },
       },
       visualMap: {
+        show: false,
         min: 0,
         max: 300,
+        range: filterRange,
         calculable: true,
         realtime: true,
         hoverLink: false,
@@ -476,7 +550,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
         },
       },
       calendar: {
-        top: 36,
+        top: 18,
         left: 40,
         right: 30,
         cellSize: ['auto', 16],
@@ -513,7 +587,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
         data: seriesData,
       },
     };
-  }, [dataMap, seriesData, year, onlyPm25]);
+  }, [dataMap, seriesData, year, onlyPm25, filterRange]);
 
   // 按用户要求规范命名：{城市名} {年份} 年 空气质量详情
   const titleText = cityName ? `${cityName} ${year} 年 空气质量详情` : `${year} 年 空气质量详情`;
@@ -604,43 +678,139 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
 
   return (
     <div>
-      {/* 1. 顶部标题与日历区间筛选控制 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-        <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center space-x-2">
-          <Calendar className="w-4 h-4 text-sky-600" />
-          <span>{titleText}</span>
-        </h3>
-        <div className="flex items-center space-x-2 text-xs flex-wrap gap-y-1">
+      {/* 1. 顶部标题、居中双端彩虹滑块、右侧天数统计 (三栏网格架构，滑块绝对居中，右侧宽度变动零干扰) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] items-center gap-3 mb-2">
+        {/* 左列：标题与实测状态 */}
+        <div className="flex items-center space-x-2 shrink-0 min-w-0 justify-self-start">
+          <Calendar className="w-4 h-4 text-sky-600 shrink-0" />
+          <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">{titleText}</h3>
           {loadingDaily && (
-            <span className="flex items-center space-x-1 text-sky-600 mr-1">
+            <span className="flex items-center space-x-1 text-sky-600 text-xs shrink-0 ml-1">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>实测数据同步中...</span>
+              <span>同步中...</span>
             </span>
           )}
+        </div>
 
-          {/* 实时动态天数与区间联动展示 */}
+        {/* 中列：居中的双端彩虹滑块 (在卡片水平正中心绝对居中，物理锁定，不受右侧任何宽度变动影响，拖拽零抖动) */}
+        <div className="flex items-center justify-center justify-self-center">
+          <div className="flex items-center space-x-2 bg-slate-50/90 hover:bg-slate-100/60 border border-slate-200/90 rounded-full px-3 py-1.5 shadow-2xs select-none transition-colors">
+            <span className="text-[11px] font-bold text-slate-400 shrink-0">AQI:</span>
+            <span
+              className="font-mono text-[11px] font-bold text-slate-500 tabular-nums cursor-pointer hover:text-sky-600 transition-colors shrink-0"
+              onClick={() => updateRangeByVal(0, 'min')}
+              title="点击将左侧下限重置为 0"
+            >
+              0
+            </span>
+            <div
+              ref={sliderTrackRef}
+              className="relative w-36 sm:w-44 md:w-52 h-2 rounded-full cursor-pointer select-none touch-none shrink-0"
+              style={{
+                background:
+                  'linear-gradient(to right, #10b981 0%, #eab308 20%, #f97316 40%, #ef4444 60%, #8b5cf6 80%, #7f1d1d 100%)',
+              }}
+              onPointerDown={handleTrackPointerDown}
+              title="点击轨道或拖动左右手柄筛选日历 AQI 区间"
+            >
+              {/* 左侧非选中区间遮罩 */}
+              <div
+                className="absolute left-0 top-0 bottom-0 bg-slate-200/85 rounded-l-full pointer-events-none transition-all duration-75"
+                style={{ width: `${(filterRange[0] / 300) * 100}%` }}
+              />
+              {/* 右侧非选中区间遮罩 */}
+              <div
+                className="absolute right-0 top-0 bottom-0 bg-slate-200/85 rounded-r-full pointer-events-none transition-all duration-75"
+                style={{ width: `${100 - (filterRange[1] / 300) * 100}%` }}
+              />
+
+              {/* 左滑块 (Min Thumb) - 带有 28px 透明外围热区，100% 灵敏 */}
+              <div
+                role="slider"
+                aria-valuenow={filterRange[0]}
+                tabIndex={0}
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 flex items-center justify-center cursor-ew-resize touch-none focus:outline-none"
+                style={{
+                  left: `${(filterRange[0] / 300) * 100}%`,
+                  zIndex: activeThumb === 'min' ? 30 : 20,
+                }}
+                onPointerDown={(e) => handleThumbPointerDown(e, 'min')}
+                title={`当前下限: AQI ${filterRange[0]} (可左右拖动或点击轨道)`}
+              >
+                {activeThumb === 'min' && (
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-slate-900 text-white text-[10px] font-bold rounded shadow pointer-events-none tabular-nums whitespace-nowrap">
+                    {filterRange[0]}
+                  </div>
+                )}
+                <div
+                  className="w-2.5 h-4.5 rounded-full bg-white shadow-md border-2 transition-transform hover:scale-110 active:scale-125 pointer-events-none"
+                  style={{ borderColor: getAqiColor(filterRange[0]) }}
+                />
+              </div>
+
+              {/* 右滑块 (Max Thumb) - 带有 28px 透明外围热区，100% 灵敏 */}
+              <div
+                role="slider"
+                aria-valuenow={filterRange[1]}
+                tabIndex={0}
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 flex items-center justify-center cursor-ew-resize touch-none focus:outline-none"
+                style={{
+                  left: `${(filterRange[1] / 300) * 100}%`,
+                  zIndex: activeThumb === 'max' ? 30 : 20,
+                }}
+                onPointerDown={(e) => handleThumbPointerDown(e, 'max')}
+                title={`当前上限: AQI ${filterRange[1]} (可左右拖动或点击轨道)`}
+              >
+                {activeThumb === 'max' && (
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-slate-900 text-white text-[10px] font-bold rounded shadow pointer-events-none tabular-nums whitespace-nowrap">
+                    {filterRange[1]}
+                  </div>
+                )}
+                <div
+                  className="w-2.5 h-4.5 rounded-full bg-white shadow-md border-2 transition-transform hover:scale-110 active:scale-125 pointer-events-none"
+                  style={{ borderColor: getAqiColor(filterRange[1]) }}
+                />
+              </div>
+            </div>
+            <span
+              className="font-mono text-[11px] font-bold text-slate-500 tabular-nums cursor-pointer hover:text-sky-600 transition-colors shrink-0"
+              onClick={() => updateRangeByVal(300, 'max')}
+              title="点击将右侧上限重置为 300"
+            >
+              300
+            </span>
+          </div>
+        </div>
+
+        {/* 右列：天数统计徽标 (靠右对齐，固定最小宽度与等宽数字，彻底消除宽度抖动) */}
+        <div className="flex items-center justify-self-end text-xs shrink-0">
           {totalDays > 0 &&
             (isFiltered ? (
-              <div className="flex items-center space-x-2 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200/80 font-medium transition-all shadow-sm">
-                <span className="text-slate-500">{rangeLabel}:</span>
-                <span className="font-extrabold text-sky-800">{matchedDays} 天</span>
-                <span className="text-slate-400 text-[11px]">/ {totalDays} 天</span>
-                <span className="px-1.5 py-0.5 rounded-md bg-sky-100 text-sky-700 text-[11px] font-bold">
+              <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200/80 font-medium transition-all shadow-2xs min-w-[220px] justify-between">
+                <span className="text-slate-500 font-mono text-[11px] tabular-nums shrink-0">{rangeLabel}:</span>
+                <span className="font-extrabold text-sky-800 font-mono tabular-nums shrink-0">{matchedDays} 天</span>
+                <span className="text-slate-400 text-[11px] font-mono tabular-nums shrink-0">/ {totalDays} 天</span>
+                <span className="px-1.5 py-0.5 rounded-md bg-sky-100 text-sky-700 text-[11px] font-bold font-mono tabular-nums shrink-0">
                   {percentage}%
                 </span>
                 <button
                   type="button"
                   onClick={handleResetRange}
                   title="重置区间为全量 0 ~ 300"
-                  className="ml-1 text-slate-400 hover:text-sky-600 transition-colors flex items-center cursor-pointer"
+                  className="text-slate-400 hover:text-sky-600 transition-colors flex items-center cursor-pointer p-0.5 shrink-0"
                 >
-                  <RotateCcw className="w-3 h-3" />
+                  <RotateCcw className="w-3.5 h-3.5" />
                 </button>
               </div>
             ) : (
-              <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-100/90 text-slate-600 font-medium">
-                <span className="text-slate-400">全年在册</span>
-                <span className="font-bold text-slate-800">{totalDays} 天</span>
+              <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-100/90 text-slate-600 font-medium min-w-[220px] justify-between">
+                <span className="text-slate-500 font-mono text-[11px] shrink-0">全年在册:</span>
+                <span className="font-extrabold text-slate-800 font-mono tabular-nums shrink-0">{totalDays} 天</span>
+                <span className="text-slate-400 text-[11px] font-mono tabular-nums shrink-0">/ {totalDays} 天</span>
+                <span className="px-1.5 py-0.5 rounded-md bg-slate-200/80 text-slate-700 text-[11px] font-bold font-mono tabular-nums shrink-0">
+                  100%
+                </span>
+                <span className="w-3.5 h-3.5 invisible shrink-0" />
               </div>
             ))}
         </div>
@@ -648,13 +818,13 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
 
       {/* 2. 365 天日历矩阵热力全景图 (移动端支持平滑横向滚动，确保 53 周方格不被压缩挤扁) */}
       {!mounted ? (
-        <div className="h-60 flex items-center justify-center text-slate-400 text-sm">
+        <div className="h-44 flex items-center justify-center text-slate-400 text-sm">
           <Loader2 className="w-4 h-4 animate-spin mr-2 text-sky-600" />
           <span>加载日历热力图中...</span>
         </div>
       ) : totalDays > 0 ? (
-        <div className="w-full overflow-x-auto pb-2 custom-scrollbar">
-          <div className="min-w-[760px] h-[272px]">
+        <div className="w-full overflow-x-auto pb-1 custom-scrollbar">
+          <div className="min-w-[760px] h-[142px]">
             <ReactECharts
               ref={echartsRef}
               option={option}
@@ -667,7 +837,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
           </div>
         </div>
       ) : (
-        <div className="h-56 flex flex-col items-center justify-center text-slate-400 text-sm space-y-2">
+        <div className="h-44 flex flex-col items-center justify-center text-slate-400 text-sm space-y-2">
           <Calendar className="w-8 h-8 text-slate-300" />
           <p>该城市在 {year} 年度暂无官方逐日实测归档记录</p>
           {availableYears && availableYears.length > 0 && (
@@ -680,7 +850,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
 
       {/* 3. 年度空气质量极值天气排行：最好与最差天数并列对比与翻页控制 */}
       {totalDays > 0 && (
-        <div className="mt-7 pt-5 border-t border-slate-200/80 space-y-4">
+        <div className="mt-3 pt-3 border-t border-slate-200/80 space-y-4">
           {/* 排行模块控制头部：标题与每页条数选择 */}
           <div className="flex items-center justify-between gap-3 pb-1">
             <div className="flex items-center space-x-2">
