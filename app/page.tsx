@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useStandard } from '@/components/StandardContext';
 import { CITIES_REGISTRY, findCity, getHotCities } from '@/lib/constants/cities';
@@ -45,7 +45,7 @@ import {
 } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { standard } = useStandard();
+  const { standard, onlyPm25 } = useStandard();
   const [selectedCity, setSelectedCity] = useState<CityMeta>(() => findCity('cn-chengdu') || CITIES_REGISTRY[0]); // 默认成都
   const [loading, setLoading] = useState(false);
   const [record, setRecord] = useState<AirQualityRecord | null>(null);
@@ -466,7 +466,21 @@ export default function DashboardPage() {
   };
 
 
-  const evaluation = record ? (standard === 'CN' ? record.evaluationCN : record.evaluationUS) : null;
+  const evaluation = useMemo(() => {
+    if (!record) return null;
+    if (onlyPm25) {
+      return evaluateAQI({ pm25: record.pollutants.pm25 }, standard, true);
+    }
+    return standard === 'CN' ? record.evaluationCN : record.evaluationUS;
+  }, [record, standard, onlyPm25]);
+
+  const baseCityEval = useMemo(() => {
+    if (!baseCityRecord) return null;
+    if (onlyPm25) {
+      return evaluateAQI({ pm25: baseCityRecord.pollutants.pm25 }, standard, true);
+    }
+    return standard === 'CN' ? baseCityRecord.evaluationCN : baseCityRecord.evaluationUS;
+  }, [baseCityRecord, standard, onlyPm25]);
   const activeIAQI = record ? (standard === 'CN' ? calculateCNIAQI(record.pollutants) : calculateUSIAQI(record.pollutants)) : {};
 
   // 根据当前标准计算微观在册测站的 AQI 指数与评级颜色
@@ -634,15 +648,15 @@ export default function DashboardPage() {
                               <div className="text-[10px] text-slate-400 truncate">城市基准测站 · 实时首报</div>
                             </div>
                           </div>
-                          {baseCityRecord && (
+                          {baseCityEval && (
                             <span
                               className="px-2 py-0.5 rounded-md font-mono font-bold text-[11px] shrink-0 ml-2"
                               style={{
-                                backgroundColor: (standard === 'CN' ? baseCityRecord.evaluationCN.color : baseCityRecord.evaluationUS.color) + '18',
-                                color: standard === 'CN' ? baseCityRecord.evaluationCN.color : baseCityRecord.evaluationUS.color,
+                                backgroundColor: baseCityEval.color + '18',
+                                color: baseCityEval.color,
                               }}
                             >
-                              AQI {standard === 'CN' ? baseCityRecord.evaluationCN.aqi : baseCityRecord.evaluationUS.aqi}
+                              AQI {baseCityEval.aqi}
                             </span>
                           )}
                         </button>
@@ -814,6 +828,11 @@ export default function DashboardPage() {
                   {evaluation.aqi > 0 ? evaluation.aqi : '-'}
                 </span>
                 <span className="text-slate-500 text-sm font-bold uppercase">AQI</span>
+                {onlyPm25 && (
+                  <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-md font-bold bg-sky-100 text-sky-700 border border-sky-200/80 ml-1">
+                    仅看 PM2.5
+                  </span>
+                )}
               </div>
 
               <div className="flex flex-col">

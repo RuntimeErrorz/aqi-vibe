@@ -14,11 +14,12 @@ import {
   Menu,
   X,
   ChevronRight,
+  Filter,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
-  const { standard, toggleStandard, mounted } = useStandard();
+  const { standard, toggleStandard, onlyPm25, toggleOnlyPm25, mounted } = useStandard();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // 路由跳转时自动关闭移动端菜单
@@ -105,105 +106,170 @@ export const Navbar: React.FC = () => {
           })}
         </nav>
 
-        {/* 桌面端标准切换开关与独立悬停 Tip (仅 md 及以上展示) */}
-        <div className="hidden md:flex w-[186px] shrink-0 items-center justify-between rounded-xl border border-slate-200 bg-white shadow-sm hover:border-slate-300 transition-colors">
-          {/* 左侧主体：点击切换标准 */}
-          <button
-            onClick={toggleStandard}
-            className="flex-1 flex items-center space-x-1.5 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50 rounded-l-xl cursor-pointer select-none"
-            title="点击切换 AQI 计算标准 (美国 EPA / 中国国标)"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <span className="text-slate-500 shrink-0">标准:</span>
-            <span className="w-20 inline-flex items-center text-left shrink-0">
-              {!mounted ? (
-                <span className="h-3.5 w-16 bg-slate-200/90 rounded-md animate-pulse inline-block" />
-              ) : (
-                <span className="font-bold text-slate-900 whitespace-nowrap">
-                  {standard === 'US' ? '美标 (US EPA)' : '国标 (HJ 633)'}
-                </span>
-              )}
-            </span>
-          </button>
-
-          {/* 分隔细线 */}
-          <div className="h-4 w-px bg-slate-200 shrink-0" />
-
-          {/* 右侧独立 Tip 图标 */}
-          <div className="relative group/tip shrink-0">
+        {/* 桌面端控制组：只看 PM2.5 开关 + 标准切换开关 (仅 md 及以上展示) */}
+        <div className="hidden md:flex items-center space-x-2.5 shrink-0">
+          {/* 美标左侧：只看 PM2.5 纯净模式开关 */}
+          <div className="relative group/pm25">
             <button
               type="button"
-              className="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-r-xl transition-colors cursor-help flex items-center justify-center"
-              aria-label="查看标准说明"
+              onClick={toggleOnlyPm25}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none shadow-2xs ${
+                onlyPm25
+                  ? 'bg-sky-600 text-white border-sky-600 shadow-sky-600/25 ring-2 ring-sky-300/40'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+              title="开启/关闭仅看 PM2.5 模式 (全站实时指标、日历与排行仅按 PM2.5 评级)"
             >
-              <HelpCircle className="w-3.5 h-3.5" />
+              <Filter className="w-3.5 h-3.5 shrink-0" />
+              <span className="whitespace-nowrap">只看 PM2.5</span>
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 transition-all ${
+                  onlyPm25 ? 'bg-white shadow-xs animate-pulse' : 'bg-slate-300'
+                }`}
+              />
             </button>
 
-            {/* 仅在悬停右侧 Tip 时弹出的说明卡片 */}
-            <div className="absolute right-0 top-full pt-2 w-80 opacity-0 translate-y-1 pointer-events-none group-hover/tip:opacity-100 group-hover/tip:translate-y-0 group-hover/tip:pointer-events-auto transition-all duration-200 z-50">
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-900/10 p-4 text-xs space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            {/* 悬停 Tip 浮层说明卡片 */}
+            <div className="absolute left-0 top-full pt-2 w-72 opacity-0 translate-y-1 pointer-events-none group-hover/pm25:opacity-100 group-hover/pm25:translate-y-0 group-hover/pm25:pointer-events-auto transition-all duration-200 z-50">
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-900/10 p-3.5 text-xs space-y-2">
+                <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
                   <div className="flex items-center space-x-1.5 font-bold text-slate-900">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    <span>AQI 评价标准对照</span>
+                    <Filter className="w-3.5 h-3.5 text-sky-600" />
+                    <span>只看 PM2.5 纯净模式</span>
                   </div>
-                  <span className="text-[10px] text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full font-medium">
-                    左侧按钮可直接切换
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                      onlyPm25 ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {onlyPm25 ? '生效中' : '未开启'}
                   </span>
                 </div>
-
-                {/* 美标模式卡片 */}
-                <div
-                  className={`p-2.5 rounded-xl transition-all border ${
-                    standard === 'US'
-                      ? 'bg-amber-50/80 border-amber-200 text-amber-950 shadow-sm'
-                      : 'bg-slate-50/60 border-slate-100 text-slate-600'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-slate-900">美国标准 (US EPA NowCast)</span>
-                    {standard === 'US' && (
-                      <span className="text-[10px] bg-amber-600 text-white px-1.5 py-0.5 rounded font-bold">
-                        当前生效
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] leading-relaxed">
-                    标准限值更严苛，<b>一级优</b> 仅对应 PM2.5 ≤ 12 μg/m³，<b>二级良</b> 对应 PM2.5 ≤ 35.4 μg/m³，超过 35.4 即进入不健康超标区间。
-                  </p>
-                </div>
-
-                {/* 国标模式卡片 */}
-                <div
-                  className={`p-2.5 rounded-xl transition-all border ${
-                    standard === 'CN'
-                      ? 'bg-sky-50/80 border-sky-200 text-sky-950 shadow-sm'
-                      : 'bg-slate-50/60 border-slate-100 text-slate-600'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-slate-900">中国国标 (HJ 633-2012)</span>
-                    {standard === 'CN' && (
-                      <span className="text-[10px] bg-sky-600 text-white px-1.5 py-0.5 rounded font-bold">
-                        当前生效
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] leading-relaxed">
-                    优良门槛为 <b>AQI ≤ 100</b>（包含一级优 PM2.5 ≤ 35 μg/m³、二级良 PM2.5 ≤ 75 μg/m³），更符合国内日常通报口径。
-                  </p>
-                </div>
-
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  开启后，全站实时指数、365 天日历热力图、历史统计与城市排行榜将<b>仅以 PM2.5 单项指标</b>计算 AQI 等级与颜色，过滤掉臭氧 (O₃) 或扬沙 (PM10) 的复合拉升影响。
+                </p>
                 <div className="text-[10px] text-slate-400 pt-1 flex items-center justify-between border-t border-slate-100">
-                  <span>💡 全站实时指标、日历与历史数据即时联动重算</span>
+                  <span>💡 点击此按钮即可随时开启或关闭</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 右侧：标准切换开关与独立悬停 Tip */}
+          <div className="flex w-[186px] shrink-0 items-center justify-between rounded-xl border border-slate-200 bg-white shadow-sm hover:border-slate-300 transition-colors">
+            {/* 左侧主体：点击切换标准 */}
+            <button
+              onClick={toggleStandard}
+              className="flex-1 flex items-center space-x-1.5 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50 rounded-l-xl cursor-pointer select-none"
+              title="点击切换 AQI 计算标准 (美国 EPA / 中国国标)"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span className="text-slate-500 shrink-0">标准:</span>
+              <span className="w-20 inline-flex items-center text-left shrink-0">
+                {!mounted ? (
+                  <span className="h-3.5 w-16 bg-slate-200/90 rounded-md animate-pulse inline-block" />
+                ) : (
+                  <span className="font-bold text-slate-900 whitespace-nowrap">
+                    {standard === 'US' ? '美标 (US EPA)' : '国标 (HJ 633)'}
+                  </span>
+                )}
+              </span>
+            </button>
+
+            {/* 分隔细线 */}
+            <div className="h-4 w-px bg-slate-200 shrink-0" />
+
+            {/* 右侧独立 Tip 图标 */}
+            <div className="relative group/tip shrink-0">
+              <button
+                type="button"
+                className="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-r-xl transition-colors cursor-help flex items-center justify-center"
+                aria-label="查看标准说明"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+              </button>
+
+              {/* 仅在悬停右侧 Tip 时弹出的说明卡片 */}
+              <div className="absolute right-0 top-full pt-2 w-80 opacity-0 translate-y-1 pointer-events-none group-hover/tip:opacity-100 group-hover/tip:translate-y-0 group-hover/tip:pointer-events-auto transition-all duration-200 z-50">
+                <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-900/10 p-4 text-xs space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <div className="flex items-center space-x-1.5 font-bold text-slate-900">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>AQI 评价标准对照</span>
+                    </div>
+                    <span className="text-[10px] text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full font-medium">
+                      左侧按钮可直接切换
+                    </span>
+                  </div>
+
+                  {/* 美标模式卡片 */}
+                  <div
+                    className={`p-2.5 rounded-xl transition-all border ${
+                      standard === 'US'
+                        ? 'bg-amber-50/80 border-amber-200 text-amber-950 shadow-sm'
+                        : 'bg-slate-50/60 border-slate-100 text-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-slate-900">美国标准 (US EPA NowCast)</span>
+                      {standard === 'US' && (
+                        <span className="text-[10px] bg-amber-600 text-white px-1.5 py-0.5 rounded font-bold">
+                          当前生效
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] leading-relaxed">
+                      标准限值更严苛，<b>一级优</b> 仅对应 PM2.5 ≤ 12 μg/m³，<b>二级良</b> 对应 PM2.5 ≤ 35.4 μg/m³，超过 35.4 即进入不健康超标区间。
+                    </p>
+                  </div>
+
+                  {/* 国标模式卡片 */}
+                  <div
+                    className={`p-2.5 rounded-xl transition-all border ${
+                      standard === 'CN'
+                        ? 'bg-sky-50/80 border-sky-200 text-sky-950 shadow-sm'
+                        : 'bg-slate-50/60 border-slate-100 text-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-slate-900">中国国标 (HJ 633-2012)</span>
+                      {standard === 'CN' && (
+                        <span className="text-[10px] bg-sky-600 text-white px-1.5 py-0.5 rounded font-bold">
+                          当前生效
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] leading-relaxed">
+                      优良门槛为 <b>AQI ≤ 100</b>（包含一级优 PM2.5 ≤ 35 μg/m³、二级良 PM2.5 ≤ 75 μg/m³），更符合国内日常通报口径。
+                    </p>
+                  </div>
+
+                  <div className="text-[10px] text-slate-400 pt-1 flex items-center justify-between border-t border-slate-100">
+                    <span>💡 全站实时指标、日历与历史数据即时联动重算</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 移动端顶栏右侧快捷区域：紧凑标准切换键 + 汉堡按钮 */}
-        <div className="flex md:hidden items-center space-x-2">
+        {/* 移动端顶栏右侧快捷区域：紧凑 PM2.5 切换 + 标准切换键 + 汉堡按钮 */}
+        <div className="flex md:hidden items-center space-x-1.5">
+          {/* 移动端 PM2.5 纯净模式快捷切换 */}
+          <button
+            type="button"
+            onClick={toggleOnlyPm25}
+            className={`flex items-center space-x-1 px-2 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none shadow-2xs ${
+              onlyPm25
+                ? 'bg-sky-600 text-white border-sky-600'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+            }`}
+            title="点击开启/关闭只看 PM2.5 模式"
+          >
+            <Filter className="w-3 h-3 shrink-0" />
+            <span>PM2.5</span>
+          </button>
+
           {/* 移动端 1 键快速切换胶囊 */}
           <button
             onClick={toggleStandard}
@@ -289,8 +355,34 @@ export const Navbar: React.FC = () => {
               })}
             </div>
 
-            {/* 移动端标准切换 */}
-            <div className="pt-2 border-t border-slate-100">
+            {/* 移动端 PM2.5 与标准切换控制区 */}
+            <div className="pt-2 border-t border-slate-100 space-y-2">
+              <button
+                type="button"
+                onClick={toggleOnlyPm25}
+                className={`w-full flex items-center justify-between p-3 rounded-xl border text-xs font-semibold select-none cursor-pointer transition-all ${
+                  onlyPm25
+                    ? 'bg-sky-50 border-sky-200 text-sky-900 shadow-2xs'
+                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700'
+                }`}
+                title="开启/关闭仅看 PM2.5 模式"
+              >
+                <div className="flex items-center space-x-2">
+                  <Filter className={`w-4 h-4 ${onlyPm25 ? 'text-sky-600' : 'text-slate-400'}`} />
+                  <span className="text-slate-500">只看 PM2.5:</span>
+                  <span className="font-bold text-slate-900">
+                    {onlyPm25 ? '已启用 (仅看单项)' : '未启用 (综合全项)'}
+                  </span>
+                </div>
+                <span
+                  className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                    onlyPm25 ? 'bg-sky-600 text-white' : 'bg-slate-200 text-slate-600'
+                  }`}
+                >
+                  {onlyPm25 ? '已开启' : '点击开启'}
+                </span>
+              </button>
+
               <button
                 onClick={toggleStandard}
                 className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-xs font-semibold select-none cursor-pointer"

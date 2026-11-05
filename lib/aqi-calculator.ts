@@ -141,13 +141,55 @@ const POLLUTANT_NAMES_ZH: Record<string, string> = {
   co: '一氧化碳 (CO)',
 };
 
-export function evaluateAQI(pollutants: PollutantValues, standard: StandardType = 'US'): AQIEvaluation {
+/**
+ * 纯粹基于 PM2.5 物理质量浓度计算 AQI（仅看 PM2.5 模式核心算法）
+ * 严格只根据 PM2.5 单项指标分指数折算，绝对不与其他污染物（O3、PM10 等）比较或取最大值 (No Max)！
+ */
+export function calculatePM25AQI(
+  pm25Concentration: number | undefined | null,
+  standard: StandardType = 'US'
+): number {
+  if (
+    pm25Concentration === undefined ||
+    pm25Concentration === null ||
+    isNaN(pm25Concentration) ||
+    pm25Concentration <= 0
+  ) {
+    return 0;
+  }
+  if (standard === 'CN') {
+    return calculateIAQI(pm25Concentration, CN_BREAKPOINTS.pm25, CN_BREAKPOINTS.iaqi);
+  } else {
+    return calculateIAQI(pm25Concentration, US_BREAKPOINTS.pm25, US_BREAKPOINTS.aqi);
+  }
+}
+
+export function evaluateAQI(
+  pollutants: PollutantValues,
+  standard: StandardType = 'US',
+  onlyPm25 = false
+): AQIEvaluation {
+  // 1. 如果开启「只看 PM2.5」模式：AQI 计算完全只按照 PM2.5 单项物理质量浓度计算，绝对不取最大值！
+  if (onlyPm25) {
+    const pm25Val = pollutants.pm25;
+    const aqi = calculatePM25AQI(pm25Val, standard);
+    const evalResult = standard === 'CN' ? getCNEvaluation(aqi, 'pm25') : getUSEvaluation(aqi, 'pm25');
+    return {
+      ...evalResult,
+      primaryPollutant: 'pm25',
+      primaryPollutantName: 'PM2.5 (细颗粒物)',
+    };
+  }
+
+  // 2. 综合全项 AQI 模式：取六项污染物 IAQI 分指数中的最大值 (max)
   const iaqi = standard === 'CN' ? calculateCNIAQI(pollutants) : calculateUSIAQI(pollutants);
 
   let maxAQI = 0;
   let primaryPollutant = 'pm25';
 
-  const validEntries = Object.entries(iaqi).filter(([_, v]) => v !== undefined && !isNaN(v as number)) as [string, number][];
+  const validEntries = Object.entries(iaqi).filter(
+    ([_, v]) => v !== undefined && !isNaN(v as number)
+  ) as [string, number][];
 
   if (validEntries.length > 0) {
     for (const [key, val] of validEntries) {
@@ -158,9 +200,9 @@ export function evaluateAQI(pollutants: PollutantValues, standard: StandardType 
     }
   }
 
-  // 兜底：如果完全没有分项，则设定为良
+  // 兜底：如果完全没有分项，则以 PM2.5 单项直接计算兜底
   if (maxAQI === 0 && pollutants.pm25) {
-    maxAQI = Math.round(pollutants.pm25 * 1.2);
+    maxAQI = calculatePM25AQI(pollutants.pm25, standard);
   }
 
   if (standard === 'CN') {

@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { Activity } from 'lucide-react';
 import { HourlyTrendPoint } from '@/lib/services/history-data';
+import { useStandard } from './StandardContext';
+import { calculatePM25AQI } from '@/lib/aqi-calculator';
 
 interface TrendChartProps {
   data: HourlyTrendPoint[];
@@ -22,6 +24,7 @@ const DEFAULT_SELECTED_MAP: Record<string, boolean> = {
 };
 
 export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = true }) => {
+  const { standard, onlyPm25 } = useStandard();
   const [mounted, setMounted] = useState(false);
   const [selectedHours, setSelectedHours] = useState<number>(24);
   const [selectedMap, setSelectedMap] = useState<Record<string, boolean>>(DEFAULT_SELECTED_MAP);
@@ -79,7 +82,13 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = tru
   // 根据当前选择的时间跨度截取实测数据
   const activePoints = data.slice(-selectedHours);
   const hours = activePoints.map((d) => (selectedHours > 24 && d.fullTime ? d.fullTime : d.hour));
-  const aqiVals = activePoints.map((d) => d.aqi);
+  const aqiSeriesName = onlyPm25 ? 'PM2.5 AQI 指数' : 'AQI 综合指数';
+  const aqiVals = activePoints.map((d) => {
+    if (onlyPm25) {
+      return calculatePM25AQI(d.pm25, standard);
+    }
+    return d.aqi;
+  });
   const pm25Vals = activePoints.map((d) => d.pm25);
   const pm10Vals = activePoints.map((d) => d.pm10 ?? null);
   const o3Vals = activePoints.map((d) => d.o3);
@@ -92,7 +101,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = tru
   const hasSo2 = activePoints.some((d) => d.so2 !== undefined && d.so2 > 0);
   const hasCo = activePoints.some((d) => d.co !== undefined && d.co > 0);
 
-  const legendData = ['AQI 综合指数', 'PM2.5 (μg/m³)', '臭氧 O₃ (μg/m³)'];
+  const legendData = [aqiSeriesName, 'PM2.5 (μg/m³)', '臭氧 O₃ (μg/m³)'];
   if (hasPm10) legendData.push('PM10 (μg/m³)');
   if (hasNo2) legendData.push('二氧化氮 NO₂ (μg/m³)');
   if (hasSo2) legendData.push('二氧化硫 SO₂ (μg/m³)');
@@ -100,7 +109,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = tru
 
   const series: any[] = [
     {
-      name: 'AQI 综合指数',
+      name: aqiSeriesName,
       type: 'line',
       smooth: true,
       data: aqiVals,

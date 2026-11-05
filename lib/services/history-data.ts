@@ -1,5 +1,5 @@
 import { AnnualTrend, StandardType, ForecastDay, CalendarHeatmapDay } from '../types';
-import { evaluateAQI } from '../aqi-calculator';
+import { evaluateAQI, calculatePM25AQI } from '../aqi-calculator';
 import { build24HourPointsFromWaqiObs, fetchWaqiHourlyDirect } from './waqi-decoder';
 import historySummary from '@/data/processed/history_summary.json';
 import { CITIES_REGISTRY } from '@/lib/constants/cities';
@@ -12,7 +12,7 @@ const clientDailyCache: Record<string, Record<string, any>> = {};
  * 获取城市的年际长期演进趋势
  * 严格由逐日真实历史实测记录在对应标准下按年聚合得出，无任何人工伪造数据。
  */
-export function getAnnualTrends(cityId: string, standard: StandardType = 'US'): AnnualTrend[] {
+export function getAnnualTrends(cityId: string, standard: StandardType = 'US', onlyPm25 = false): AnnualTrend[] {
   const cityTrends = (historySummary as Record<string, any[]>)[cityId];
   if (!cityTrends || !Array.isArray(cityTrends)) {
     return [];
@@ -31,7 +31,7 @@ export function getAnnualTrends(cityId: string, standard: StandardType = 'US'): 
           ? (t.pollutedDaysCN ?? Math.max(0, t.daysCount - Math.round((t.goodDaysRatioCN * t.daysCount) / 100)))
           : (t.pollutedDaysUS ?? Math.max(0, t.daysCount - Math.round((t.goodDaysRatioUS * t.daysCount) / 100))),
       heavyPollutionDays: standard === 'CN' ? t.heavyPollutionDaysCN : t.heavyPollutionDaysUS,
-      aqiAvg: standard === 'CN' ? t.aqiAvgCN : t.aqiAvgUS,
+      aqiAvg: onlyPm25 ? (t.pm25Avg > 0 ? calculatePM25AQI(t.pm25Avg, standard) : 0) : (standard === 'CN' ? t.aqiAvgCN : t.aqiAvgUS),
       daysCount: t.daysCount,
     }));
 }
@@ -138,7 +138,8 @@ export function get365CalendarHeatmap(
   cityId: string,
   year = 2025,
   standard: StandardType = 'US',
-  dailyRecords?: Record<string, any>
+  dailyRecords?: Record<string, any>,
+  onlyPm25 = false
 ): CalendarHeatmapDay[] {
   let records = dailyRecords || clientDailyCache[cityId];
 
@@ -177,7 +178,7 @@ export function get365CalendarHeatmap(
       co: rec.co !== undefined && rec.co !== null ? Number(rec.co) : undefined,
     };
 
-    const evalResult = evaluateAQI(pollutants, standard);
+    const evalResult = evaluateAQI(pollutants, standard, onlyPm25);
     result.push({
       date: dateStr,
       aqi: evalResult.aqi,
@@ -371,7 +372,11 @@ export interface CountryRankingItem {
 /**
  * 获取指定年份全球与国内所有城市的统一排名列表
  */
-export function getAllCitiesRanking(year = 2025, standard: StandardType = 'US'): CityRankingItem[] {
+export function getAllCitiesRanking(
+  year = 2025,
+  standard: StandardType = 'US',
+  onlyPm25 = false
+): CityRankingItem[] {
   const summaryMap = historySummary as Record<string, any[]>;
   const list: CityRankingItem[] = [];
 
@@ -389,6 +394,14 @@ export function getAllCitiesRanking(year = 2025, standard: StandardType = 'US'):
       improvementRate = Number((((yearObj.pm25Avg - earliestObj.pm25Avg) / earliestObj.pm25Avg) * 100).toFixed(1));
     }
 
+    const calculatedAqi = onlyPm25
+      ? (yearObj.pm25Avg > 0 ? calculatePM25AQI(yearObj.pm25Avg, standard) : 0)
+      : (standard === 'CN' ? yearObj.aqiAvgCN : yearObj.aqiAvgUS);
+
+    // 严禁将无实测数据、AQI <= 0 或缺失 PM2.5 的城市纳入排行榜（彻底过滤 0 分与暂无数据）
+    if (!calculatedAqi || calculatedAqi <= 0) continue;
+    if (onlyPm25 && (!yearObj.pm25Avg || yearObj.pm25Avg <= 0)) continue;
+
     list.push({
       id: city.id,
       nameZh: city.nameZh,
@@ -402,7 +415,7 @@ export function getAllCitiesRanking(year = 2025, standard: StandardType = 'US'):
       year: yearObj.year,
       pm25Avg: yearObj.pm25Avg,
       pm10Avg: yearObj.pm10Avg,
-      aqiAvg: standard === 'CN' ? yearObj.aqiAvgCN : yearObj.aqiAvgUS,
+      aqiAvg: calculatedAqi,
       goodDaysRatio: standard === 'CN' ? yearObj.goodDaysRatioCN : yearObj.goodDaysRatioUS,
       heavyPollutionDays: standard === 'CN' ? yearObj.heavyPollutionDaysCN : yearObj.heavyPollutionDaysUS,
       daysCount: yearObj.daysCount,
@@ -418,8 +431,12 @@ export function getAllCitiesRanking(year = 2025, standard: StandardType = 'US'):
 /**
  * 聚合获取指定年份全球各国家/地区的综合空气质量排行榜
  */
-export function getAllCountriesRanking(year = 2025, standard: StandardType = 'US'): CountryRankingItem[] {
-  const cities = getAllCitiesRanking(year, standard);
+export function getAllCountriesRanking(
+  year = 2025,
+  standard: StandardType = 'US',
+  onlyPm25 = false
+): CountryRankingItem[] {
+  const cities = getAllCitiesRanking(year, standard, onlyPm25);
   const countryGroups = new Map<string, CityRankingItem[]>();
 
   for (const c of cities) {
@@ -435,7 +452,7 @@ export function getAllCountriesRanking(year = 2025, standard: StandardType = 'US
     if (cList.length === 0) return;
     const countryMeta = getCountryInfo(cCode);
 
-    const aqiSum = cList.reduce((acc, c) => acc + c.aqiAvg, 0);
+    const aqiSum = cList.reduce((acc, c) => acc + c.aqiAvg, 0); if (aqiSum <= 0) return;
     const pm25Sum = cList.reduce((acc, c) => acc + c.pm25Avg, 0);
     const pm10Sum = cList.reduce((acc, c) => acc + c.pm10Avg, 0);
     const goodDaysSum = cList.reduce((acc, c) => acc + c.goodDaysRatio, 0);

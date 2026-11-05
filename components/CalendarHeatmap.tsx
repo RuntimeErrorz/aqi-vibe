@@ -18,6 +18,7 @@ interface CalendarHeatmapProps {
   data: CalendarHeatmapDay[];
   year: number;
   standard: StandardType;
+  onlyPm25?: boolean;
   cityName?: string;
   loadingDaily?: boolean;
   availableYears?: number[];
@@ -159,6 +160,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
   data,
   year,
   standard,
+  onlyPm25 = false,
   cityName,
   loadingDaily = false,
   availableYears,
@@ -345,7 +347,46 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
     return {
       backgroundColor: 'transparent',
       tooltip: {
-        position: 'top',
+        show: true,
+        trigger: 'item',
+        confine: true,
+        extraCssText: 'z-index: 50;',
+        position: (
+          point: [number, number],
+          params: any,
+          dom: any,
+          rect: any,
+          size: { contentSize: [number, number]; viewSize: [number, number] }
+        ) => {
+          const [x, y] = point;
+          const [boxWidth, boxHeight] = size?.contentSize || [240, 150];
+          const [viewWidth, viewHeight] = size?.viewSize || [760, 272];
+
+          // 1. 水平居中，防止左右超出可视容器边界
+          let posX = x - boxWidth / 2;
+          if (posX < 8) posX = 8;
+          if (posX + boxWidth > viewWidth - 8) {
+            posX = viewWidth - boxWidth - 8;
+          }
+
+          // 2. 垂直空间自适应：
+          // 日历周一靠近顶部(y ≈ 45)，周日靠近底部(y ≈ 145)
+          const spaceAbove = y;
+          const spaceBelow = viewHeight - y;
+          let posY: number;
+
+          // 日历周一至周四(y < 115)一律向下展开，绝不冲出顶部被卡片截断
+          if (y < 115 || spaceAbove < boxHeight + 20) {
+            posY = y + 18;
+          } else if (spaceBelow < boxHeight + 14 && spaceAbove >= boxHeight + 14) {
+            posY = y - boxHeight - 12;
+          } else {
+            posY = y + 18;
+          }
+          posY = Math.max(6, Math.min(posY, viewHeight - boxHeight - 6));
+
+          return [posX, posY];
+        },
         backgroundColor: '#ffffff',
         borderColor: '#e2e8f0',
         borderWidth: 1,
@@ -374,21 +415,21 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
               </div>
 
               <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
-                <span style="color: #64748b; font-size: 11px;">AQI 指数</span>
+                <span style="color: #64748b; font-size: 11px;">${onlyPm25 ? 'PM2.5 IAQI (单项)' : 'AQI 指数'}</span>
                 <span style="font-size: 16px; font-weight: 800; color: ${item.color};">${item.aqi}</span>
               </div>
 
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 11px;">
-                <span style="color: #64748b;">首要污染物</span>
-                <span style="font-weight: 600; color: #334155;">${primaryText}</span>
+                <span style="color: #64748b;">${onlyPm25 ? '关注指标' : '首要污染物'}</span>
+                <span style="font-weight: 600; color: #334155;">${onlyPm25 ? 'PM2.5 (细颗粒物)' : primaryText}</span>
               </div>
 
               <div style="background: #f8fafc; border-radius: 8px; padding: 6px 8px; border: 1px solid #f1f5f9;">
                 <div style="font-size: 10px; font-weight: 600; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">六项实测浓度指标</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: 11px;">
-                  <div style="display: flex; justify-content: space-between;">
-                    <span style="color: #64748b;">PM2.5:</span>
-                    <span style="font-weight: 600; color: #1e293b;">${fmtVal(item.pm25)}</span>
+                  <div style="display: flex; justify-content: space-between; ${onlyPm25 ? 'background: #e0f2fe; padding: 1px 4px; border-radius: 4px;' : ''}">
+                    <span style="color: ${onlyPm25 ? '#0369a1' : '#64748b'}; font-weight: ${onlyPm25 ? '700' : 'normal'};">PM2.5:</span>
+                    <span style="font-weight: 700; color: ${onlyPm25 ? '#0284c7' : '#1e293b'};">${fmtVal(item.pm25)}</span>
                   </div>
                   <div style="display: flex; justify-content: space-between;">
                     <span style="color: #64748b;">PM10:</span>
@@ -424,7 +465,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
         hoverLink: false,
         orient: 'horizontal',
         left: 'center',
-        bottom: '0%',
+        bottom: 4,
         textStyle: { color: '#64748b', fontSize: 11 },
         inRange: {
           color: ['#10b981', '#eab308', '#f97316', '#ef4444', '#8b5cf6', '#7f1d1d'],
@@ -435,7 +476,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
         },
       },
       calendar: {
-        top: 30,
+        top: 36,
         left: 40,
         right: 30,
         cellSize: ['auto', 16],
@@ -472,7 +513,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
         data: seriesData,
       },
     };
-  }, [dataMap, seriesData, year]);
+  }, [dataMap, seriesData, year, onlyPm25]);
 
   // 按用户要求规范命名：{城市名} {年份} 年 空气质量详情
   const titleText = cityName ? `${cityName} ${year} 年 空气质量详情` : `${year} 年 空气质量详情`;
@@ -613,7 +654,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
         </div>
       ) : totalDays > 0 ? (
         <div className="w-full overflow-x-auto pb-2 custom-scrollbar">
-          <div className="min-w-[760px] h-60">
+          <div className="min-w-[760px] h-[272px]">
             <ReactECharts
               ref={echartsRef}
               option={option}

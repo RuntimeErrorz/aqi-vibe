@@ -128,7 +128,7 @@ export function GlobalRankingSandbox({
   onToggleCity,
   onAddCity,
 }: GlobalRankingSandboxProps) {
-  const { standard, mounted } = useStandard();
+  const { standard, onlyPm25, mounted } = useStandard();
   const router = useRouter();
 
   // 当前主 Tab: 城市榜单 vs 国家榜单
@@ -185,12 +185,12 @@ export function GlobalRankingSandbox({
 
   // 1. 获取基础数据
   const rawCities = useMemo(() => {
-    return getAllCitiesRanking(selectedYear, standard);
-  }, [selectedYear, standard]);
+    return getAllCitiesRanking(selectedYear, standard, onlyPm25);
+  }, [selectedYear, standard, onlyPm25]);
 
   const rawCountries = useMemo(() => {
-    return getAllCountriesRanking(selectedYear, standard);
-  }, [selectedYear, standard]);
+    return getAllCountriesRanking(selectedYear, standard, onlyPm25);
+  }, [selectedYear, standard, onlyPm25]);
 
   // 2. 统计并收集可选国家列表（按纳入城市数量排序）
   const countryOptions = useMemo(() => {
@@ -265,7 +265,7 @@ export function GlobalRankingSandbox({
       ...item,
       rank: index + 1,
     }));
-  }, [rawCities, geoScope, selectedCountry, populationTier, sortMetric, sortOrder]);
+  }, [rawCities, geoScope, selectedCountry, populationTier, sortMetric, sortOrder, onlyPm25]);
 
   // 4. 应用关键词搜索过滤城市（保留城市既有权威排名，不重置为1）
   const filteredCities = useMemo(() => {
@@ -284,6 +284,9 @@ export function GlobalRankingSandbox({
   // 5. 排序国家榜单并确立全量客观权威排名
   const sortedCountriesWithRank = useMemo(() => {
     let list = [...rawCountries];
+
+    // 严禁展示无实测数据或 AQI <= 0 的国家
+    list = list.filter((c) => c.aqiAvg > 0 && (!onlyPm25 || (c.pm25Avg !== undefined && c.pm25Avg > 0)));
 
     list.sort((a, b) => {
       let diff = 0;
@@ -305,7 +308,7 @@ export function GlobalRankingSandbox({
       ...cItem,
       rank: index + 1,
     }));
-  }, [rawCountries, sortMetric, sortOrder]);
+  }, [rawCountries, sortMetric, sortOrder, onlyPm25]);
 
   // 6. 关键词搜索过滤国家榜单（保留国家既有权威排名）
   const filteredCountries = useMemo(() => {
@@ -401,8 +404,13 @@ export function GlobalRankingSandbox({
         <div>
           <div className="flex items-center space-x-2">
             <Trophy className="w-5 h-5 text-amber-500" />
-            <h2 className="text-lg font-bold text-slate-900">
-              全球与多国空气质量多维全景排行榜
+            <h2 className="text-lg font-bold text-slate-900 flex items-center flex-wrap gap-1.5">
+              <span>全球与多国空气质量多维全景排行榜</span>
+              {onlyPm25 && (
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-bold border border-sky-200/80">
+                  仅看 PM2.5
+                </span>
+              )}
             </h2>
           </div>
         </div>
@@ -553,7 +561,7 @@ export function GlobalRankingSandbox({
           <div className="flex flex-wrap items-center gap-1.5">
             {(activeTab === 'cities'
               ? [
-                  { key: 'aqi', label: '综合 AQI' },
+                  { key: 'aqi', label: onlyPm25 ? 'PM2.5 AQI' : '综合 AQI' },
                   { key: 'pm25', label: 'PM2.5 均值' },
                   { key: 'pm10', label: 'PM10 均值' },
                   { key: 'goodRatio', label: '达标优良率' },
@@ -561,7 +569,7 @@ export function GlobalRankingSandbox({
                   { key: 'improved', label: '治理改善' },
                 ]
               : [
-                  { key: 'aqi', label: '全国综合 AQI' },
+                  { key: 'aqi', label: onlyPm25 ? '全国 PM2.5 AQI' : '全国综合 AQI' },
                   { key: 'pm25', label: 'PM2.5 均值' },
                   { key: 'pm10', label: 'PM10 均值' },
                   { key: 'goodRatio', label: '平均优良率' },
@@ -785,7 +793,7 @@ export function GlobalRankingSandbox({
               <tr>
                 <th className="py-3.5 px-3 w-14 text-center whitespace-nowrap">排名</th>
                 <th className="py-3.5 px-3 min-w-[180px] whitespace-nowrap">城市 / 国家</th>
-                <th className="py-3.5 px-3 min-w-[110px] whitespace-nowrap">综合 AQI</th>
+                <th className="py-3.5 px-3 min-w-[110px] whitespace-nowrap">{onlyPm25 ? 'PM2.5 AQI' : '综合 AQI'}</th>
                 <th className="py-3.5 px-3 min-w-[120px] whitespace-nowrap">PM2.5 年均 (μg/m³)</th>
                 <th className="py-3.5 px-3 min-w-[120px] whitespace-nowrap">PM10 年均 (μg/m³)</th>
                 <th className="py-3.5 px-3 min-w-[130px] whitespace-nowrap">优良达标率</th>
@@ -986,7 +994,7 @@ export function GlobalRankingSandbox({
                 <th className="py-3.5 px-3 w-14 text-center whitespace-nowrap">排名</th>
                 <th className="py-3.5 px-3 min-w-[150px] whitespace-nowrap">国家 / 地区</th>
                 <th className="py-3.5 px-3 min-w-[120px] whitespace-nowrap">纳入监测城市数</th>
-                <th className="py-3.5 px-3 min-w-[110px] whitespace-nowrap">全国平均 AQI</th>
+                <th className="py-3.5 px-3 min-w-[110px] whitespace-nowrap">{onlyPm25 ? '全国 PM2.5 AQI' : '全国平均 AQI'}</th>
                 <th className="py-3.5 px-3 min-w-[130px] whitespace-nowrap">PM2.5 全国均值 (μg/m³)</th>
                 <th className="py-3.5 px-3 min-w-[110px] whitespace-nowrap">平均优良达标率</th>
                 <th className="py-3.5 px-3 min-w-[170px] whitespace-nowrap">最清洁代表城市</th>

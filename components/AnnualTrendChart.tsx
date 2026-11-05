@@ -3,14 +3,16 @@
 import React, { useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { AnnualTrend, StandardType } from '@/lib/types';
+import { calculatePM25AQI } from '@/lib/aqi-calculator';
 
 interface AnnualTrendChartProps {
   data: AnnualTrend[];
   cityName: string;
   standard: StandardType;
+  onlyPm25?: boolean;
 }
 
-export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityName, standard }) => {
+export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityName, standard, onlyPm25 = false }) => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
   const ratioLabel = '优良天数比例 (%)';
   const pollutedLabel = '超标污染天数 (AQI>100, 天)';
   const aqiLabel = '年均 AQI';
-  const aqiAvgs = data.map((d) => d.aqiAvg ?? Math.round(d.pm25Avg * 1.2));
+  const aqiAvgs = data.map((d) => onlyPm25 ? (d.pm25Avg > 0 ? calculatePM25AQI(d.pm25Avg, standard) : 0) : (d.aqiAvg ?? Math.round(d.pm25Avg * 1.2)));
 
   const option = {
     backgroundColor: 'transparent',

@@ -9,10 +9,10 @@ import { CalendarHeatmap } from '@/components/CalendarHeatmap';
 import { AnnualTrendChart } from '@/components/AnnualTrendChart';
 import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
 import { History, Download, TrendingDown, TrendingUp, CheckCircle2, AlertCircle, Loader2, Gauge } from 'lucide-react';
-import { getCNEvaluation, getUSEvaluation } from '@/lib/aqi-calculator';
+import { getCNEvaluation, getUSEvaluation, calculatePM25AQI } from '@/lib/aqi-calculator';
 
 function HistoryPageContent() {
-  const { standard, mounted } = useStandard();
+  const { standard, onlyPm25, mounted } = useStandard();
   const searchParams = useSearchParams();
   const cityParam = searchParams.get('city');
   const yearParam = searchParams.get('year');
@@ -59,7 +59,7 @@ function HistoryPageContent() {
 
   const rawCity = findCity(selectedCityId);
   const city = rawCity && hasCityHistory(rawCity.id) ? rawCity : (findCity('cn-chengdu') || CITIES_REGISTRY[0]);
-  const annualTrends = getAnnualTrends(city.id, standard);
+  const annualTrends = getAnnualTrends(city.id, standard, onlyPm25);
   const availableYears = getCityAvailableYears(city.id);
 
   // 当切换城市时，若当前选中的年份在目标城市中不存在，自动调整为该城市最新年份
@@ -84,7 +84,7 @@ function HistoryPageContent() {
     };
   }, [city.id]);
 
-  const calendarData = get365CalendarHeatmap(city.id, selectedYear, standard, dailyRecords);
+  const calendarData = get365CalendarHeatmap(city.id, selectedYear, standard, dailyRecords, onlyPm25);
 
   // 动态获取当前年份的预聚合历史基准（首屏立即可用，避免逐日数据异步加载期间出现 0 天/0% 的错误占位）
   const firstYearObj = annualTrends[0];
@@ -105,19 +105,25 @@ function HistoryPageContent() {
     calendarData.length > 0
       ? calendarData.filter((d) => d.aqi > 100).length
       : (currentYearObj?.pollutedDays ?? 0);
-  const avgAQI =
-    calendarData.length > 0
-      ? Math.round(calendarData.reduce((acc, d) => acc + d.aqi, 0) / validTotalDays)
-      : (currentYearObj?.aqiAvg ?? 0);
-
-  const avgEvaluation = standard === 'CN' ? getCNEvaluation(avgAQI) : getUSEvaluation(avgAQI);
-
   const firstYearPM25 = firstYearObj?.pm25Avg || 0;
   const currentYearPM25 =
     currentYearObj?.pm25Avg ??
     (validTotalDays > 0
       ? Math.round((calendarData.reduce((acc, d) => acc + (d.pm25 || 0), 0) / validTotalDays) * 10) / 10
       : 0);
+
+  // 逐日 AQI 算术平均值（即全年逐日 AQI 累加求均值）
+  const dailyAvgAQI =
+    validTotalDays > 0 && calendarData.length > 0
+      ? Math.round(calendarData.reduce((acc, d) => acc + d.aqi, 0) / validTotalDays)
+      : (currentYearObj?.aqiAvg ?? 0);
+
+  // 当开启“只看 PM2.5”时，年综合等效 AQI 统一采用与排行榜、生态环境年报完全一致的权威口径：由全年 PM2.5 年均实测浓度折算
+  const avgAQI = onlyPm25
+    ? (currentYearPM25 > 0 ? calculatePM25AQI(currentYearPM25, standard) : dailyAvgAQI)
+    : dailyAvgAQI;
+
+  const avgEvaluation = standard === 'CN' ? getCNEvaluation(avgAQI) : getUSEvaluation(avgAQI);
 
   const isBaselineYear = Boolean(firstYearObj && selectedYear === firstYearObj.year);
 
@@ -145,7 +151,7 @@ function HistoryPageContent() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `${city.nameZh}_${selectedYear}_空气质量历史统计_${standard}.csv`);
+    link.setAttribute('download', `${city.nameZh}_${selectedYear}_空气质量历史统计_${standard}${onlyPm25 ? '_仅PM2.5' : ''}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -218,7 +224,7 @@ function HistoryPageContent() {
                 </>
               )}
             </div>
-            <p className="text-[11px] sm:text-xs text-slate-400 mt-1">全年在册实测均值</p>
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-1">{onlyPm25 ? '基于年均浓度折算' : '全年在册实测均值'}</p>
           </div>
           <Gauge className="w-7 h-7 sm:w-8 sm:h-8 shrink-0" style={{ color: `${avgEvaluation.color}50` }} />
         </div>
@@ -327,6 +333,7 @@ function HistoryPageContent() {
           data={calendarData}
           year={selectedYear}
           standard={standard}
+          onlyPm25={onlyPm25}
           cityName={city.nameZh}
           loadingDaily={loadingDaily}
           availableYears={availableYears}
@@ -344,7 +351,7 @@ function HistoryPageContent() {
           </h3>
         </div>
         {annualTrends.length > 0 ? (
-          <AnnualTrendChart data={annualTrends} cityName={city.nameZh} standard={standard} />
+          <AnnualTrendChart data={annualTrends} cityName={city.nameZh} standard={standard} onlyPm25={onlyPm25} />
         ) : (
           <div className="h-64 flex items-center justify-center text-slate-400 text-sm">
             暂无该城市的长期年度实测记录

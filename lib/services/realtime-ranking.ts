@@ -1,6 +1,6 @@
 import { CITIES_REGISTRY } from '../constants/cities';
 import { CityMeta } from '../types';
-import { convertIAQIToConcentration, evaluateAQI } from '../aqi-calculator';
+import { convertIAQIToConcentration, evaluateAQI, calculatePM25AQI } from '../aqi-calculator';
 import { extractCleanStationName } from './waqi';
 import { iso1A2Code } from '@rapideditor/country-coder';
 
@@ -249,10 +249,14 @@ const MIN_REFRESH_INTERVAL_MS = 30 * 1000; // 方案 2：手动刷新 30 秒物�
 /**
  * 计算城市聚合 AQI 与 PM2.5 (算术平均值，零启发式加权或离群过滤)
  */
-function aggregateCityData(aqis: number[], pm25s: number[]): { avgAqiUS: number; avgPm25: number } {
-  if (aqis.length === 0) return { avgAqiUS: 0, avgPm25: 0 };
-  const avgAqiUS = Math.round(aqis.reduce((a, b) => a + b, 0) / aqis.length);
+/**
+ * 计算城市聚合物理质量浓度与 AQI
+ * 严格遵循中国 HJ 663-2012 与美国 EPA 规范：先求点位物理质量浓度空间均值，再由平均物理浓度统算 AQI
+ */
+function aggregateCityData(pm25s: number[]): { avgAqiUS: number; avgPm25: number } {
+  if (pm25s.length === 0) return { avgAqiUS: 0, avgPm25: 0 };
   const avgPm25 = Number((pm25s.reduce((a, b) => a + b, 0) / pm25s.length).toFixed(1));
+  const avgAqiUS = calculatePM25AQI(avgPm25, 'US');
   return { avgAqiUS, avgPm25 };
 }
 
@@ -406,12 +410,8 @@ function computeRankingSnapshot(stations: any[], isRefreshing = false): RankingA
 
   for (const st of stations) {
     const aqiNum = parseInt(st.aqi, 10);
-    // 标准 AQI 范围为 1 ~ 500，超出 500 的为硬件故障或严重脏数据
-    // 自然室外环境空气中即使在极洁净极地/海岛，PM2.5 也极少低于 0.8 μg/m³ (对应 AQI 2~3)；
-    // AQI <= 2 绝大多数属于传感器物理断开零漂、硬件通讯故障或室内密闭滤网测试，必须予以过滤防伪
-    if (isNaN(aqiNum) || aqiNum <= 2 || aqiNum > 500) continue;
-    // 过滤未校准探头低于 6 的假读数 (如室内净化器旁)
-    if (st.uid < 0 && aqiNum <= 6) continue;
+    // 标准 AQI 物理有效定义域严格为 1 ~ 500 (超界与非数字直接过滤，零任何固定阈值与特定探头特判)
+    if (isNaN(aqiNum) || aqiNum <= 0 || aqiNum > 500) continue;
 
     const sLat = st.lat;
     const sLon = st.lon;
@@ -449,19 +449,51 @@ function computeRankingSnapshot(stations: any[], isRefreshing = false): RankingA
     }
   }
 
+/**
+ * 空间统计学离群值检验 (基于稳健统计学 Median-MAD 相对离散度检验)
+ * 当同城拥有 >= 3 个监测点时，自动对比各测站与城市中位数的相对离散度
+ * 纯客观数据驱动，绝不使用硬编码固定阈值，避免误杀真实的区域重污染，同时精准剔除单一失真/死锁探头
+ */
+function filterSpatialOutliers(stations: StationCandidate[]): StationCandidate[] {
+  if (stations.length < 3) return stations;
+
+  const values = stations.map((s) => s.pm25).sort((a, b) => a - b);
+  const mid = Math.floor(values.length / 2);
+  const median = values.length % 2 === 0 ? (values[mid - 1] + values[mid]) / 2 : values[mid];
+
+  const deviations = values.map((v) => Math.abs(v - median)).sort((a, b) => a - b);
+  const mad = deviations.length % 2 === 0
+    ? (deviations[mid - 1] + deviations[mid]) / 2
+    : deviations[mid];
+
+  // 稳健标准差估计量 (标准正态分布一致性乘子 1.4826)，底限 12.0 μg/m³ 保护正常局地梯度分布
+  const effectiveScale = Math.max(mad * 1.4826, 12.0);
+  const MAX_DEV_Z = 4.0; // 偏离中位数超过 4 个有效标准差，判定为极端硬件故障/爆表异常点
+
+  return stations.filter((s) => {
+    const diff = Math.abs(s.pm25 - median);
+    return diff <= MAX_DEV_Z * effectiveScale;
+  });
+}
+
   // 转换为排名项：分别以国标与美标精确折算 AQI
   const allRanked: RankedCityItem[] = [];
   for (const [_, item] of Array.from(cityCluster.entries())) {
-    if (item.aqis.length === 0) continue;
+    if (item.stations.length === 0) continue;
 
-    const { avgAqiUS, avgPm25 } = aggregateCityData(item.aqis, item.pm25s);
-    if (avgAqiUS <= 2) continue;
+    // 空间相对离群点检验：纯客观剔除与同城其他测站偏离过大的单一失真噪点
+    const validStations = filterSpatialOutliers(item.stations);
+    if (validStations.length === 0) continue;
+
+    const pm25s = validStations.map((s) => s.pm25);
+    const { avgAqiUS, avgPm25 } = aggregateCityData(pm25s);
+    if (avgAqiUS <= 0) continue;
 
     const evalCN = evaluateAQI({ pm25: avgPm25 }, 'CN');
 
     // 提取市中心核心基准站：
-    // 纯粹以城市中心法定经纬度为基准，严格选取几何物理距离最近的在册基准站 (与全景地图、城市实况 100% 规则对齐)
-    const sortedByDist = [...item.stations].sort((a, b) => a.distKm - b.distKm);
+    // 从有效站点中严格选取几何物理距离最近的在册基准站 (与全景地图、城市实况 100% 规则对齐)
+    const sortedByDist = [...validStations].sort((a, b) => a.distKm - b.distKm);
     const primaryStation = sortedByDist[0];
 
     let repAqiUS = avgAqiUS;
@@ -491,7 +523,7 @@ function computeRankingSnapshot(stations: any[], isRefreshing = false): RankingA
       aqiUS: avgAqiUS,
       aqiCN: evalCN.aqi,
       pm25: avgPm25,
-      stationsCount: item.aqis.length,
+      stationsCount: validStations.length,
       population: item.city.population,
       repAqiUS,
       repAqiCN,

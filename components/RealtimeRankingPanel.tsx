@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useStandard } from '@/components/StandardContext';
-import { getCNEvaluation, getUSEvaluation } from '@/lib/aqi-calculator';
+import { getCNEvaluation, getUSEvaluation, evaluateAQI } from '@/lib/aqi-calculator';
 import {
   Trophy,
   Flame,
@@ -142,7 +142,7 @@ const PageJumper: React.FC<{
 };
 
 export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSelectCity, className }) => {
-  const { standard } = useStandard();
+  const { standard, onlyPm25 } = useStandard();
   const [scope, setScope] = useState<'global' | 'domestic'>('global');
   const [data, setData] = useState<RankingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -238,20 +238,41 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
   // 1. 人口规模阶梯过滤 (全部 / 1000万+ / 500万+ / 100万+ / 10万+)
   const populationFilteredCities = useMemo(() => {
     const cleanest = activeCategory?.cleanest || [];
+    let list = cleanest;
     const threshold = POPULATION_THRESHOLDS[populationTier];
-    if (threshold <= 0) return cleanest;
-    return cleanest.filter((c) => (c.population ?? 0) >= threshold);
-  }, [activeCategory, populationTier]);
+    if (threshold > 0) {
+      list = list.filter((c) => (c.population ?? 0) >= threshold);
+    }
+    // 严格过滤无有效实测数据或 AQI <= 0 的项，杜绝 0 分暂无数据被排在最清新榜首
+    list = list.filter((c) => {
+      if (onlyPm25) {
+        const pm25Val = (metricMode === 'rep' ? c.repPm25 : c.pm25) ?? c.pm25;
+        return pm25Val !== undefined && pm25Val !== null && pm25Val > 0;
+      }
+      const aqiVal = metricMode === 'rep'
+        ? (standard === 'CN' ? (c.repAqiCN ?? c.aqiCN ?? c.aqi) : (c.repAqiUS ?? c.aqiUS ?? c.aqi))
+        : (standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi));
+      return aqiVal !== undefined && aqiVal !== null && aqiVal > 0;
+    });
+    return list;
+  }, [activeCategory, populationTier, onlyPm25, metricMode, standard]);
 
   // 2. 为当前人口池赋予真实、固定的阶梯排名 (1 .. N)，依据选定标准与测站口径动态排序
   // 在 100万+ 默认视图下：全部 442 座百万大城已在 Phase 1 全部就绪，长尾小城绝不会进入此池，名次 100% 绝对恒定永不跳变！
-  const allCitiesWithRank = useMemo<RankedCityWithOrder[]>(() => {
-    const getVal = (c: RankedCityItem) => {
-      if (metricMode === 'rep') {
-        return standard === 'CN' ? (c.repAqiCN ?? c.aqiCN ?? c.aqi) : (c.repAqiUS ?? c.aqiUS ?? c.aqi);
+  const getCityCurrentAqi = (c: RankedCityItem) => {
+    if (onlyPm25) {
+      const pm25Val = (metricMode === 'rep' ? c.repPm25 : c.pm25) ?? c.pm25;
+      if (pm25Val !== undefined && pm25Val !== null && pm25Val > 0) {
+        return evaluateAQI({ pm25: pm25Val }, standard, true).aqi;
       }
-      return standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi);
-    };
+    }
+    return metricMode === 'rep'
+      ? (standard === 'CN' ? (c.repAqiCN ?? c.aqiCN ?? c.aqi) : (c.repAqiUS ?? c.aqiUS ?? c.aqi))
+      : (standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi));
+  };
+
+  const allCitiesWithRank = useMemo<RankedCityWithOrder[]>(() => {
+    const getVal = getCityCurrentAqi;
 
     // 依据选定标准进行升序排序 (AQI 越低越清新)
     const sorted = [...populationFilteredCities].sort((a, b) => getVal(a) - getVal(b));
@@ -261,7 +282,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
       cleanRank: idx + 1,
       pollutedRank: total - idx,
     }));
-  }, [populationFilteredCities, standard, metricMode]);
+  }, [populationFilteredCities, standard, metricMode, onlyPm25]);
 
   // 3. 即时搜索匹配列表（携带保留的绝对名次）
   const searchMatchedCities = useMemo(() => {
@@ -297,8 +318,8 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
       return [...allCitiesWithRank].reverse();
     }
     // 搜索时按当前标准下的污染程度降序排
-    return [...searchMatchedCities].sort((a, b) => getVal(b) - getVal(a));
-  }, [allCitiesWithRank, searchMatchedCities, searchQuery, standard, metricMode]);
+    return [...searchMatchedCities].sort((a, b) => getCityCurrentAqi(b) - getCityCurrentAqi(a));
+  }, [allCitiesWithRank, searchMatchedCities, searchQuery, standard, metricMode, onlyPm25]);
 
 
 
@@ -504,9 +525,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                     </div>
                   ) : (
                     searchMatchedCities.slice(0, 8).map((c) => {
-                      const currentAqi = metricMode === 'rep'
-                        ? (standard === 'CN' ? (c.repAqiCN ?? c.aqiCN ?? c.aqi) : (c.repAqiUS ?? c.aqiUS ?? c.aqi))
-                        : (standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi));
+                      const currentAqi = getCityCurrentAqi(c);
                       const currentPm25 = metricMode === 'rep' ? (c.repPm25 ?? c.pm25) : c.pm25;
                       const evaluation = standard === 'CN' ? getCNEvaluation(currentAqi) : getUSEvaluation(currentAqi);
                       const showProvince = !c.isDomestic && c.country !== 'CN' && Boolean(c.province);
@@ -719,9 +738,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                   <div className="py-8 text-center text-xs text-slate-400">未找到匹配的城市</div>
                 ) : (
                   currentCleanList.map((c) => {
-                    const currentAqi = metricMode === 'rep'
-                      ? (standard === 'CN' ? (c.repAqiCN ?? c.aqiCN ?? c.aqi) : (c.repAqiUS ?? c.aqiUS ?? c.aqi))
-                      : (standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi));
+                    const currentAqi = getCityCurrentAqi(c);
                     const currentPm25 = metricMode === 'rep' ? (c.repPm25 ?? c.pm25) : c.pm25;
                     const evaluation = standard === 'CN' ? getCNEvaluation(currentAqi) : getUSEvaluation(currentAqi);
                     const showProvince = !c.isDomestic && c.country !== 'CN' && Boolean(c.province);
@@ -823,9 +840,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                   <div className="py-8 text-center text-xs text-slate-400">未找到匹配的城市</div>
                 ) : (
                   currentPollutedList.map((c) => {
-                    const currentAqi = metricMode === 'rep'
-                      ? (standard === 'CN' ? (c.repAqiCN ?? c.aqiCN ?? c.aqi) : (c.repAqiUS ?? c.aqiUS ?? c.aqi))
-                      : (standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi));
+                    const currentAqi = getCityCurrentAqi(c);
                     const currentPm25 = metricMode === 'rep' ? (c.repPm25 ?? c.pm25) : c.pm25;
                     const evaluation = standard === 'CN' ? getCNEvaluation(currentAqi) : getUSEvaluation(currentAqi);
                     const showProvince = !c.isDomestic && c.country !== 'CN' && Boolean(c.province);
