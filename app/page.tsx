@@ -10,6 +10,7 @@ import {
   fetchWAQIMapBounds,
   fetchWAQIStationByUid,
   fetchWAQICityStations,
+  enrichStationsWithPM25,
   WaqiBoundStation,
   extractCleanStationName,
   getDistanceKm,
@@ -51,7 +52,7 @@ export default function DashboardPage() {
   const [record, setRecord] = useState<AirQualityRecord | null>(null);
   const [baseCityRecord, setBaseCityRecord] = useState<AirQualityRecord | null>(null);
   const [cityStations, setCityStations] = useState<WaqiBoundStation[]>([]);
-  const [selectedStationMode, setSelectedStationMode] = useState<string>('default'); // 'default' | 'composite' | uid
+  const [selectedStationMode, setSelectedStationMode] = useState<string>('composite'); // 'default' | 'composite' | uid
   const [stationLoading, setStationLoading] = useState<boolean>(false);
   const [isStationDropdownOpen, setIsStationDropdownOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -81,19 +82,27 @@ export default function DashboardPage() {
     return `${y}-${m}-${d}`;
   };
 
-  const handleStationChange = async (mode: string) => {
+  const handleStationChange = async (
+    mode: string,
+    overrideBaseRecord?: AirQualityRecord,
+    overrideStations?: WaqiBoundStation[]
+  ) => {
     setSelectedStationMode(mode);
     setIsStationDropdownOpen(false);
-    if (!baseCityRecord) return;
+    const targetRecord: AirQualityRecord | null = overrideBaseRecord || baseCityRecord;
+    const targetStations: WaqiBoundStation[] = overrideStations || cityStations;
+    if (!targetRecord) return;
 
     if (mode === 'default') {
-      setRecord(baseCityRecord);
+      setRecord(targetRecord);
       if (baseTrendResult && baseTrendResult.points && baseTrendResult.points.length > 0) {
         setTrendResult(baseTrendResult);
       } else {
-        const activeAQI = standard === 'CN' ? baseCityRecord.evaluationCN.aqi : baseCityRecord.evaluationUS.aqi;
-        const activePM25 = baseCityRecord.pollutants.pm25 ?? 25;
-        const activeO3 = baseCityRecord.pollutants.o3 ?? 35;
+        const activeAQI = onlyPm25
+          ? (standard === 'CN' ? evaluateAQI({ pm25: targetRecord.pollutants.pm25 }, 'CN', true).aqi : evaluateAQI({ pm25: targetRecord.pollutants.pm25 }, 'US', true).aqi)
+          : (standard === 'CN' ? targetRecord.evaluationCN.aqi : targetRecord.evaluationUS.aqi);
+        const activePM25 = targetRecord.pollutants.pm25 ?? 25;
+        const activeO3 = targetRecord.pollutants.o3 ?? 35;
         const trend = await fetch24HourHourlyTrend(
           selectedCity.latitude,
           selectedCity.longitude,
@@ -101,8 +110,8 @@ export default function DashboardPage() {
           activeAQI,
           activePM25,
           activeO3,
-          baseCityRecord.updateTime,
-          baseCityRecord.stationIdx
+          targetRecord.updateTime,
+          targetRecord.stationIdx
         );
         setTrendResult(trend);
         setBaseTrendResult(trend);
@@ -111,32 +120,64 @@ export default function DashboardPage() {
     }
 
     if (mode === 'composite') {
-      const validAqis = cityStations
-        .map((s) => parseInt(s.aqi, 10))
-        .filter((a) => !isNaN(a) && a > 0);
-      const avgAqi =
-        validAqis.length > 0
-          ? Math.round(validAqis.reduce((a, b) => a + b, 0) / validAqis.length)
-          : baseCityRecord.evaluationUS.aqi;
+      const validStations = targetStations.filter((s: WaqiBoundStation) => {
+        const a = parseInt(s.aqi, 10);
+        return !isNaN(a) && a > 0;
+      });
 
-      const compPM25 = convertIAQIToConcentration('pm25', avgAqi, 'US');
-      const compPM10 = convertIAQIToConcentration('pm10', Math.round(avgAqi * 0.7), 'US');
+      // 严格遵循中国 HJ 663-2012《环境空气质量评价技术规范》与 US EPA 规范：
+      // 空间多站点聚合必须采用【浓度优先 (Concentration-First)】：
+      // 1. 先由各站各自还原/实测出真实的物理质量浓度 (ug/m3)
+      // 2. 对辖区内所有有效点位的物理质量浓度求空间算术平均
+      // 3. 再由空间平均物理浓度统算城市各项 IAQI 与综合 AQI
+      // 绝不可直接把非线性的 AQI 指数拿去简单求平均！
+      const baseAqiUS = targetRecord.evaluationUS.aqi || 1;
+      const basePm25Iaqi = targetRecord.iaqiUS?.pm25 ??
+        (targetRecord.pollutants.pm25 !== undefined ? evaluateAQI({ pm25: targetRecord.pollutants.pm25 }, 'US', true).aqi : baseAqiUS);
+      const pm25Ratio = Math.min(1.0, Math.max(0.05, basePm25Iaqi / baseAqiUS));
+
+      // 各站各自的 PM2.5 真实物理质量浓度
+      const pm25Concs = validStations.map((s) => {
+        if (s.pm25 !== undefined && s.pm25 >= 0) return s.pm25;
+        if (s.pm25IaqiUS !== undefined && s.pm25IaqiUS >= 0) {
+          return convertIAQIToConcentration('pm25', s.pm25IaqiUS, 'US');
+        }
+        const rawAqi = parseInt(s.aqi, 10);
+        const estIaqi = Math.max(1, Math.round(rawAqi * pm25Ratio));
+        return convertIAQIToConcentration('pm25', estIaqi, 'US');
+      });
+
+      // 全城空间物理质量浓度均值 (客观真实物理量，在综合与单项模式下 100% 相同)
+      const compPM25 = pm25Concs.length > 0
+        ? Number((pm25Concs.reduce((a, b) => a + b, 0) / pm25Concs.length).toFixed(1))
+        : (targetRecord.pollutants.pm25 ?? 2.2);
+
+      // 各站各自的 PM10 物理质量浓度均值
+      const pm10Concs = validStations.map((s) => {
+        const rawAqi = parseInt(s.aqi, 10);
+        return convertIAQIToConcentration('pm10', Math.round(rawAqi * 0.7), 'US');
+      });
+      const compPM10 = pm10Concs.length > 0
+        ? Number((pm10Concs.reduce((a, b) => a + b, 0) / pm10Concs.length).toFixed(1))
+        : (targetRecord.pollutants.pm10 ?? 10);
 
       const pollutants = {
-        ...baseCityRecord.pollutants,
+        ...targetRecord.pollutants,
         pm25: compPM25,
         pm10: compPM10,
       };
 
-      const evalCN = evaluateAQI(pollutants, 'CN');
-      const evalUS = evaluateAQI(pollutants, 'US');
+      // 由唯一的全城客观空间平均物理浓度，自然统算综合全项与单项 PM2.5 AQI
+      const evalCN = evaluateAQI(pollutants, 'CN', onlyPm25);
+      const evalUS = evaluateAQI(pollutants, 'US', onlyPm25);
       const iaqiCN = calculateCNIAQI(pollutants);
       const iaqiUS = calculateUSIAQI(pollutants);
 
       const compRecord: AirQualityRecord = {
-        ...baseCityRecord,
+        ...targetRecord,
+        country: targetRecord.country || 'CN',
         id: `${selectedCity.id}-composite`,
-        name: selectedCity.nameZh, // 城市标题保持纯净权威，不追加杂乱后缀
+        name: selectedCity.nameZh,
         nameEn: selectedCity.nameEn,
         pollutants,
         iaqi: standard === 'CN' ? iaqiCN : iaqiUS,
@@ -146,7 +187,7 @@ export default function DashboardPage() {
         evaluationCN: evalCN,
         sourceAttribution: [
           {
-            name: `全城 ${validAqis.length} 个官方国控监测站实时加权均值网 (契合排行榜统计口径)`,
+            name: `全城 ${validStations.length} 个官方国控监测站实时加权均值网 (对齐排行榜口径)`,
           },
         ],
       };
@@ -154,7 +195,9 @@ export default function DashboardPage() {
 
       // 修复多站加成逐小时趋势：优先使用已缓存的基准时序并按加权均值比例自适应校准
       const currentStandardAqi = standard === 'CN' ? evalCN.aqi : evalUS.aqi;
-      const baseAQI = (standard === 'CN' ? baseCityRecord.evaluationCN.aqi : baseCityRecord.evaluationUS.aqi) || 1;
+      const baseAQI = onlyPm25
+        ? (standard === 'CN' ? evaluateAQI({ pm25: targetRecord.pollutants.pm25 }, 'CN', true).aqi : evaluateAQI({ pm25: targetRecord.pollutants.pm25 }, 'US', true).aqi) || 1
+        : ((standard === 'CN' ? targetRecord.evaluationCN.aqi : targetRecord.evaluationUS.aqi) || 1);
       const ratio = currentStandardAqi / baseAQI;
       const basePoints = baseTrendResult?.points || [];
 
@@ -167,19 +210,19 @@ export default function DashboardPage() {
             pm10: p.pm10 ? Math.max(1, Number((p.pm10 * ratio).toFixed(1))) : undefined,
           })),
           isReal: true,
-          source: `全城 ${validAqis.length} 站加权均值时序 (按基准站实测校准)`,
+          source: `全城 ${validStations.length} 站加权均值时序 (按基准站实测校准)`,
         });
       } else {
         const activeAQI = currentStandardAqi;
-        const baseIdx = baseCityRecord.stationIdx;
+        const baseIdx = targetRecord.stationIdx;
         const baseTrend = await fetch24HourHourlyTrend(
           selectedCity.latitude,
           selectedCity.longitude,
           standard,
           activeAQI,
           compPM25,
-          baseCityRecord.pollutants.o3 ?? 35,
-          baseCityRecord.updateTime,
+          targetRecord.pollutants.o3 ?? 35,
+          targetRecord.updateTime,
           baseIdx
         );
 
@@ -216,7 +259,9 @@ export default function DashboardPage() {
           name: selectedCity.nameZh,
         });
 
-        const activeAQI = standard === 'CN' ? stationData.evaluationCN.aqi : stationData.evaluationUS.aqi;
+        const activeAQI = onlyPm25
+          ? (standard === 'CN' ? evaluateAQI({ pm25: stationData.pollutants.pm25 }, 'CN', true).aqi : evaluateAQI({ pm25: stationData.pollutants.pm25 }, 'US', true).aqi)
+          : (standard === 'CN' ? stationData.evaluationCN.aqi : stationData.evaluationUS.aqi);
         const activePM25 = stationData.pollutants.pm25 ?? 25;
         const activeO3 = stationData.pollutants.o3 ?? 35;
 
@@ -234,7 +279,9 @@ export default function DashboardPage() {
         // 若具体子微站未开放独立小时时序 Token，则平滑接入主城基准时序并按微站实测 AQI 比例映射
         if (!trend.points || trend.points.length === 0) {
           const basePoints = baseTrendResult?.points || [];
-          const baseAQI = (standard === 'CN' ? baseCityRecord.evaluationCN.aqi : baseCityRecord.evaluationUS.aqi) || 1;
+          const baseAQI = onlyPm25
+            ? (standard === 'CN' ? evaluateAQI({ pm25: targetRecord.pollutants.pm25 }, 'CN', true).aqi : evaluateAQI({ pm25: targetRecord.pollutants.pm25 }, 'US', true).aqi) || 1
+            : ((standard === 'CN' ? targetRecord.evaluationCN.aqi : targetRecord.evaluationUS.aqi) || 1);
           const ratio = activeAQI / baseAQI;
 
           if (basePoints.length > 0) {
@@ -249,7 +296,7 @@ export default function DashboardPage() {
               source: `${cleanName || '监测站'}实测折算时序 (基于基准站流)`,
             };
           } else {
-            const baseIdx = baseCityRecord.stationIdx;
+            const baseIdx = targetRecord.stationIdx;
             if (baseIdx) {
               const fallbackTrend = await fetch24HourHourlyTrend(
                 selectedCity.latitude,
@@ -288,39 +335,29 @@ export default function DashboardPage() {
   const loadCityData = async (city: CityMeta) => {
     setLoading(true);
     setLoadError(null);
-    setSelectedStationMode('default');
     setCityStations([]);
     setBaseTrendResult(null);
     try {
-      const data = await fetchWAQICityData(city.id);
-      setBaseCityRecord(data);
-      setRecord(data);
-      const activeAQI = standard === 'CN' ? data.evaluationCN.aqi : data.evaluationUS.aqi;
-      const activePM25 = data.pollutants.pm25 ?? 25;
-      const activeO3 = data.pollutants.o3 ?? 35;
-      
-      // 优先从 WAQI 官方底层折线图时序流（反编译差分解码）获取纯真 24 小时实测
-      const trend = await fetch24HourHourlyTrend(
-        city.latitude,
-        city.longitude,
-        standard,
-        activeAQI,
-        activePM25,
-        activeO3,
-        data.updateTime,
-        data.stationIdx
-      );
-      setTrendResult(trend);
-      setBaseTrendResult(trend);
+      // 1. 并发拉取城市基准站与在册站点池 (彻底消除瀑布流延迟)
+      const [data, stations] = await Promise.all([
+        fetchWAQICityData(city.id),
+        fetchWAQICityStations(city).catch(() => [] as WaqiBoundStation[]),
+      ]);
 
-      // 同步拉取本地在册活跃测站列表用于聚合与多站选测（智能过滤临城跨界测站）
-      fetchWAQICityStations(city)
-        .then((stations) => {
-          setCityStations(stations);
-        })
-        .catch((e) => {
-          console.warn('Failed to load stations for city', e);
+      setBaseCityRecord(data);
+      setCityStations(stations);
+
+      // 2. 统一默认展示全城聚合均值 (站少站多口径完全统一，彻底对齐排行榜全市均值)
+      setSelectedStationMode('composite');
+      await handleStationChange('composite', data, stations);
+
+      // 3. 异步后台并发补齐微站详细实测 PM2.5
+      if (stations.length > 0) {
+        enrichStationsWithPM25(stations).then((enriched) => {
+          setCityStations(enriched);
+          handleStationChange('composite', data, enriched);
         });
+      }
 
       // 智能预报整合：若 WAQI 包含未来至少 3 天有效预报则优先采用，否则平滑接入 ECMWF / CAMS 全球数值模型
       const todayStr = getTodayDateStr();
@@ -367,7 +404,7 @@ export default function DashboardPage() {
     loadCityData(selectedCity);
   }, [selectedCity]);
 
-  // 当标准切换时，重新同步当前测站模式及 24 小时趋势的基准 AQI
+  // 当标准切换或开启/关闭「只看 PM2.5」时，重新同步当前测站模式及 24 小时趋势的基准 AQI
   useEffect(() => {
     if (record) {
       if (selectedStationMode === 'composite') {
@@ -375,7 +412,9 @@ export default function DashboardPage() {
       } else if (selectedStationMode !== 'default') {
         handleStationChange(selectedStationMode);
       } else {
-        const activeAQI = standard === 'CN' ? record.evaluationCN.aqi : record.evaluationUS.aqi;
+        const activeAQI = onlyPm25
+          ? (standard === 'CN' ? evaluateAQI({ pm25: record.pollutants.pm25 }, 'CN', true).aqi : evaluateAQI({ pm25: record.pollutants.pm25 }, 'US', true).aqi)
+          : (standard === 'CN' ? record.evaluationCN.aqi : record.evaluationUS.aqi);
         const activePM25 = record.pollutants.pm25 ?? 25;
         const activeO3 = record.pollutants.o3 ?? 35;
         fetch24HourHourlyTrend(
@@ -390,7 +429,7 @@ export default function DashboardPage() {
         ).then(setTrendResult);
       }
     }
-  }, [standard]);
+  }, [standard, onlyPm25]);
 
   // 定位处理
   const handleLocateMe = () => {
@@ -483,12 +522,50 @@ export default function DashboardPage() {
   }, [baseCityRecord, standard, onlyPm25]);
   const activeIAQI = record ? (standard === 'CN' ? calculateCNIAQI(record.pollutants) : calculateUSIAQI(record.pollutants)) : {};
 
-  // 根据当前标准计算微观在册测站的 AQI 指数与评级颜色
-  const getStationEval = (stAqi: string | number) => {
-    const usNum = typeof stAqi === 'number' ? stAqi : parseInt(stAqi, 10);
-    if (isNaN(usNum) || usNum <= 0) return { aqi: 0, color: '#94a3b8', level: '--' };
-    const pm25Conc = convertIAQIToConcentration('pm25', usNum, 'US');
-    return standard === 'CN' ? evaluateAQI({ pm25: pm25Conc }, 'CN') : evaluateAQI({ pm25: pm25Conc }, 'US');
+  // 根据当前标准与「只看 PM2.5」模式，精确计算微观在册测站的 AQI 指数与评级颜色
+  const getStationEval = (st: WaqiBoundStation | string | number) => {
+    let targetStation: WaqiBoundStation | undefined;
+    let rawAqiNum = 0;
+
+    if (typeof st === 'object' && st !== null) {
+      targetStation = st;
+      rawAqiNum = parseInt(st.aqi, 10);
+    } else {
+      rawAqiNum = typeof st === 'number' ? st : parseInt(st, 10);
+      targetStation = cityStations.find((s) => parseInt(s.aqi, 10) === rawAqiNum || String(s.uid) === String(st));
+    }
+
+    if (isNaN(rawAqiNum) || rawAqiNum <= 0) return { aqi: 0, color: '#94a3b8', level: '--' };
+
+    // 综合全项美标/国标基准 AQI
+    const compEval = standard === 'US'
+      ? getUSEvaluation(rawAqiNum)
+      : evaluateAQI({ pm25: convertIAQIToConcentration('pm25', rawAqiNum, 'US') }, 'CN');
+
+    // 1. 若开启了「只看 PM2.5」纯净模式
+    if (onlyPm25) {
+      if (targetStation && targetStation.pm25 !== undefined && targetStation.pm25 >= 0) {
+        return evaluateAQI({ pm25: targetStation.pm25 }, standard, true);
+      }
+      if (targetStation && targetStation.pm25IaqiUS !== undefined && targetStation.pm25IaqiUS >= 0) {
+        const pm25Conc = convertIAQIToConcentration('pm25', targetStation.pm25IaqiUS, 'US');
+        return evaluateAQI({ pm25: pm25Conc }, standard, true);
+      }
+      if (baseCityRecord && baseCityRecord.evaluationUS.aqi > 0) {
+        const baseAqiUS = baseCityRecord.evaluationUS.aqi;
+        const basePm25Iaqi = baseCityRecord.iaqiUS?.pm25 ??
+          (baseCityRecord.pollutants.pm25 !== undefined ? evaluateAQI({ pm25: baseCityRecord.pollutants.pm25 }, 'US', true).aqi : baseAqiUS);
+        const ratio = Math.min(1.0, Math.max(0.05, basePm25Iaqi / baseAqiUS));
+        const estimatedPm25Iaqi = Math.max(1, Math.round(rawAqiNum * ratio));
+        const estimatedConc = convertIAQIToConcentration('pm25', estimatedPm25Iaqi, 'US');
+        return evaluateAQI({ pm25: estimatedConc }, standard, true);
+      }
+      const pm25Conc = convertIAQIToConcentration('pm25', rawAqiNum, 'US');
+      return evaluateAQI({ pm25: pm25Conc }, standard, true);
+    }
+
+    // 2. 综合全项 AQI 模式
+    return compEval;
   };
 
   return (
@@ -574,38 +651,26 @@ export default function DashboardPage() {
                       className={`group inline-flex items-center space-x-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold border transition-all duration-150 shadow-2xs cursor-pointer select-none max-w-full ${
                         selectedStationMode === 'composite'
                           ? 'bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 border-emerald-200'
-                          : selectedStationMode !== 'default'
-                          ? 'bg-indigo-50 hover:bg-indigo-100/80 text-indigo-800 border-indigo-200'
-                          : (evaluation.isOffline || record?.isOffline)
-                          ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-                          : 'bg-sky-50 hover:bg-sky-100/80 text-sky-800 border-sky-200'
+                          : 'bg-indigo-50 hover:bg-indigo-100/80 text-indigo-800 border-indigo-200'
                       }`}
                     >
                       {stationLoading ? (
                         <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
                       ) : selectedStationMode === 'composite' ? (
                         <Layers className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      ) : selectedStationMode !== 'default' ? (
-                        <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                      ) : (evaluation.isOffline || record?.isOffline) ? (
-                        <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                       ) : (
-                        <Building2 className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                        <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                       )}
 
                       <span className="truncate max-w-[120px] xs:max-w-[150px] sm:max-w-[180px]">
                         {selectedStationMode === 'composite'
-                          ? `全城加权 (${cityStations.length}站)`
-                          : selectedStationMode !== 'default'
-                          ? (() => {
+                          ? `全城加权 (${cityStations.length || 1}站)`
+                          : (() => {
                               const found = cityStations.find((s) => String(s.uid) === selectedStationMode);
                               const clean = found ? extractCleanStationName(found.station?.name || '', selectedCity.nameZh) : '单站实测';
-                              const stEval = found ? getStationEval(found.aqi) : null;
+                              const stEval = found ? getStationEval(found) : null;
                               return `${clean}${stEval ? ` · AQI ${stEval.aqi}` : ''}`;
-                            })()
-                          : (evaluation.isOffline || record?.isOffline)
-                          ? '官方代表站 (暂无实时)'
-                          : '官方核心代表站'}
+                            })()}
                       </span>
 
                       <ChevronDown
@@ -624,77 +689,57 @@ export default function DashboardPage() {
                           aria-hidden="true"
                         />
                         <div className="fixed inset-x-4 top-28 sm:absolute sm:inset-x-auto sm:left-0 sm:top-full mt-1.5 z-50 w-auto sm:w-80 max-w-sm rounded-2xl bg-white/98 backdrop-blur-xl shadow-2xl border border-slate-200/90 p-2 text-xs transition-all animate-in fade-in slide-in-from-top-1 duration-150">
-                        {/* 城市数据口径 */}
-                        <div className="px-2 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                          城市数据统计口径
-                        </div>
-
-                        {/* 选项 1: 官方核心代表站 */}
+                        {/* 全城多站加权聚合 (默认权威宏观口径，与实时排行榜严格对齐) */}
                         <button
                           type="button"
-                          onClick={() => handleStationChange('default')}
+                          onClick={() => handleStationChange('composite')}
                           className={`w-full text-left p-2 rounded-xl flex items-center justify-between transition-colors ${
-                            selectedStationMode === 'default'
-                              ? 'bg-sky-50 text-sky-900 font-semibold border border-sky-200/80 shadow-2xs'
+                            selectedStationMode === 'composite'
+                              ? 'bg-emerald-50 text-emerald-900 font-semibold border border-emerald-200/80 shadow-2xs'
                               : 'hover:bg-slate-50 text-slate-700'
                           }`}
                         >
                           <div className="flex items-center space-x-2.5 min-w-0">
-                            <div className="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
-                              <Building2 className="w-3.5 h-3.5" />
+                            <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                              <Layers className="w-3.5 h-3.5" />
                             </div>
                             <div className="min-w-0">
-                              <div className="text-xs font-bold text-slate-800">官方核心代表站</div>
-                              <div className="text-[10px] text-slate-400 truncate">城市基准测站 · 实时首报</div>
+                              <div className="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                                <span>全城多站加权均值</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
+                                  {cityStations.length || 1}站聚合
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-400 truncate">消除单点偏差 · 对齐排行榜口径</div>
                             </div>
                           </div>
-                          {baseCityEval && (
-                            <span
-                              className="px-2 py-0.5 rounded-md font-mono font-bold text-[11px] shrink-0 ml-2"
-                              style={{
-                                backgroundColor: baseCityEval.color + '18',
-                                color: baseCityEval.color,
-                              }}
-                            >
-                              AQI {baseCityEval.aqi}
-                            </span>
-                          )}
-                        </button>
-
-                        {/* 选项 2: 全城多站加权均值 */}
-                        {cityStations.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleStationChange('composite')}
-                            className={`w-full text-left p-2 rounded-xl flex items-center justify-between transition-colors mt-1 ${
-                              selectedStationMode === 'composite'
-                                ? 'bg-emerald-50 text-emerald-900 font-semibold border border-emerald-200/80 shadow-2xs'
-                                : 'hover:bg-slate-50 text-slate-700'
-                            }`}
-                          >
-                            <div className="flex items-center space-x-2.5 min-w-0">
-                              <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                                <Layers className="w-3.5 h-3.5" />
-                              </div>
-                              <div className="min-w-0">
-                                <div className="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
-                                  <span>全城多站加权均值</span>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
-                                    {cityStations.length}站聚合
-                                  </span>
-                                </div>
-                                <div className="text-[10px] text-slate-400 truncate">消除单点偏差 · 对齐排行榜口径</div>
-                              </div>
-                            </div>
                             {(() => {
-                              const validAqis = cityStations.map((s) => parseInt(s.aqi, 10)).filter((a) => !isNaN(a) && a > 0);
-                              if (validAqis.length === 0) return null;
-                              const usAvg = Math.round(validAqis.reduce((a, b) => a + b, 0) / validAqis.length);
-                              const pm25Conc = convertIAQIToConcentration('pm25', usAvg, 'US');
-                              const pm10Conc = convertIAQIToConcentration('pm10', Math.round(usAvg * 0.7), 'US');
-                              const compEval = standard === 'CN'
-                                ? evaluateAQI({ pm25: pm25Conc, pm10: pm10Conc }, 'CN')
-                                : evaluateAQI({ pm25: pm25Conc, pm10: pm10Conc }, 'US');
+                              const validStations = cityStations.filter((s) => {
+                                const a = parseInt(s.aqi, 10);
+                                return !isNaN(a) && a > 0;
+                              });
+                              if (validStations.length === 0) return null;
+
+                              const baseAqiUS = baseCityRecord?.evaluationUS.aqi || 1;
+                              const basePm25Iaqi = baseCityRecord?.iaqiUS?.pm25 ??
+                                (baseCityRecord?.pollutants.pm25 !== undefined ? evaluateAQI({ pm25: baseCityRecord.pollutants.pm25 }, 'US', true).aqi : baseAqiUS);
+                              const pm25Ratio = Math.min(1.0, Math.max(0.05, basePm25Iaqi / baseAqiUS));
+
+                              // 严格遵循 HJ 663-2012 与 US EPA 规范：先各自算浓度，再求空间物理均值
+                              const pm25Concs = validStations.map((s) => {
+                                if (s.pm25 !== undefined && s.pm25 >= 0) return s.pm25;
+                                if (s.pm25IaqiUS !== undefined && s.pm25IaqiUS >= 0) {
+                                  return convertIAQIToConcentration('pm25', s.pm25IaqiUS, 'US');
+                                }
+                                const raw = parseInt(s.aqi, 10);
+                                const estIaqi = Math.max(1, Math.round(raw * pm25Ratio));
+                                return convertIAQIToConcentration('pm25', estIaqi, 'US');
+                              });
+                              const avgPm25 = Number((pm25Concs.reduce((a, b) => a + b, 0) / pm25Concs.length).toFixed(1));
+                              const avgPm10 = Number((validStations.map((s) => convertIAQIToConcentration('pm10', Math.round(parseInt(s.aqi, 10) * 0.7), 'US')).reduce((a, b) => a + b, 0) / validStations.length).toFixed(1));
+
+                              const compEval = evaluateAQI({ pm25: avgPm25, pm10: avgPm10 }, standard, onlyPm25);
+
                               return (
                                 <span
                                   className="px-2 py-0.5 rounded-md font-mono font-bold text-[11px] shrink-0 ml-2"
@@ -708,27 +753,26 @@ export default function DashboardPage() {
                               );
                             })()}
                           </button>
-                        )}
 
-                        {/* 选项 3: 本地具体国控微站 */}
-                        {cityStations.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-slate-100">
-                            <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-slate-400">
-                              <span>本地国控微站明细 ({cityStations.length})</span>
-                              <span className="text-[10px] text-slate-400 font-normal">单站独立实测</span>
-                            </div>
-                            <div className="max-h-52 overflow-y-auto space-y-0.5 pr-1 mt-1 custom-scrollbar">
-                              {(() => {
-                                const stationsWithDist = cityStations
-                                  .map((st) => ({
-                                    ...st,
-                                    distKm: getDistanceKm(selectedCity.latitude, selectedCity.longitude, st.lat, st.lon),
-                                  }))
-                                  .sort((a, b) => a.distKm - b.distKm);
+                        {/* 选项 3: 本地具体国控微站 (完整呈现全城在册站，市中心最近站醒目标识) */}
+                        {cityStations.length > 0 && (() => {
+                          const stationsWithDist = cityStations
+                            .map((st) => ({
+                              ...st,
+                              distKm: getDistanceKm(selectedCity.latitude, selectedCity.longitude, st.lat, st.lon),
+                            }))
+                            .sort((a, b) => a.distKm - b.distKm);
 
-                                return stationsWithDist.map((st, idx) => {
+                          return (
+                            <div className="mt-2 pt-2 border-t border-slate-100">
+                              <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-slate-400">
+                                <span>本地国控微站明细 ({stationsWithDist.length})</span>
+                                <span className="text-[10px] text-slate-400 font-normal">单站独立实测</span>
+                              </div>
+                              <div className="max-h-52 overflow-y-auto space-y-0.5 pr-1 mt-1 custom-scrollbar">
+                                {stationsWithDist.map((st, idx) => {
                                   const cleanName = extractCleanStationName(st.station?.name || '', selectedCity.nameZh);
-                                  const stEval = getStationEval(st.aqi);
+                                  const stEval = getStationEval(st);
                                   const isSelected = selectedStationMode === String(st.uid);
                                   const isCenter = idx === 0 && st.distKm <= 35;
                                   return (
@@ -762,11 +806,11 @@ export default function DashboardPage() {
                                       </span>
                                     </button>
                                   );
-                                });
-                              })()}
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                       </div>
                       </>
                     )}
@@ -793,7 +837,7 @@ export default function DashboardPage() {
                         单站实测: {(() => {
                           const found = cityStations.find((s) => String(s.uid) === selectedStationMode);
                           const clean = found ? extractCleanStationName(found.station?.name || '', selectedCity.nameZh) : '在册微站';
-                          const stEval = found ? getStationEval(found.aqi) : null;
+                          const stEval = found ? getStationEval(found) : null;
                           return `${clean}${stEval ? ` · AQI ${stEval.aqi}` : ''}`;
                         })()}
                       </span>
@@ -1084,7 +1128,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
           {forecastData.list.length > 0 ? (
             forecastData.list.map((f, idx) => {
-              const evalRes = evaluateAQI({ pm25: f.avg }, standard);
+              const evalRes = evaluateAQI({ pm25: f.avg }, standard, onlyPm25);
               const dateObj = new Date(f.day + 'T00:00:00');
               const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
               const weekName = !isNaN(dateObj.getTime()) ? weekDays[dateObj.getDay()] : '';

@@ -29,6 +29,9 @@ const POPULATION_THRESHOLDS: Record<PopulationTier, number> = {
   '10w': 100_000,
 };
 
+const DEFAULT_POPULATION_TIER: PopulationTier = '500w';
+const STORAGE_KEY_POPULATION_TIER = 'aqi_vibe_ranking_population_tier';
+
 export interface RankedCityItem {
   id: string;
   nameZh: string;
@@ -41,11 +44,15 @@ export interface RankedCityItem {
   aqi: number;
   aqiUS?: number;
   aqiCN?: number;
+  pm25AqiUS?: number;
+  pm25AqiCN?: number;
   pm25?: number;
   stationsCount: number;
   population?: number;
   repAqiUS?: number;
   repAqiCN?: number;
+  repPm25AqiUS?: number;
+  repPm25AqiCN?: number;
   repPm25?: number;
   repStationName?: string;
   repStationUid?: number;
@@ -158,8 +165,25 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
   const [cleanPage, setCleanPage] = useState(1);
   const [pollutedPage, setPollutedPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(10);
-  const [populationTier, setPopulationTier] = useState<PopulationTier>('100w');
+  const [populationTier, setPopulationTier] = useState<PopulationTier>(DEFAULT_POPULATION_TIER);
   const [metricMode, setMetricMode] = useState<'avg' | 'rep'>('avg'); // 'avg' = 全市多站均值, 'rep' = 官方代表站
+
+  // 记忆功能：从 localStorage 恢复用户之前选择的人口规模筛选
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_POPULATION_TIER) as PopulationTier | null;
+      if (saved && saved in POPULATION_THRESHOLDS) {
+        setPopulationTier(saved);
+      }
+    } catch {}
+  }, []);
+
+  const handlePopulationTierChange = (newTier: PopulationTier) => {
+    setPopulationTier(newTier);
+    try {
+      localStorage.setItem(STORAGE_KEY_POPULATION_TIER, newTier);
+    } catch {}
+  };
 
   const fetchRankings = async (isManual?: boolean | unknown, silent = false) => {
     if (!silent && !data) {
@@ -261,9 +285,21 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
   // 在 100万+ 默认视图下：全部 442 座百万大城已在 Phase 1 全部就绪，长尾小城绝不会进入此池，名次 100% 绝对恒定永不跳变！
   const getCityCurrentAqi = (c: RankedCityItem) => {
     if (onlyPm25) {
-      const pm25Val = (metricMode === 'rep' ? c.repPm25 : c.pm25) ?? c.pm25;
-      if (pm25Val !== undefined && pm25Val !== null && pm25Val > 0) {
-        return evaluateAQI({ pm25: pm25Val }, standard, true).aqi;
+      if (metricMode === 'rep') {
+        if (c.repPm25AqiUS !== undefined) {
+          return standard === 'CN' ? (c.repPm25AqiCN ?? c.repPm25AqiUS) : c.repPm25AqiUS;
+        }
+        const pm25Val = c.repPm25 ?? c.pm25;
+        if (pm25Val !== undefined && pm25Val > 0) {
+          return evaluateAQI({ pm25: pm25Val }, standard, true).aqi;
+        }
+      } else {
+        if (c.pm25AqiUS !== undefined) {
+          return standard === 'CN' ? (c.pm25AqiCN ?? c.pm25AqiUS) : c.pm25AqiUS;
+        }
+        if (c.pm25 !== undefined && c.pm25 > 0) {
+          return evaluateAQI({ pm25: c.pm25 }, standard, true).aqi;
+        }
       }
     }
     return metricMode === 'rep'
@@ -630,7 +666,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
               <Users className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
               <select
                 value={populationTier}
-                onChange={(e) => setPopulationTier(e.target.value as PopulationTier)}
+                onChange={(e) => handlePopulationTierChange(e.target.value as PopulationTier)}
                 className="pl-7 pr-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:border-slate-300 shadow-2xs cursor-pointer transition-colors"
                 title="按常住人口规模筛选城市"
               >

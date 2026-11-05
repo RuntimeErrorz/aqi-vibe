@@ -138,6 +138,68 @@ export interface WaqiBoundStation {
     name: string;
     time: string;
   };
+  pm25?: number; // 实测 PM2.5 质量浓度 (μg/m³)
+  pm25IaqiUS?: number; // 实测美标 PM2.5 分指数
+  pm25IaqiCN?: number; // 实测国标 PM2.5 分指数
+}
+
+// 测站实测 PM2.5 内存快照缓存池 (5分钟保鲜，杜绝重复击穿网络)
+const stationDetailCache = new Map<number, { pm25: number; pm25IaqiUS: number; pm25IaqiCN: number; timestamp: number }>();
+
+/**
+ * 异步并发获取或补齐微站详细实测 PM2.5 指标
+ */
+export async function enrichStationsWithPM25(stations: WaqiBoundStation[]): Promise<WaqiBoundStation[]> {
+  if (!stations || stations.length === 0) return [];
+  const now = Date.now();
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  const enriched = await Promise.all(
+    stations.map(async (st) => {
+      const cached = stationDetailCache.get(st.uid);
+      if (cached && now - cached.timestamp < CACHE_TTL) {
+        return {
+          ...st,
+          pm25: cached.pm25,
+          pm25IaqiUS: cached.pm25IaqiUS,
+          pm25IaqiCN: cached.pm25IaqiCN,
+        };
+      }
+
+      try {
+        const url = `https://api.waqi.info/feed/@${st.uid}/?token=${WAQI_TOKEN}`;
+        const res = await fetch(url, { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.status === 'ok' && json.data) {
+            const rawPm25 = json.data.iaqi?.pm25?.v;
+            if (rawPm25 !== undefined && !isNaN(rawPm25)) {
+              const pm25IaqiUS = Math.round(rawPm25);
+              const pm25 = convertIAQIToConcentration('pm25', pm25IaqiUS, 'US');
+              const evalCN = evaluateAQI({ pm25 }, 'CN', true);
+              const entry = {
+                pm25,
+                pm25IaqiUS,
+                pm25IaqiCN: evalCN.aqi,
+                timestamp: now,
+              };
+              stationDetailCache.set(st.uid, entry);
+              return {
+                ...st,
+                ...entry,
+              };
+            }
+          }
+        }
+      } catch {
+        // 静默容灾
+      }
+
+      return st;
+    })
+  );
+
+  return enriched;
 }
 
 export async function fetchWAQIMapBounds(
