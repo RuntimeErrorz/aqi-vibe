@@ -21,7 +21,7 @@ const AirMap = dynamic(() => import('@/components/AirMap'), {
 });
 
 export default function MapPage() {
-  const { standard } = useStandard();
+  const { standard, onlyPm25 } = useStandard();
   const defaultCity = findCity('cn-chengdu') || CITIES_REGISTRY[0];
   const [showStations, setShowStations] = useState(true);
   const [focusCity, setFocusCity] = useState<CityMeta>(defaultCity);

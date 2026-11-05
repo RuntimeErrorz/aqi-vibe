@@ -3,8 +3,8 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { fetchWAQIMapBounds, WaqiBoundStation, getDistanceKm, extractCleanStationName } from '@/lib/services/waqi';
-import { CityMeta, StandardType } from '@/lib/types';
+import { fetchWAQIMapBounds, WaqiBoundStation, getDistanceKm, extractCleanStationName, fetchWAQICityData } from '@/lib/services/waqi';
+import { CityMeta, StandardType, AirQualityRecord } from '@/lib/types';
 import { useStandard } from '@/components/StandardContext';
 import { convertIAQIToConcentration, evaluateAQI, getCNEvaluation, getUSEvaluation } from '@/lib/aqi-calculator';
 import { iso1A2Code } from '@rapideditor/country-coder';
@@ -33,7 +33,7 @@ interface AirMapProps {
   ) => void;
 }
 
-function getStationPinEvaluation(rawAqi: number, standard: StandardType) {
+function getStationPinEvaluation(rawAqi: number, standard: StandardType, onlyPm25 = false) {
   if (isNaN(rawAqi) || rawAqi <= 0) {
     return {
       displayAqi: '-',
@@ -41,6 +41,30 @@ function getStationPinEvaluation(rawAqi: number, standard: StandardType) {
       levelText: '暂无数据',
       colorHex: '#64748b',
       pm25: undefined as number | undefined,
+    };
+  }
+
+  const pm25 = convertIAQIToConcentration('pm25', rawAqi, 'US');
+
+  // 若开启「只看 PM2.5」纯净模式：严格以单项 PM2.5 浓度折算标准 AQI 与等级
+  if (onlyPm25) {
+    const evalPm25 = evaluateAQI({ pm25 }, standard, true);
+    const aqi = evalPm25.aqi;
+
+    let boxClass = 'aqi-pin-good';
+    if (aqi <= 50) boxClass = 'aqi-pin-good';
+    else if (aqi <= 100) boxClass = 'aqi-pin-moderate';
+    else if (aqi <= 150) boxClass = 'aqi-pin-usg';
+    else if (aqi <= 200) boxClass = 'aqi-pin-unhealthy';
+    else if (aqi <= 300) boxClass = 'aqi-pin-very-unhealthy';
+    else boxClass = 'aqi-pin-hazardous';
+
+    return {
+      displayAqi: String(aqi),
+      boxClass,
+      levelText: evalPm25.level,
+      colorHex: evalPm25.color,
+      pm25,
     };
   }
 
@@ -59,11 +83,10 @@ function getStationPinEvaluation(rawAqi: number, standard: StandardType) {
       boxClass,
       levelText: evaluation.level,
       colorHex: evaluation.color,
-      pm25: undefined as number | undefined,
+      pm25,
     };
   } else {
     // 国标 HJ 633-2012: 从 WAQI 美标 IAQI 逆算物理质量浓度，再折算国标 AQI 与级别
-    const pm25 = convertIAQIToConcentration('pm25', rawAqi, 'US');
     const evalCN = evaluateAQI({ pm25 }, 'CN');
     const cnAqi = evalCN.aqi;
 
@@ -171,8 +194,9 @@ export default function AirMap({
   focusCity,
   onStationCountChange,
 }: AirMapProps) {
-  const { standard } = useStandard();
+  const { standard, onlyPm25 } = useStandard();
   const standardRef = useRef<StandardType>(standard);
+  const onlyPm25Ref = useRef<boolean>(onlyPm25);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
@@ -181,10 +205,12 @@ export default function AirMap({
   const stationCacheRef = useRef<Map<number, WaqiBoundStation>>(new Map());
   const showStationsRef = useRef(showStations);
   const nearestStationRef = useRef<(WaqiBoundStation & { distKm: number }) | null>(null);
+  const focusCityDataMap = useRef<Map<string, AirQualityRecord>>(new Map());
 
   useEffect(() => {
     standardRef.current = standard;
-  }, [standard]);
+    onlyPm25Ref.current = onlyPm25;
+  }, [standard, onlyPm25]);
 
   useEffect(() => {
     showStationsRef.current = showStations;
@@ -207,9 +233,23 @@ export default function AirMap({
 
     markersLayer.clearLayers();
 
+    // 计算当前焦点城市/区域的 PM2.5 真实比率 (若有实测则精准对齐)
+    const currentCityRec = focusCity ? focusCityDataMap.current.get(focusCity.id) : null;
+    let pm25Ratio = 0.3;
+    if (currentCityRec && currentCityRec.pollutants.pm25 !== undefined && currentCityRec.evaluationUS.aqi > 0) {
+      const basePm25Aqi = evaluateAQI({ pm25: currentCityRec.pollutants.pm25 }, 'US', true).aqi;
+      pm25Ratio = Math.min(1.0, Math.max(0.1, basePm25Aqi / currentCityRec.evaluationUS.aqi));
+    }
+
     displayStations.forEach((st: WaqiBoundStation) => {
       const aqiVal = parseInt(st.aqi, 10);
-      const style = getStationPinEvaluation(aqiVal, standardRef.current);
+      let style;
+      if (onlyPm25Ref.current) {
+        const estPm25Aqi = Math.max(1, Math.round(aqiVal * pm25Ratio));
+        style = getStationPinEvaluation(estPm25Aqi, standardRef.current, true);
+      } else {
+        style = getStationPinEvaluation(aqiVal, standardRef.current, false);
+      }
 
       // 原版标牌指针拟真矢量标记 (针尖直指站点经纬度，高分屏超锐利)
       const icon = L.divIcon({
@@ -312,24 +352,64 @@ export default function AirMap({
       return;
     }
 
+    const cityRecord = focusCityDataMap.current.get(city.id);
     const rawAqi = parseInt(station.aqi, 10);
-    const pm25 = convertIAQIToConcentration('pm25', rawAqi, 'US');
-    const aqiNum = standardRef.current === 'CN'
-      ? evaluateAQI({ pm25 }, 'CN').aqi
-      : rawAqi;
-    const style = getStationPinEvaluation(aqiNum, standardRef.current);
+    let aqiNum: number;
+    let pm25Conc: number;
+    let levelText: string;
+    let colorHex: string;
+    let boxClass: string;
+
+    if (onlyPm25Ref.current) {
+      if (cityRecord && cityRecord.pollutants.pm25 !== undefined) {
+        pm25Conc = cityRecord.pollutants.pm25;
+        const evalRes = evaluateAQI({ pm25: pm25Conc }, standardRef.current, true);
+        aqiNum = evalRes.aqi;
+        levelText = evalRes.level;
+        colorHex = evalRes.color;
+      } else {
+        const estIaqi = Math.max(1, Math.round(rawAqi * 0.3));
+        pm25Conc = convertIAQIToConcentration('pm25', estIaqi, 'US');
+        const evalRes = evaluateAQI({ pm25: pm25Conc }, standardRef.current, true);
+        aqiNum = evalRes.aqi;
+        levelText = evalRes.level;
+        colorHex = evalRes.color;
+      }
+    } else {
+      if (cityRecord) {
+        const evalRes = standardRef.current === 'CN' ? cityRecord.evaluationCN : cityRecord.evaluationUS;
+        aqiNum = evalRes.aqi;
+        levelText = evalRes.level;
+        colorHex = evalRes.color;
+        pm25Conc = cityRecord.pollutants.pm25 ?? 2.2;
+      } else {
+        pm25Conc = convertIAQIToConcentration('pm25', rawAqi, 'US');
+        aqiNum = standardRef.current === 'CN' ? evaluateAQI({ pm25: pm25Conc }, 'CN').aqi : rawAqi;
+        const style = getStationPinEvaluation(rawAqi, standardRef.current, false);
+        levelText = style.levelText;
+        colorHex = style.colorHex;
+      }
+    }
+
+    if (aqiNum <= 50) boxClass = 'aqi-pin-good';
+    else if (aqiNum <= 100) boxClass = 'aqi-pin-moderate';
+    else if (aqiNum <= 150) boxClass = 'aqi-pin-usg';
+    else if (aqiNum <= 200) boxClass = 'aqi-pin-unhealthy';
+    else if (aqiNum <= 300) boxClass = 'aqi-pin-very-unhealthy';
+    else boxClass = 'aqi-pin-hazardous';
+
     const cleanName = extractCleanStationName(station.station?.name || '', city.nameZh);
     const distText = station.distKm < 1 ? '<1km' : `${station.distKm.toFixed(1)}km`;
 
     const updatedHtml = `
       <div class="aqi-focus-city-pin">
-        <div class="aqi-focus-badge ${style.boxClass} shadow-xl ring-2 ring-white">
+        <div class="aqi-focus-badge ${boxClass} shadow-xl ring-2 ring-white">
           <span class="font-black text-xs tracking-tight">${escapeHtml(city.nameZh)}</span>
           <span class="mx-1 opacity-60 font-normal">|</span>
           <span class="font-black text-xs">${aqiNum}</span>
         </div>
         <div class="aqi-focus-pin-pole"></div>
-        <div class="aqi-focus-pulse" style="border-color: ${style.colorHex};"></div>
+        <div class="aqi-focus-pulse" style="border-color: ${colorHex};"></div>
       </div>
     `;
 
@@ -354,7 +434,7 @@ export default function AirMap({
       <div class="p-3 text-slate-800 min-w-[240px]">
         <div class="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100">
           <div class="font-black text-sm text-slate-900">${escapeHtml(city.nameZh)} (${escapeHtml(city.nameEn)})</div>
-          <span class="text-xs font-mono font-bold px-1.5 py-0.5 rounded text-white" style="background-color: ${style.colorHex};">AQI ${aqiNum}</span>
+          <span class="text-xs font-mono font-bold px-1.5 py-0.5 rounded text-white" style="background-color: ${colorHex};">AQI ${aqiNum}</span>
         </div>
         <div class="mt-2 text-xs space-y-1">
           <div class="flex items-center justify-between text-slate-600">
@@ -363,11 +443,11 @@ export default function AirMap({
           </div>
           <div class="flex items-center justify-between text-slate-600">
             <span class="text-slate-400">综合级别:</span>
-            <span class="font-bold" style="color: ${style.colorHex}">${style.levelText}</span>
+            <span class="font-bold" style="color: ${colorHex}">${levelText}</span>
           </div>
           <div class="flex items-center justify-between text-slate-600">
             <span class="text-slate-400">实测 PM2.5:</span>
-            <span class="font-mono font-bold text-slate-800">${pm25} μg/m³</span>
+            <span class="font-mono font-bold text-slate-800">${pm25Conc} μg/m³</span>
           </div>
           <div class="flex items-center justify-between text-slate-400 text-[10px] pt-1 border-t border-slate-100">
             <span>更新时间: ${formattedTime}</span>
@@ -382,7 +462,7 @@ export default function AirMap({
     onStationCountChange?.(-1, false, {
       name: city.nameZh,
       aqi: aqiNum,
-      level: style.levelText,
+      level: levelText,
       stationName: cleanName,
       stationUid: station.uid,
       distKm: station.distKm,
@@ -563,9 +643,10 @@ export default function AirMap({
     }
   }, [showStations]);
 
-  // 响应标准切换：重新渲染视野内测站微标与焦点城市微标
+  // 响应标准切换或「只看 PM2.5」切换：重新渲染视野内测站微标与焦点城市微标
   useEffect(() => {
     standardRef.current = standard;
+    onlyPm25Ref.current = onlyPm25;
     const map = mapInstanceRef.current;
     if (!map) return;
 
@@ -589,7 +670,7 @@ export default function AirMap({
     if (nearestStationRef.current && focusCity) {
       renderFocusMarkerRef.current(nearestStationRef.current, focusCity);
     }
-  }, [standard, focusCity]);
+  }, [standard, onlyPm25, focusCity]);
 
   // 响应焦点城市变更：计算距该城市市中心经纬度最近的在册核心站点并渲染地标
   useEffect(() => {
@@ -633,6 +714,18 @@ export default function AirMap({
         zIndexOffset: 3000,
       });
       layer.addLayer(tempMarker);
+    }
+
+    // 异步拉取焦点城市官方实测数据 (获取实测 PM2.5 与分项指标)
+    if (!focusCityDataMap.current.has(focusCity.id)) {
+      fetchWAQICityData(focusCity.id).then((rec: AirQualityRecord) => {
+        if (rec) {
+          focusCityDataMap.current.set(focusCity.id, rec);
+          if (nearestStationRef.current) {
+            renderFocusMarkerRef.current(nearestStationRef.current, focusCity);
+          }
+        }
+      }).catch(() => {});
     }
 
     // 2. 异步向 bounds 网格切片接口请求该城市中心周边 ±0.35° 范围站点，精准补全最近站
