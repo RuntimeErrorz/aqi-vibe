@@ -10727,21 +10727,36 @@ export const CITIES_REGISTRY: CityMeta[] = [
   }
 ];
 
+// 动态城市统计常量（避免页面硬编码陈旧数字）
+export const TOTAL_CITY_COUNT = CITIES_REGISTRY.length;
+export const DOMESTIC_CITY_COUNT = CITIES_REGISTRY.filter((c) => c.isDomestic).length;
+export const GLOBAL_CITY_COUNT = TOTAL_CITY_COUNT - DOMESTIC_CITY_COUNT;
+
+// O(1) 哈希索引，大幅加速热路径 findCity() 查询
+const CITY_EXACT_INDEX = new Map<string, CityMeta>();
+for (const c of CITIES_REGISTRY) {
+  CITY_EXACT_INDEX.set(c.id.toLowerCase(), c);
+  if (!CITY_EXACT_INDEX.has(c.nameZh.toLowerCase())) {
+    CITY_EXACT_INDEX.set(c.nameZh.toLowerCase(), c);
+  }
+  if (!CITY_EXACT_INDEX.has(c.nameEn.toLowerCase())) {
+    CITY_EXACT_INDEX.set(c.nameEn.toLowerCase(), c);
+  }
+  if (c.waqiSlug && !CITY_EXACT_INDEX.has(c.waqiSlug.toLowerCase())) {
+    CITY_EXACT_INDEX.set(c.waqiSlug.toLowerCase(), c);
+  }
+}
+
 export function findCity(query: string): CityMeta | undefined {
   if (!query) return undefined;
   const q = query.trim().toLowerCase();
-  
-  // 1. 精确匹配
-  const exact = CITIES_REGISTRY.find(c => 
-    c.id.toLowerCase() === q ||
-    c.nameZh.toLowerCase() === q ||
-    c.nameEn.toLowerCase() === q ||
-    c.waqiSlug?.toLowerCase() === q
-  );
+
+  // 1. O(1) 精确匹配
+  const exact = CITY_EXACT_INDEX.get(q);
   if (exact) return exact;
 
   // 2. 包含匹配 (如搜 "巴黎" 或 "paris")
-  const partial = CITIES_REGISTRY.find(c => 
+  const partial = CITIES_REGISTRY.find(c =>
     c.nameZh.toLowerCase().includes(q) ||
     c.nameEn.toLowerCase().includes(q) ||
     c.id.toLowerCase().includes(q)

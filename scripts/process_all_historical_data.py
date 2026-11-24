@@ -10,26 +10,12 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 print("Starting Full Historical Air Quality Data Processing Pipeline...")
 
-# 1. Breakpoints matching lib/aqi-calculator.ts
-CN_BP = {
-    'iaqi': [0, 50, 100, 150, 200, 300, 400, 500],
-    'pm25': [0, 35, 75, 115, 150, 250, 350, 500],
-    'pm10': [0, 50, 150, 250, 350, 420, 500, 600],
-    'so2':  [0, 150, 500, 650, 800],
-    'no2':  [0, 100, 200, 700, 1200, 2340, 3090, 3840],
-    'co':   [0, 5, 10, 35, 60, 90, 120, 150],
-    'o3':   [0, 160, 200, 300, 400, 800, 1000, 1200],
-}
+# 1. Load Breakpoints from shared/aqi-standards.json (SSOT: HJ 633-2012 Daily + US EPA 2024)
+with open('shared/aqi-standards.json', 'r', encoding='utf-8') as _sf:
+    _STD = json.load(_sf)
 
-US_BP = {
-    'aqi':  [0, 50, 100, 150, 200, 300, 500],
-    'pm25': [0.0, 12.0, 35.4, 55.4, 150.4, 250.4, 500.4],
-    'pm10': [0, 54, 154, 254, 354, 424, 604],
-    'no2':  [0, 100, 188, 677, 1221, 2349, 3853],
-    'so2':  [0, 92, 197, 485, 797, 1584, 2630],
-    'co':   [0, 5.0, 10.8, 14.2, 17.6, 34.8, 57.6],
-    'o3':   [0, 108, 140, 170, 210, 400, 800],
-}
+CN_BP = _STD['cn_daily']
+US_BP = _STD['us_2024']
 
 def calc_iaqi(val, bp_conc, bp_iaqi):
     if val is None or val <= 0:

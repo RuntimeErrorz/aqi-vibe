@@ -46,12 +46,12 @@ jobs:
           git config --local user.name "github-actions[bot]"
           
           # 仅在数据目录有实质变化时提交
-          if [ -n "$(git status --porcelain data/ public/data/history/)" ]; then
-            git add data/processed/ public/data/history/
+          if [ -n "$(git status --porcelain data/ public/data/)" ]; then
+            git add data/processed/ public/data/history/ public/data/history_summary.json
             SYNC_TIME=$(date -u +'%Y-%m-%d')
             git commit -m "chore(data): auto-sync domestic air quality history for $SYNC_TIME"
             git push origin ${{ github.ref_name }}
-            echo "::notice::历史数据已成功增量同步并推送到仓库，将自动触发 Cloudflare Pages 部署！"
+            echo "::notice::历史数据已成功增量同步并推送到仓库，将自动触发 Cloudflare Workers 部署！"
           else
             echo "::notice::本地数据已是最新，无任何新数据变更。"
           fi

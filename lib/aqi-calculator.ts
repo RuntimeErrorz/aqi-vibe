@@ -1,30 +1,25 @@
 import { AQIEvaluation, PollutantValues, IAQIValues, StandardType } from './types';
+import standardsConfig from '../shared/aqi-standards.json';
 
-// 中国国标 HJ 633-2012 断点表
-const CN_BREAKPOINTS = {
-  iaqi: [0, 50, 100, 150, 200, 300, 400, 500],
-  pm25: [0, 35, 75, 115, 150, 250, 350, 500],
-  pm10: [0, 50, 150, 250, 350, 420, 500, 600],
-  so2: [0, 150, 500, 650, 800],
-  no2: [0, 100, 200, 700, 1200, 2340, 3090, 3840],
-  co: [0, 5, 10, 35, 60, 90, 120, 150],
-  o3: [0, 160, 200, 300, 400, 800, 1000, 1200],
-};
+export type AveragingPeriod = 'hourly' | 'daily';
 
-// 美国环保署 US EPA 断点表 (浓度转微克/立方米)
-const US_BREAKPOINTS = {
-  aqi: [0, 50, 100, 150, 200, 300, 500],
-  pm25: [0.0, 12.0, 35.4, 55.4, 150.4, 250.4, 500.4],
-  pm10: [0, 54, 154, 254, 354, 424, 604],
-  no2: [0, 100, 188, 677, 1221, 2349, 3853],
-  so2: [0, 92, 197, 485, 797, 1584, 2630],
-  co: [0, 5.0, 10.8, 14.2, 17.6, 34.8, 57.6],
-  o3: [0, 108, 140, 170, 210, 400, 800],
-};
+// WHO AQG 2021 全球空气质量健康参考准则
+export const WHO_2021_GUIDELINES = standardsConfig.who2021;
+
+// 中国国标 HJ 633-2012 断点表（区分实时小时评价与 24h 日均/O3_8h 评价）
+export const CN_HOURLY_BREAKPOINTS = standardsConfig.cn_hourly;
+export const CN_DAILY_BREAKPOINTS = standardsConfig.cn_daily;
+
+// 美国环保署 US EPA 2024 修订断点表 (2024年5月6日生效：PM2.5 优限值 9.0 μg/m³)
+export const US_BREAKPOINTS = standardsConfig.us_2024;
+
+function getCNBreakpoints(period: AveragingPeriod) {
+  return period === 'daily' ? CN_DAILY_BREAKPOINTS : CN_HOURLY_BREAKPOINTS;
+}
 
 function calculateIAQI(concentration: number, bpConcentrations: number[], bpIAQI: number[]): number {
   if (concentration <= 0 || isNaN(concentration)) return 0;
-  
+
   const maxIdx = Math.min(bpConcentrations.length - 1, bpIAQI.length - 1);
   if (concentration >= bpConcentrations[maxIdx]) {
     return bpIAQI[maxIdx];
@@ -77,34 +72,39 @@ export function calculateConcentrationFromIAQI(
 export function convertIAQIToConcentration(
   pollutant: 'pm25' | 'pm10' | 'o3' | 'no2' | 'so2' | 'co',
   iaqiVal: number,
-  standard: StandardType = 'US'
+  standard: StandardType = 'US',
+  period: AveragingPeriod = 'hourly'
 ): number {
-  const bp = standard === 'CN' ? CN_BREAKPOINTS : US_BREAKPOINTS;
-  const bpIAQI = standard === 'CN' ? CN_BREAKPOINTS.iaqi : US_BREAKPOINTS.aqi;
-  const bpConc = (bp as any)[pollutant];
+  const bp = standard === 'CN' ? getCNBreakpoints(period) : US_BREAKPOINTS;
+  const bpIAQI = standard === 'CN' ? (bp as typeof CN_HOURLY_BREAKPOINTS).iaqi : US_BREAKPOINTS.aqi;
+  const bpConc = (bp as Record<string, number[]>)[pollutant];
   if (!bpConc) return iaqiVal;
   return calculateConcentrationFromIAQI(iaqiVal, bpConc, bpIAQI);
 }
 
-export function calculateCNIAQI(pollutants: PollutantValues): IAQIValues {
+export function calculateCNIAQI(
+  pollutants: PollutantValues,
+  period: AveragingPeriod = 'hourly'
+): IAQIValues {
+  const bp = getCNBreakpoints(period);
   const result: IAQIValues = {};
   if (pollutants.pm25 !== undefined) {
-    result.pm25 = calculateIAQI(pollutants.pm25, CN_BREAKPOINTS.pm25, CN_BREAKPOINTS.iaqi);
+    result.pm25 = calculateIAQI(pollutants.pm25, bp.pm25, bp.iaqi);
   }
   if (pollutants.pm10 !== undefined) {
-    result.pm10 = calculateIAQI(pollutants.pm10, CN_BREAKPOINTS.pm10, CN_BREAKPOINTS.iaqi);
+    result.pm10 = calculateIAQI(pollutants.pm10, bp.pm10, bp.iaqi);
   }
   if (pollutants.so2 !== undefined) {
-    result.so2 = calculateIAQI(pollutants.so2, CN_BREAKPOINTS.so2, CN_BREAKPOINTS.iaqi);
+    result.so2 = calculateIAQI(pollutants.so2, bp.so2, bp.iaqi);
   }
   if (pollutants.no2 !== undefined) {
-    result.no2 = calculateIAQI(pollutants.no2, CN_BREAKPOINTS.no2, CN_BREAKPOINTS.iaqi);
+    result.no2 = calculateIAQI(pollutants.no2, bp.no2, bp.iaqi);
   }
   if (pollutants.co !== undefined) {
-    result.co = calculateIAQI(pollutants.co, CN_BREAKPOINTS.co, CN_BREAKPOINTS.iaqi);
+    result.co = calculateIAQI(pollutants.co, bp.co, bp.iaqi);
   }
   if (pollutants.o3 !== undefined) {
-    result.o3 = calculateIAQI(pollutants.o3, CN_BREAKPOINTS.o3, CN_BREAKPOINTS.iaqi);
+    result.o3 = calculateIAQI(pollutants.o3, bp.o3, bp.iaqi);
   }
   return result;
 }
@@ -143,7 +143,7 @@ const POLLUTANT_NAMES_ZH: Record<string, string> = {
 
 /**
  * 纯粹基于 PM2.5 物理质量浓度计算 AQI（仅看 PM2.5 模式核心算法）
- * 严格只根据 PM2.5 单项指标分指数折算，绝对不与其他污染物（O3、PM10 等）比较或取最大值 (No Max)！
+ * 严格只根据 PM2.5 单项指标分指数折算，绝对不与其他污染物比较或取最大值
  */
 export function calculatePM25AQI(
   pm25Concentration: number | undefined | null,
@@ -158,7 +158,7 @@ export function calculatePM25AQI(
     return 0;
   }
   if (standard === 'CN') {
-    return calculateIAQI(pm25Concentration, CN_BREAKPOINTS.pm25, CN_BREAKPOINTS.iaqi);
+    return calculateIAQI(pm25Concentration, CN_HOURLY_BREAKPOINTS.pm25, CN_HOURLY_BREAKPOINTS.iaqi);
   } else {
     return calculateIAQI(pm25Concentration, US_BREAKPOINTS.pm25, US_BREAKPOINTS.aqi);
   }
@@ -167,9 +167,10 @@ export function calculatePM25AQI(
 export function evaluateAQI(
   pollutants: PollutantValues,
   standard: StandardType = 'US',
-  onlyPm25 = false
+  onlyPm25 = false,
+  period: AveragingPeriod = 'hourly'
 ): AQIEvaluation {
-  // 1. 如果开启「只看 PM2.5」模式：AQI 计算完全只按照 PM2.5 单项物理质量浓度计算，绝对不取最大值！
+  // 1. 若开启「只看 PM2.5」模式：AQI 计算完全只按照 PM2.5 单项物理质量浓度计算
   if (onlyPm25) {
     const pm25Val = pollutants.pm25;
     const aqi = calculatePM25AQI(pm25Val, standard);
@@ -182,7 +183,7 @@ export function evaluateAQI(
   }
 
   // 2. 综合全项 AQI 模式：取六项污染物 IAQI 分指数中的最大值 (max)
-  const iaqi = standard === 'CN' ? calculateCNIAQI(pollutants) : calculateUSIAQI(pollutants);
+  const iaqi = standard === 'CN' ? calculateCNIAQI(pollutants, period) : calculateUSIAQI(pollutants);
 
   let maxAQI = 0;
   let primaryPollutant = 'pm25';
@@ -200,7 +201,6 @@ export function evaluateAQI(
     }
   }
 
-  // 兜底：如果完全没有分项，则以 PM2.5 单项直接计算兜底
   if (maxAQI === 0 && pollutants.pm25) {
     maxAQI = calculatePM25AQI(pollutants.pm25, standard);
   }
@@ -229,8 +229,8 @@ export function getCNEvaluation(aqi: number, primaryPollutant = 'pm25'): AQIEval
 
   let level = '优';
   let levelEn = 'Good';
-  let color = '#10b981'; // 绿
-  let textColor = '#ffffff';
+  let color = '#10b981';
+  const textColor = '#ffffff';
   let healthAdvice = '空气质量令人满意，基本无空气污染，各类人群可正常户外活动。';
 
   if (aqi <= 50) {
@@ -296,7 +296,7 @@ export function getUSEvaluation(aqi: number, primaryPollutant = 'pm25'): AQIEval
   let level = '优';
   let levelEn = 'Good';
   let color = '#10b981';
-  let textColor = '#ffffff';
+  const textColor = '#ffffff';
   let healthAdvice = '空气质量优良，无污染风险，极适宜正常户外活动。';
 
   if (aqi <= 50) {

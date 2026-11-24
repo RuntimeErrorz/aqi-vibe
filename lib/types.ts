@@ -75,6 +75,8 @@ export interface AirQualityRecord {
     url?: string;
   }[];
   isOffline?: boolean;
+  compositeStationCount?: number;
+  compositeCentroid?: [number, number];
 }
 
 export interface CityMeta {

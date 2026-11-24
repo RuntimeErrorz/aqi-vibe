@@ -1,46 +1,129 @@
-import { AnnualTrend, StandardType, ForecastDay, CalendarHeatmapDay } from '../types';
+import { AnnualTrend, StandardType, CalendarHeatmapDay } from '../types';
 import { evaluateAQI, calculatePM25AQI } from '../aqi-calculator';
-import { build24HourPointsFromWaqiObs, fetchWaqiHourlyDirect } from './waqi-decoder';
-import historySummary from '@/data/processed/history_summary.json';
 import { CITIES_REGISTRY } from '@/lib/constants/cities';
 import { getCountryInfo } from '@/lib/constants/countries';
+
+// 重新导出实时趋势与预报接口，保持向后兼容（首页和地图页应直接导入 realtime-trend 避免加载历史逻辑）
+export {
+  fetch24HourHourlyTrend,
+  fetch5DayForecast,
+  type HourlyTrendPoint,
+  type HourlyTrendResult,
+} from './realtime-trend';
+
+// 运行时异步加载的 history_summary.json 内存单例缓存（彻底避免将 1.8MB 静态打入客户端 JS 包！）
+let summaryCache: Record<string, any[]> | null = null;
+let summaryPromise: Promise<Record<string, any[]>> | null = null;
 
 // 客户端逐日数据内存缓存（按需加载并保持极速响应）
 const clientDailyCache: Record<string, Record<string, any>> = {};
 
+function getSummarySync(): Record<string, any[]> {
+  if (summaryCache) return summaryCache;
+  // Node.js 服务端/测试环境直接同步读取本地文件
+  if (typeof window === 'undefined') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const fs = require('fs');
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const path = require('path');
+      const candidates = [
+        path.join(process.cwd(), 'public', 'data', 'history_summary.json'),
+        path.join(process.cwd(), 'data', 'processed', 'history_summary.json'),
+      ];
+      for (const p of candidates) {
+        if (fs.existsSync(p)) {
+          summaryCache = JSON.parse(fs.readFileSync(p, 'utf-8'));
+          return summaryCache!;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return {};
+}
+
+/**
+ * 异步加载全局历史年度汇总索引 (/data/history_summary.json)，客户端单次按需请求并常驻内存
+ */
+export async function loadHistorySummary(): Promise<Record<string, any[]>> {
+  if (summaryCache) return summaryCache;
+  if (typeof window === 'undefined') {
+    return getSummarySync();
+  }
+  if (!summaryPromise) {
+    summaryPromise = fetch('/data/history_summary.json')
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data: Record<string, any[]>) => {
+        summaryCache = data || {};
+        return summaryCache;
+      })
+      .catch((err) => {
+        console.warn('[HistoryData] Failed to load history_summary.json:', err);
+        summaryPromise = null;
+        return {};
+      });
+  }
+  return summaryPromise;
+}
+
+export function isHistorySummaryLoaded(): boolean {
+  return summaryCache !== null;
+}
+
 /**
  * 获取城市的年际长期演进趋势
- * 严格由逐日真实历史实测记录在对应标准下按年聚合得出，无任何人工伪造数据。
+ * 严格由逐日真实历史实测记录在对应标准（国标 HJ 633-2012 日均 / 美标 US EPA 2024）下按年聚合得出。
  */
 export function getAnnualTrends(cityId: string, standard: StandardType = 'US', onlyPm25 = false): AnnualTrend[] {
-  const cityTrends = (historySummary as Record<string, any[]>)[cityId];
+  const summaryMap = getSummarySync();
+  const cityTrends = summaryMap[cityId];
   if (!cityTrends || !Array.isArray(cityTrends)) {
     return [];
   }
 
-  // 过滤少于 30 天的残缺年份
   return cityTrends
     .filter((t) => t.daysCount >= 30)
-    .map((t) => ({
-      year: t.year,
-      pm25Avg: t.pm25Avg,
-      pm10Avg: t.pm10Avg,
-      goodDaysRatio: standard === 'CN' ? t.goodDaysRatioCN : t.goodDaysRatioUS,
-      pollutedDays:
-        standard === 'CN'
-          ? (t.pollutedDaysCN ?? Math.max(0, t.daysCount - Math.round((t.goodDaysRatioCN * t.daysCount) / 100)))
-          : (t.pollutedDaysUS ?? Math.max(0, t.daysCount - Math.round((t.goodDaysRatioUS * t.daysCount) / 100))),
-      heavyPollutionDays: standard === 'CN' ? t.heavyPollutionDaysCN : t.heavyPollutionDaysUS,
-      aqiAvg: onlyPm25 ? (t.pm25Avg > 0 ? calculatePM25AQI(t.pm25Avg, standard) : 0) : (standard === 'CN' ? t.aqiAvgCN : t.aqiAvgUS),
-      daysCount: t.daysCount,
-    }));
+    .map((t) => {
+      const goodDaysRatio = onlyPm25
+        ? (standard === 'CN'
+            ? (t.goodDaysRatioPm25CN ?? t.goodDaysRatioCN)
+            : (t.goodDaysRatioPm25US ?? t.goodDaysRatioUS))
+        : (standard === 'CN' ? t.goodDaysRatioCN : t.goodDaysRatioUS);
+
+      const pollutedDays = onlyPm25
+        ? (standard === 'CN'
+            ? (t.pollutedDaysPm25CN ?? t.pollutedDaysCN ?? Math.max(0, t.daysCount - Math.round((goodDaysRatio * t.daysCount) / 100)))
+            : (t.pollutedDaysPm25US ?? t.pollutedDaysUS ?? Math.max(0, t.daysCount - Math.round((goodDaysRatio * t.daysCount) / 100))))
+        : (standard === 'CN'
+            ? (t.pollutedDaysCN ?? Math.max(0, t.daysCount - Math.round((t.goodDaysRatioCN * t.daysCount) / 100)))
+            : (t.pollutedDaysUS ?? Math.max(0, t.daysCount - Math.round((t.goodDaysRatioUS * t.daysCount) / 100))));
+
+      return {
+        year: t.year,
+        pm25Avg: t.pm25Avg,
+        pm10Avg: t.pm10Avg,
+        goodDaysRatio,
+        pollutedDays,
+        heavyPollutionDays: standard === 'CN' ? t.heavyPollutionDaysCN : t.heavyPollutionDaysUS,
+        aqiAvg: onlyPm25
+          ? (t.pm25Avg > 0 ? calculatePM25AQI(t.pm25Avg, standard) : 0)
+          : (standard === 'CN' ? t.aqiAvgCN : t.aqiAvgUS),
+        daysCount: t.daysCount,
+      };
+    });
 }
 
 /**
  * 校验该城市是否具备官方实测长期历史归档数据
  */
 export function hasCityHistory(cityId: string): boolean {
-  const cityTrends = (historySummary as Record<string, any[]>)[cityId];
+  const summaryMap = getSummarySync();
+  const cityTrends = summaryMap[cityId];
   return Array.isArray(cityTrends) && cityTrends.length > 0;
 }
 
@@ -52,7 +135,7 @@ export function getCityAvailableYears(cityId: string): number[] {
   if (trends.length === 0) {
     return [];
   }
-  return trends.map((t) => t.year).reverse(); // 降序排列
+  return trends.map((t) => t.year).reverse();
 }
 
 /**
@@ -63,7 +146,11 @@ export async function fetchCityDailyHistory(cityId: string): Promise<Record<stri
     return clientDailyCache[cityId];
   }
 
-  // 绝不虚构兜底：若该城市未被收录于历史档案库，直接返回空，避免发起无效网络请求与产生 404
+  // 若 summary 尚未加载，先确保加载完成，防止误判为无历史记录
+  if (!summaryCache) {
+    await loadHistorySummary();
+  }
+
   if (!hasCityHistory(cityId)) {
     return {};
   }
@@ -86,17 +173,18 @@ export async function fetchCityDailyHistory(cityId: string): Promise<Record<stri
 
 export interface CityYearPollutants {
   year: number;
-  pm25: number;
-  pm10: number;
-  o3: number;
-  no2: number;
-  so2: number;
-  co: number;
+  pm25: number | null;
+  pm10: number | null;
+  o3: number | null;
+  no2: number | null;
+  so2: number | null;
+  co: number | null;
   validDays: number;
 }
 
 /**
  * 从城市逐日实测字典中精确聚合指定年份的 6 大主要污染物实测年均值
+ * 严格遵循反伪造原则：缺失的污染物返回 null，绝不按系数伪造！
  */
 export function aggregateYearlyPollutants(
   daily: Record<string, any> | undefined,
@@ -107,11 +195,11 @@ export function aggregateYearlyPollutants(
   const days = Object.keys(daily).filter((k) => k.startsWith(prefix));
   if (days.length === 0) return null;
 
-  const calcAvg = (key: string): number => {
+  const calcAvg = (key: string): number | null => {
     const vals = days
       .map((d) => daily[d]?.[key])
       .filter((v) => v !== undefined && v !== null && !isNaN(v) && v > 0);
-    return vals.length ? Number((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1)) : 0;
+    return vals.length ? Number((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1)) : null;
   };
 
   return {
@@ -126,13 +214,75 @@ export function aggregateYearlyPollutants(
   };
 }
 
+export interface MonthlySeasonalStat {
+  month: number; // 1..12
+  label: string;
+  pm25Avg: number | null;
+  o3Avg: number | null;
+  aqiAvg: number | null;
+  daysCount: number;
+}
+
+/**
+ * 从真实逐日实测字典聚合 1~12 月季节律动均值（支持单年或全历史多年聚合）
+ */
+export function aggregateMonthlySeasonality(
+  daily: Record<string, any> | undefined,
+  standard: StandardType = 'US',
+  onlyPm25 = false,
+  year?: number
+): MonthlySeasonalStat[] {
+  const buckets = Array.from({ length: 12 }, (_, idx) => ({
+    month: idx + 1,
+    pm25: [] as number[],
+    o3: [] as number[],
+    aqi: [] as number[],
+    daysCount: 0,
+  }));
+
+  if (daily && typeof daily === 'object') {
+    const prefix = year ? `${year}-` : null;
+    for (const [dateStr, rec] of Object.entries(daily)) {
+      if (prefix && !dateStr.startsWith(prefix)) continue;
+      const monthNum = parseInt(dateStr.slice(5, 7), 10);
+      if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) continue;
+      const b = buckets[monthNum - 1];
+      b.daysCount++;
+      const pm25 = rec?.pm25 !== undefined && rec?.pm25 !== null && Number(rec.pm25) > 0 ? Number(rec.pm25) : undefined;
+      const o3 = rec?.o3 !== undefined && rec?.o3 !== null && Number(rec.o3) > 0 ? Number(rec.o3) : undefined;
+      if (pm25 !== undefined) b.pm25.push(pm25);
+      if (o3 !== undefined) b.o3.push(o3);
+
+      const evalRes = evaluateAQI(
+        {
+          pm25,
+          pm10: rec?.pm10 ? Number(rec.pm10) : undefined,
+          o3,
+          no2: rec?.no2 ? Number(rec.no2) : undefined,
+          so2: rec?.so2 ? Number(rec.so2) : undefined,
+          co: rec?.co ? Number(rec.co) : undefined,
+        },
+        standard,
+        onlyPm25,
+        'daily'
+      );
+      if (evalRes.aqi > 0) b.aqi.push(evalRes.aqi);
+    }
+  }
+
+  return buckets.map((b) => ({
+    month: b.month,
+    label: `${b.month}月`,
+    pm25Avg: b.pm25.length ? Number((b.pm25.reduce((a, c) => a + c, 0) / b.pm25.length).toFixed(1)) : null,
+    o3Avg: b.o3.length ? Number((b.o3.reduce((a, c) => a + c, 0) / b.o3.length).toFixed(1)) : null,
+    aqiAvg: b.aqi.length ? Math.round(b.aqi.reduce((a, c) => a + c, 0) / b.aqi.length) : null,
+    daysCount: b.daysCount,
+  }));
+}
+
 /**
  * 获取特定城市某一年的真实 365 天日历热力数据
- * 严格基于 QuotSoft 与 WAQI 真实逐日实测记录，无任何伪随机或波形兜底。
- * @param cityId 城市 ID (如 'gl-newyork', 'cn-beijing')
- * @param year 年份 (如 2024)
- * @param standard 评价标准 (CN 或 US)
- * @param dailyRecords 可选的传入实测逐日字典；未提供时如果在 Node 环境则自动读取文件
+ * 严格使用日均断点评价 (period = 'daily')，无任何伪随机或波形兜底。
  */
 export function get365CalendarHeatmap(
   cityId: string,
@@ -143,10 +293,11 @@ export function get365CalendarHeatmap(
 ): CalendarHeatmapDay[] {
   let records = dailyRecords || clientDailyCache[cityId];
 
-  // 服务端 Node.js 环境下 (如 API 路由执行)，自动读取本地静态文件
   if (!records && typeof window === 'undefined') {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const fs = require('fs');
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const path = require('path');
       const safeId = cityId.replace(/[^a-zA-Z0-9_\-]/g, '_');
       const filePath = path.join(process.cwd(), 'public', 'data', 'history', `${safeId}.json`);
@@ -178,7 +329,7 @@ export function get365CalendarHeatmap(
       co: rec.co !== undefined && rec.co !== null ? Number(rec.co) : undefined,
     };
 
-    const evalResult = evaluateAQI(pollutants, standard, onlyPm25);
+    const evalResult = evaluateAQI(pollutants, standard, onlyPm25, 'daily');
     result.push({
       date: dateStr,
       aqi: evalResult.aqi,
@@ -195,143 +346,9 @@ export function get365CalendarHeatmap(
     });
   }
 
-  // 严格按日期升序排列
   result.sort((a, b) => a.date.localeCompare(b.date));
   return result;
 }
-
-export interface HourlyTrendPoint {
-  hour: string;
-  fullTime?: string;
-  aqi: number;
-  pm25: number;   // μg/m³
-  pm10?: number;  // μg/m³
-  o3: number;     // μg/m³
-  no2?: number;   // μg/m³
-  so2?: number;   // μg/m³
-  co?: number;    // mg/m³
-  iaqi?: {
-    pm25?: number;
-    pm10?: number;
-    o3?: number;
-    no2?: number;
-    so2?: number;
-    co?: number;
-  };
-  isReal?: boolean;
-}
-
-export interface HourlyTrendResult {
-  points: HourlyTrendPoint[];
-  isReal: boolean;
-  source: string;
-  forecast?: ForecastDay[];
-}
-
-/**
- * 过去 24 小时逐小时走势分析：
- * 纯真 100% 直连 WAQI 官方底层折线图时序流（反编译差分解码）
- * 彻底移除任何 CAMS / 数值预报兜底与伪造波形，纯粹呈现官方测站逐小时实测。
- */
-export async function fetch24HourHourlyTrend(
-  lat: number,
-  lng: number,
-  standard: StandardType = 'US',
-  currentAQI = 65,
-  currentPM25 = 32,
-  currentO3 = 40,
-  updateTime?: string,
-  stationIdx?: number
-): Promise<HourlyTrendResult> {
-  if (stationIdx) {
-    // 优先 1：直连 WAQI 官方底层双步鉴权与差分解码协议（本地开发与前端直连 100% 秒通）
-    try {
-      const directPoints = await fetchWaqiHourlyDirect(stationIdx, standard);
-      if (directPoints && directPoints.length >= 3) {
-        return {
-          points: directPoints,
-          isReal: true,
-          source: '官方测站逐小时实测',
-        };
-      }
-    } catch {
-      // 忽略直连网络微抖
-    }
-
-    // 优先 2：若部署在边缘环境且直连未中，通过 Cloudflare 边缘缓存专线网关拉取
-    try {
-      if (typeof window !== 'undefined' && window.location.origin) {
-        const edgeRes = await fetch(`${window.location.origin}/api/waqi-hourly?idx=${stationIdx}`, {
-          signal: AbortSignal.timeout(3000),
-        });
-        if (edgeRes.ok) {
-          const waqiJson = await edgeRes.json();
-          const obs = waqiJson?.rxs?.obs?.[0]?.msg?.obs;
-          if (obs && obs.pm25) {
-            const edgePoints = build24HourPointsFromWaqiObs(obs, standard);
-            if (edgePoints.length >= 3) {
-              return {
-                points: edgePoints,
-                isReal: true,
-                source: '官方测站逐小时实测',
-              };
-            }
-          }
-        }
-      }
-    } catch {
-      // 边缘网关失败
-    }
-  }
-
-  // 绝不使用任何 CAMS 或虚构模拟数据兜底，无数据时如实返回空点集
-  return {
-    points: [],
-    isReal: false,
-    source: '该站点暂无 WAQI 逐小时实测发布',
-  };
-}
-
-/**
- * 获取未来 5 天基于 ECMWF / CAMS（欧洲中期天气预报中心数值扩散模型）的真实大气质量预测
- */
-export async function fetch5DayForecast(lat: number, lng: number): Promise<ForecastDay[]> {
-  try {
-    const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}&hourly=pm2_5&forecast_days=6&timezone=auto`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(4500) });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const times: string[] = data?.hourly?.time || [];
-    const pm25Arr: (number | null)[] = data?.hourly?.pm2_5 || [];
-
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    const todayStr = `${y}-${m}-${d}`;
-
-    const forecastMap: Record<string, number[]> = {};
-    for (let i = 0; i < times.length; i++) {
-      const dayStr = times[i].slice(0, 10);
-      if (dayStr >= todayStr && pm25Arr[i] != null && !isNaN(pm25Arr[i]!)) {
-        if (!forecastMap[dayStr]) forecastMap[dayStr] = [];
-        forecastMap[dayStr].push(pm25Arr[i]!);
-      }
-    }
-
-    return Object.entries(forecastMap).slice(0, 5).map(([day, vals]) => {
-      const min = Math.round(Math.min(...vals));
-      const max = Math.round(Math.max(...vals));
-      const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-      return { day, min, max, avg };
-    });
-  } catch {
-    return [];
-  }
-}
-
-
-
 
 export interface CityRankingItem {
   id: string;
@@ -350,7 +367,7 @@ export interface CityRankingItem {
   goodDaysRatio: number;
   heavyPollutionDays: number;
   daysCount: number;
-  improvementRate: number | null; // % relative to earliest baseline
+  improvementRate: number | null;
   earliestYear: number;
   earliestPm25: number;
 }
@@ -377,7 +394,7 @@ export function getAllCitiesRanking(
   standard: StandardType = 'US',
   onlyPm25 = false
 ): CityRankingItem[] {
-  const summaryMap = historySummary as Record<string, any[]>;
+  const summaryMap = getSummarySync();
   const list: CityRankingItem[] = [];
 
   for (const city of CITIES_REGISTRY) {
@@ -398,9 +415,14 @@ export function getAllCitiesRanking(
       ? (yearObj.pm25Avg > 0 ? calculatePM25AQI(yearObj.pm25Avg, standard) : 0)
       : (standard === 'CN' ? yearObj.aqiAvgCN : yearObj.aqiAvgUS);
 
-    // 严禁将无实测数据、AQI <= 0 或缺失 PM2.5 的城市纳入排行榜（彻底过滤 0 分与暂无数据）
     if (!calculatedAqi || calculatedAqi <= 0) continue;
     if (onlyPm25 && (!yearObj.pm25Avg || yearObj.pm25Avg <= 0)) continue;
+
+    const goodDaysRatio = onlyPm25
+      ? (standard === 'CN'
+          ? (yearObj.goodDaysRatioPm25CN ?? yearObj.goodDaysRatioCN)
+          : (yearObj.goodDaysRatioPm25US ?? yearObj.goodDaysRatioUS))
+      : (standard === 'CN' ? yearObj.goodDaysRatioCN : yearObj.goodDaysRatioUS);
 
     list.push({
       id: city.id,
@@ -416,7 +438,7 @@ export function getAllCitiesRanking(
       pm25Avg: yearObj.pm25Avg,
       pm10Avg: yearObj.pm10Avg,
       aqiAvg: calculatedAqi,
-      goodDaysRatio: standard === 'CN' ? yearObj.goodDaysRatioCN : yearObj.goodDaysRatioUS,
+      goodDaysRatio,
       heavyPollutionDays: standard === 'CN' ? yearObj.heavyPollutionDaysCN : yearObj.heavyPollutionDaysUS,
       daysCount: yearObj.daysCount,
       improvementRate,
@@ -452,7 +474,8 @@ export function getAllCountriesRanking(
     if (cList.length === 0) return;
     const countryMeta = getCountryInfo(cCode);
 
-    const aqiSum = cList.reduce((acc, c) => acc + c.aqiAvg, 0); if (aqiSum <= 0) return;
+    const aqiSum = cList.reduce((acc, c) => acc + c.aqiAvg, 0);
+    if (aqiSum <= 0) return;
     const pm25Sum = cList.reduce((acc, c) => acc + c.pm25Avg, 0);
     const pm10Sum = cList.reduce((acc, c) => acc + c.pm10Avg, 0);
     const goodDaysSum = cList.reduce((acc, c) => acc + c.goodDaysRatio, 0);
