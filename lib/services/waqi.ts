@@ -1,9 +1,27 @@
-import { AirQualityRecord, PollutantValues, IAQIValues, CityMeta } from '../types';
+import { AirQualityRecord, PollutantValues, IAQIValues, CityMeta, WeatherInfo } from '../types';
 import { evaluateAQI, getCNEvaluation, getUSEvaluation, convertIAQIToConcentration, calculateCNIAQI } from '../aqi-calculator';
-import { findCity, CITIES_REGISTRY } from '../constants/cities';
-import { iso1A2Code } from '@rapideditor/country-coder';
+import { findCity } from '../constants/cities';
+import {
+  aggregateCompositeRecord,
+  extractStationMetricsFromIaqi,
+  preferOfficialStations,
+} from './composite-aggregator';
 
-const WAQI_TOKEN = process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48';
+const WAQI_TOKENS: string[] = [
+  process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48',
+  'cf3c881dede05b146dac69b27aa6ef8ec0f46886',
+  'eabaffdde577add1382ca4619b72741eabded63e',
+  '9b38f69fe8f813149605f68ddfb5e4ea49199636',
+  '59c6cfc54957d81567376569de7c00bc058e07f7',
+].filter(Boolean);
+const WAQI_TOKEN = WAQI_TOKENS[0];
+
+let waqiTokenCursor = 0;
+function getNextWaqiToken(): string {
+  const token = WAQI_TOKENS[waqiTokenCursor % WAQI_TOKENS.length];
+  waqiTokenCursor = (waqiTokenCursor + 1) % WAQI_TOKENS.length;
+  return token;
+}
 
 export async function fetchWAQICityData(cityIdentifier: string): Promise<AirQualityRecord> {
   const cityMeta = findCity(cityIdentifier);
@@ -24,7 +42,7 @@ export async function fetchWAQICityData(cityIdentifier: string): Promise<AirQual
     // 2. 若无活跃实测站 (例如全城测站暂时停更或维护)，优先检查官方 slug 并如实展示其离线/停更状态
     if (cityMeta.waqiSlug) {
       try {
-        const url = `https://api.waqi.info/feed/${encodeURIComponent(cityMeta.waqiSlug)}/?token=${WAQI_TOKEN}`;
+        const url = `https://api.waqi.info/feed/${encodeURIComponent(cityMeta.waqiSlug)}/?token=${getNextWaqiToken()}`;
         const res = await fetch(url, { cache: 'no-store' });
         if (res.ok) {
           const json = await res.json();
@@ -38,7 +56,7 @@ export async function fetchWAQICityData(cityIdentifier: string): Promise<AirQual
 
   // 兼容直接传入 slug 或非注册标识符的兜底场景
   const targetSlug = cityMeta?.waqiSlug || cityIdentifier;
-  const url = `https://api.waqi.info/feed/${encodeURIComponent(targetSlug)}/?token=${WAQI_TOKEN}`;
+  const url = `https://api.waqi.info/feed/${encodeURIComponent(targetSlug)}/?token=${getNextWaqiToken()}`;
 
   try {
     const res = await fetch(url, { cache: 'no-store' });
@@ -54,32 +72,6 @@ export async function fetchWAQICityData(cityIdentifier: string): Promise<AirQual
   } catch (err: any) {
     console.warn(`[WAQI] Fetch failed for ${cityIdentifier}:`, err?.message || err);
     throw new Error(err?.message || `WAQI 暂未收录该站点或当前无数据发布`);
-  }
-}
-
-export async function fetchWAQIGeoData(lat: number, lng: number, maxDistKm = 35): Promise<AirQualityRecord> {
-  const url = `https://api.waqi.info/feed/geo:${lat};${lng}/?token=${WAQI_TOKEN}`;
-
-  try {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`WAQI HTTP status ${res.status}`);
-    const json = await res.json();
-    if (json.status !== 'ok' || !json.data) throw new Error('该坐标附近暂无有效 WAQI 测站');
-
-    // 严密距离校验：WAQI 的 geo 接口在本地无测站时会自动向外扩大数百公里搜索 (例如成都跳到200km外的重庆)
-    // 超过设定阈值必须坚决抛出异常拒绝跨城抢站
-    const stGeo = json.data.city?.geo;
-    if (Array.isArray(stGeo) && stGeo.length >= 2) {
-      const dist = getDistanceKm(lat, lng, stGeo[0], stGeo[1]);
-      if (dist > maxDistKm) {
-        throw new Error(`最近测站距离市中心过远 (${dist.toFixed(1)}km)，不属于目标城市范围`);
-      }
-    }
-
-    return parseWAQIResponse(json.data);
-  } catch (err: any) {
-    console.warn(`[WAQI] Geo fetch failed for ${lat},${lng}:`, err?.message || err);
-    throw new Error(err?.message || `该坐标附近暂无有效 WAQI 测站`);
   }
 }
 
@@ -102,13 +94,20 @@ export async function fetchWAQIStationByUid(
   cityMeta?: CityMeta,
   stationName?: string
 ): Promise<AirQualityRecord> {
-  const url = `https://api.waqi.info/feed/@${uid}/?token=${WAQI_TOKEN}`;
+  const url = `https://api.waqi.info/feed/@${uid}/?token=${getNextWaqiToken()}`;
 
   try {
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error(`WAQI HTTP status ${res.status}`);
     const json = await res.json();
     if (json.status !== 'ok' || !json.data) throw new Error('该测站暂无最新数据发布');
+
+    // 自动回填单站完整 6 项污染物 + 4 项气象内存快照，避免 enrichStationsWithPM25 重复请求市中心基准站
+    const metrics = extractStationMetricsFromIaqi(json.data.iaqi);
+    stationDetailCache.set(uid, {
+      ...metrics,
+      timestamp: Date.now(),
+    });
 
     const cleanName = stationName || extractCleanStationName(json.data.city?.name || '', cityMeta?.nameZh);
     const displayName = cityMeta ? cityMeta.nameZh : cleanName;
@@ -141,65 +140,192 @@ export interface WaqiBoundStation {
   pm25?: number; // 实测 PM2.5 质量浓度 (μg/m³)
   pm25IaqiUS?: number; // 实测美标 PM2.5 分指数
   pm25IaqiCN?: number; // 实测国标 PM2.5 分指数
+  pollutants?: PollutantValues; // 完整 6 项实测物理浓度
+  weather?: WeatherInfo; // 完整 4 项气象实测
 }
 
-// 测站实测 PM2.5 内存快照缓存池 (5分钟保鲜，杜绝重复击穿网络)
-const stationDetailCache = new Map<number, { pm25: number; pm25IaqiUS: number; pm25IaqiCN: number; timestamp: number }>();
+export interface EdgeCityRealtimePayload {
+  success: boolean;
+  cityId: string;
+  baseRecord: AirQualityRecord;
+  stations: WaqiBoundStation[];
+  compositeRecord: AirQualityRecord;
+  totalOfficialStations: number;
+  sampledStations: number;
+  updatedAt: string;
+}
+
+interface StationDetailEntry {
+  pm25?: number;
+  pm25IaqiUS?: number;
+  pm25IaqiCN?: number;
+  pollutants: PollutantValues;
+  weather: WeatherInfo;
+  timestamp: number;
+}
+
+// 测站实测内存快照缓存池 (5分钟保鲜) + 同站/同城并发去重池
+const stationDetailCache = new Map<number, StationDetailEntry>();
+const stationDetailInFlight = new Map<number, Promise<StationDetailEntry | null>>();
+const cityStationsInFlight = new Map<string, Promise<WaqiBoundStation[]>>();
+const edgeCityInFlight = new Map<string, Promise<EdgeCityRealtimePayload | null>>();
 
 /**
- * 异步并发获取或补齐微站详细实测 PM2.5 指标
+ * 优先请求 Cloudflare Worker 边缘加速聚合接口 (/api/city-realtime?city=...)
+ * 命中 3 分钟 Edge Cache 时 < 100ms 秒开；在本地 next dev 或纯静态托管下返回 null，自动回落前端并发通道。
  */
-export async function enrichStationsWithPM25(stations: WaqiBoundStation[]): Promise<WaqiBoundStation[]> {
-  if (!stations || stations.length === 0) return [];
-  const now = Date.now();
-  const CACHE_TTL = 5 * 60 * 1000;
+export async function fetchEdgeCityRealtime(
+  cityId: string,
+  signal?: AbortSignal
+): Promise<EdgeCityRealtimePayload | null> {
+  if (typeof window === 'undefined') return null;
 
-  const enriched = await Promise.all(
-    stations.map(async (st) => {
-      const cached = stationDetailCache.get(st.uid);
-      if (cached && now - cached.timestamp < CACHE_TTL) {
-        return {
-          ...st,
-          pm25: cached.pm25,
-          pm25IaqiUS: cached.pm25IaqiUS,
-          pm25IaqiCN: cached.pm25IaqiCN,
-        };
-      }
+  const existing = edgeCityInFlight.get(cityId);
+  if (existing) return existing;
 
-      try {
-        const url = `https://api.waqi.info/feed/@${st.uid}/?token=${WAQI_TOKEN}`;
-        const res = await fetch(url, { cache: 'no-store' });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.status === 'ok' && json.data) {
-            const rawPm25 = json.data.iaqi?.pm25?.v;
-            if (rawPm25 !== undefined && !isNaN(rawPm25)) {
-              const pm25IaqiUS = Math.round(rawPm25);
-              const pm25 = convertIAQIToConcentration('pm25', pm25IaqiUS, 'US');
-              const evalCN = evaluateAQI({ pm25 }, 'CN', true);
-              const entry = {
-                pm25,
-                pm25IaqiUS,
-                pm25IaqiCN: evalCN.aqi,
+  const task = (async (): Promise<EdgeCityRealtimePayload | null> => {
+    try {
+      const res = await fetch(`/api/city-realtime?city=${encodeURIComponent(cityId)}`, {
+        signal,
+      });
+      if (!res.ok) return null;
+      const json = (await res.json()) as EdgeCityRealtimePayload;
+      if (json && json.success && json.baseRecord && json.compositeRecord) {
+        // 顺手将边缘返回的单站分项同步写入内存缓存，方便用户在页面内切单站或顶部胶囊秒读
+        const now = Date.now();
+        if (Array.isArray(json.stations)) {
+          for (const st of json.stations) {
+            if (st.pollutants) {
+              stationDetailCache.set(st.uid, {
+                pm25: st.pm25,
+                pm25IaqiUS: st.pm25IaqiUS,
+                pm25IaqiCN: st.pm25IaqiCN,
+                pollutants: st.pollutants,
+                weather: st.weather || {},
                 timestamp: now,
-              };
-              stationDetailCache.set(st.uid, entry);
-              return {
-                ...st,
-                ...entry,
-              };
+              });
             }
           }
         }
-      } catch {
-        // 静默容灾
+        return json;
       }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      edgeCityInFlight.delete(cityId);
+    }
+  })();
 
-      return st;
-    })
-  );
+  edgeCityInFlight.set(cityId, task);
+  return task;
+}
 
-  return enriched;
+function fetchSingleStationPm25(uid: number, signal?: AbortSignal): Promise<StationDetailEntry | null> {
+  const existing = stationDetailInFlight.get(uid);
+  if (existing) return existing;
+
+  const task = (async (): Promise<StationDetailEntry | null> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const onParentAbort = () => controller.abort();
+    if (signal) {
+      if (signal.aborted) {
+        clearTimeout(timer);
+        return null;
+      }
+      signal.addEventListener('abort', onParentAbort, { once: true });
+    }
+
+    try {
+      const url = `https://api.waqi.info/feed/@${uid}/?token=${getNextWaqiToken()}`;
+      const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.status === 'ok' && json.data) {
+          const metrics = extractStationMetricsFromIaqi(json.data.iaqi);
+          const entry: StationDetailEntry = {
+            ...metrics,
+            timestamp: Date.now(),
+          };
+          stationDetailCache.set(uid, entry);
+          return entry;
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+      if (signal) {
+        signal.removeEventListener('abort', onParentAbort);
+      }
+      stationDetailInFlight.delete(uid);
+    }
+  })();
+
+  stationDetailInFlight.set(uid, task);
+  return task;
+}
+
+/**
+ * 异步高并发补齐微站完整 6 项污染物 + 4 项气象实测指标
+ * 借助 5-Token 轮询池 + 10 并发 HTTP/2 多路复用 + 同站请求去重 + 单站 6 秒长尾熔断
+ */
+export async function enrichStationsWithPM25(
+  stations: WaqiBoundStation[],
+  options?: { concurrency?: number; signal?: AbortSignal; maxStations?: number }
+): Promise<WaqiBoundStation[]> {
+  if (!stations || stations.length === 0) return [];
+  const now = Date.now();
+  const CACHE_TTL = 5 * 60 * 1000;
+  const concurrency = Math.max(1, options?.concurrency ?? 10);
+  const signal = options?.signal;
+  const maxStations = options?.maxStations ?? stations.length;
+
+  const result: WaqiBoundStation[] = [...stations];
+  const pendingIndices: number[] = [];
+
+  for (let i = 0; i < Math.min(stations.length, maxStations); i++) {
+    const st = stations[i];
+    if (st.pollutants && st.pm25 !== undefined && !isNaN(st.pm25) && st.pm25 > 0) continue;
+    const cached = stationDetailCache.get(st.uid);
+    if (cached && now - cached.timestamp < CACHE_TTL) {
+      result[i] = {
+        ...st,
+        pm25: cached.pm25,
+        pm25IaqiUS: cached.pm25IaqiUS,
+        pm25IaqiCN: cached.pm25IaqiCN,
+        pollutants: cached.pollutants,
+        weather: cached.weather,
+      };
+    } else {
+      pendingIndices.push(i);
+    }
+  }
+
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < pendingIndices.length) {
+      if (signal?.aborted) return;
+      const idx = pendingIndices[cursor++];
+      const st = stations[idx];
+      const entry = await fetchSingleStationPm25(st.uid, signal);
+      if (entry) {
+        result[idx] = {
+          ...st,
+          pm25: entry.pm25,
+          pm25IaqiUS: entry.pm25IaqiUS,
+          pm25IaqiCN: entry.pm25IaqiCN,
+          pollutants: entry.pollutants,
+          weather: entry.weather,
+        };
+      }
+    }
+  };
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, pendingIndices.length) }, () => worker()));
+  return result;
 }
 
 export async function fetchWAQIMapBounds(
@@ -208,7 +334,7 @@ export async function fetchWAQIMapBounds(
   maxLat: number,
   maxLng: number
 ): Promise<WaqiBoundStation[]> {
-  const url = `https://api.waqi.info/v2/map/bounds?latlng=${minLat},${minLng},${maxLat},${maxLng}&token=${WAQI_TOKEN}`;
+  const url = `https://api.waqi.info/v2/map/bounds?latlng=${minLat},${minLng},${maxLat},${maxLng}&token=${getNextWaqiToken()}`;
   try {
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) {
@@ -243,72 +369,96 @@ export function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: nu
 }
 
 /**
- * 严格过滤属于特定城市的在册测站：
- * 杜绝地理边界矩形检索因经纬度重叠将临近城市测站误算入当前城市（例如德阳误算入成都/绵阳、佛山误算入广州/江门等）
+ * 获取特定城市在册的全部官方与国控微站列表（自动过滤跨城污染源与邻城测站）
+ * 按需动态加载 geo-filter (@rapideditor/country-coder)，不污染首页首屏 JS 包体积
  */
-export function filterStationsForCity(
-  stations: WaqiBoundStation[],
-  targetCity: CityMeta,
-  allCities: CityMeta[] = CITIES_REGISTRY
-): WaqiBoundStation[] {
-  if (!stations || stations.length === 0) return [];
+export async function fetchWAQICityStations(city: CityMeta): Promise<WaqiBoundStation[]> {
+  const existing = cityStationsInFlight.get(city.id);
+  if (existing) return existing;
 
-  // 目标城市周围 160 公里内的在册城市作为 Voronoi 空间排他排他仲裁参考
-  const neighborCities = allCities.filter((c) => {
-    if (c.id === targetCity.id) return false;
-    const dist = getDistanceKm(c.latitude, c.longitude, targetCity.latitude, targetCity.longitude);
-    return dist <= 160;
+  const task = (async () => {
+    const [stations, { filterStationsForCity }] = await Promise.all([
+      fetchWAQIMapBounds(
+        city.latitude - 0.35,
+        city.longitude - 0.35,
+        city.latitude + 0.35,
+        city.longitude + 0.35
+      ),
+      import('./geo-filter'),
+    ]);
+
+    const valid = stations.filter((s) => {
+      const a = parseInt(s.aqi, 10);
+      return !isNaN(a) && a > 0 && a <= 500;
+    });
+
+    const cityOnly = preferOfficialStations(filterStationsForCity(valid, city));
+
+    // 按距市中心距离由近及远排序
+    return cityOnly.sort((a, b) => {
+      const distA = getDistanceKm(a.lat, a.lon, city.latitude, city.longitude);
+      const distB = getDistanceKm(b.lat, b.lon, city.latitude, city.longitude);
+      return distA - distB;
+    });
+  })().finally(() => {
+    cityStationsInFlight.delete(city.id);
   });
 
-  return stations.filter((s) => {
-    // 0. 纯经纬度主权国家排他：若测站经纬度所属国家与目标城市不符，直接排除
-    const stCountry = iso1A2Code([s.lon, s.lat]);
-    if (stCountry && targetCity.country && targetCity.country !== stCountry) {
-      return false;
-    }
-
-    // 1. 严格物理几何距离门槛：测站必须在城市中心城区 35km 物理范围内
-    const distToTarget = getDistanceKm(s.lat, s.lon, targetCity.latitude, targetCity.longitude);
-    if (distToTarget > 35) return false;
-
-    // 2. 纯客观物理几何 Voronoi 空间排他仲裁 (0 字符串正则与名称猜测)：
-    // 若有其他邻近城市距离该测站更近，则该测站归属邻城
-    for (const neighbor of neighborCities) {
-      const distToNeighbor = getDistanceKm(s.lat, s.lon, neighbor.latitude, neighbor.longitude);
-      if (distToNeighbor < distToTarget) {
-        return false;
-      }
-    }
-
-    return true;
-  });
+  cityStationsInFlight.set(city.id, task);
+  return task;
 }
 
 /**
- * 获取特定城市在册的全部官方与国控微站列表（自动过滤跨城污染源与邻城测站）
+ * 拉取城市全城多站实测全项均值记录（Concentration-First 口径，与首页主卡片严格同源）
+ * 优先走 Cloudflare Worker /api/city-realtime 边缘聚合加速接口，不可用时回落前端两段并行流水线
  */
-export async function fetchWAQICityStations(city: CityMeta): Promise<WaqiBoundStation[]> {
-  // 初步采用 ±0.35 度（约 35km 半径）进行精准覆盖
-  let stations = await fetchWAQIMapBounds(
-    city.latitude - 0.35,
-    city.longitude - 0.35,
-    city.latitude + 0.35,
-    city.longitude + 0.35
-  );
+export async function fetchWAQICityCompositeData(
+  cityIdentifier: string,
+  signal?: AbortSignal
+): Promise<AirQualityRecord> {
+  const cityMeta = findCity(cityIdentifier);
+  if (!cityMeta) {
+    return fetchWAQICityData(cityIdentifier);
+  }
 
-  let valid = stations.filter((s) => {
-    const a = parseInt(s.aqi, 10);
-    return !isNaN(a) && a > 0 && a <= 500;
-  });
+  // 优先走 Cloudflare Edge 聚合加速接口（3 分钟边缘缓存，<100ms 秒开）
+  const edgePayload = await fetchEdgeCityRealtime(cityMeta.id, signal);
+  if (edgePayload?.compositeRecord) {
+    return edgePayload.compositeRecord;
+  }
 
-  let cityOnly = filterStationsForCity(valid, city);
+  // 回落前端两段并行流水线：Wave 1 单次拉取官方站点列表 -> Wave 2 市中心站详情 + 其余微站 5-Token 10并发同时拉取
+  const stations = await fetchWAQICityStations(cityMeta).catch(() => [] as WaqiBoundStation[]);
+  if (stations.length === 0) {
+    return fetchWAQICityData(cityMeta.id);
+  }
 
-  // 按距市中心距离由近及远排序
-  return cityOnly.sort((a, b) => {
-    const distA = getDistanceKm(a.lat, a.lon, city.latitude, city.longitude);
-    const distB = getDistanceKm(b.lat, b.lon, city.latitude, city.longitude);
-    return distA - distB;
-  });
+  const [baseRecord, restEnriched] = await Promise.all([
+    fetchWAQIStationByUid(stations[0].uid, cityMeta, stations[0].station?.name),
+    stations.length > 1
+      ? enrichStationsWithPM25(stations.slice(1), {
+          concurrency: 10,
+          signal,
+          maxStations: 19,
+        }).catch(() => stations.slice(1))
+      : Promise.resolve([] as WaqiBoundStation[]),
+  ]);
+
+  if (signal?.aborted) {
+    return baseRecord;
+  }
+
+  const firstStation: WaqiBoundStation = {
+    ...stations[0],
+    pm25: baseRecord.pollutants.pm25,
+    pm25IaqiUS: baseRecord.iaqiUS?.pm25,
+    pm25IaqiCN: baseRecord.iaqiCN?.pm25,
+    pollutants: baseRecord.pollutants,
+    weather: baseRecord.weather,
+  };
+  const enriched = [firstStation, ...restEnriched];
+
+  return aggregateCompositeRecord(baseRecord, enriched, cityMeta, 'CN', false);
 }
 
 function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {

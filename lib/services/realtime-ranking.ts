@@ -249,7 +249,7 @@ function findClosestCity(
   sLat: number,
   sLon: number,
   cities: CityMeta[],
-  maxDistKm = 30.0
+  maxDistKm = 35.0
 ): CityMeta | null {
   // 直接通过坐标判定测站所属主权国家代码 (例如 "MY", "SG", "CN", "US")
   const stationCountry = iso1A2Code([sLon, sLat]);
@@ -310,20 +310,6 @@ const cumulativeStationMap = new Map<number, any>();
 const FRESH_TTL_MS = 8 * 60 * 1000; // 8 分钟内视为绝对保鲜，直接 0ms 返回快照
 const STALE_TTL_MS = 25 * 60 * 1000; // 8 ~ 25 分钟处于 SWR 窗口，直接先行返回快照，后台异步静默刷新
 const MIN_REFRESH_INTERVAL_MS = 30 * 1000; // 方案 2：手动刷新 30 秒物理防抖，防止高频狂点击穿
-
-/**
- * 计算城市聚合 AQI 与 PM2.5 (算术平均值，零启发式加权或离群过滤)
- */
-/**
- * 计算城市聚合物理质量浓度与 AQI
- * 严格遵循中国 HJ 663-2012 与美国 EPA 规范：先求点位物理质量浓度空间均值，再由平均物理浓度统算 AQI
- */
-function aggregateCityData(pm25s: number[]): { avgAqiUS: number; avgPm25: number } {
-  if (pm25s.length === 0) return { avgAqiUS: 0, avgPm25: 0 };
-  const avgPm25 = Number((pm25s.reduce((a, b) => a + b, 0) / pm25s.length).toFixed(1));
-  const avgAqiUS = calculatePM25AQI(avgPm25, 'US');
-  return { avgAqiUS, avgPm25 };
-}
 
 /**
  * 实时获取全球与国内空气质量排行榜数据 (遵循方案 1 & 2：8分钟 SWR 内存快照 + 30秒防抖穿透)
@@ -480,7 +466,7 @@ function computeRankingSnapshot(stations: any[], isRefreshing = false): RankingA
 
     const sLat = st.lat;
     const sLon = st.lon;
-    const closestCity = findClosestCity(sLat, sLon, CITIES_REGISTRY, 30.0);
+    const closestCity = findClosestCity(sLat, sLon, CITIES_REGISTRY, 35.0);
 
     if (closestCity) {
       if (!cityCluster.has(closestCity.id)) {
@@ -546,8 +532,12 @@ function filterSpatialOutliers(stations: StationCandidate[]): StationCandidate[]
   for (const [_, item] of Array.from(cityCluster.entries())) {
     if (item.stations.length === 0) continue;
 
+    // 官方参考站 (uid > 0) 严格优先：同城存在官方国控站时排除民间负 uid 微感器
+    const officialStations = item.stations.filter((s) => s.uid > 0);
+    const activeStations = officialStations.length > 0 ? officialStations : item.stations;
+
     // 空间相对离群点检验：纯客观剔除与同城其他测站偏离过大的单一失真噪点
-    const validStations = filterSpatialOutliers(item.stations);
+    const validStations = filterSpatialOutliers(activeStations);
     if (validStations.length === 0) continue;
 
     // 核心城市实测 PM2.5 匹配
@@ -555,32 +545,10 @@ function filterSpatialOutliers(stations: StationCandidate[]): StationCandidate[]
     const coreSnapshot = CORE_CITY_PM25_MAP.get(citySlug);
 
     // 严格遵循 HJ 663-2012 / US EPA 规范【浓度优先 (Concentration-First)】：
-    // 1. 先由各站各自还原/实测出真实的物理质量浓度 (ug/m3)
-    // 2. 对辖区内所有有效点位的物理质量浓度求空间算术平均
-    // 3. 再由空间平均物理浓度统算城市各项 IAQI 与综合 AQI
-    let cityPm25Conc: number;
-    if (coreSnapshot) {
-      const ratio = Math.min(1.0, Math.max(0.1, coreSnapshot.pm25IaqiUS / Math.max(1, coreSnapshot.compAqiUS)));
-      const pm25List = validStations.map((s) => {
-        const estIaqi = Math.max(1, Math.round(s.aqi * ratio));
-        return convertIAQIToConcentration('pm25', estIaqi, 'US');
-      });
-      cityPm25Conc = Number((pm25List.reduce((a, b) => a + b, 0) / pm25List.length).toFixed(1));
-    } else {
-      const beijingSnapshot = CORE_CITY_PM25_MAP.get('beijing');
-      const isJingJinJi = item.city.isDomestic && item.city.province && ['北京', '天津', '河北'].includes(item.city.province);
-      if (isJingJinJi && beijingSnapshot && beijingSnapshot.compAqiUS > 0) {
-        const ratio = Math.min(1.0, Math.max(0.1, beijingSnapshot.pm25IaqiUS / beijingSnapshot.compAqiUS));
-        const pm25List = validStations.map((s) => {
-          const estIaqi = Math.max(1, Math.round(s.aqi * ratio));
-          return convertIAQIToConcentration('pm25', estIaqi, 'US');
-        });
-        cityPm25Conc = Number((pm25List.reduce((a, b) => a + b, 0) / pm25List.length).toFixed(1));
-      } else {
-        const pm25s = validStations.map((s) => s.pm25);
-        cityPm25Conc = Number((pm25s.reduce((a, b) => a + b, 0) / pm25s.length).toFixed(1));
-      }
-    }
+    // 全市均值统一对辖区内所有有效测站物理浓度求空间算术平均（不再用单站 coreSnapshot 覆盖全城多站均值），
+    // coreSnapshot 仅保留给「市中心代表站 (rep)」口径使用，彻底消除全市均值与单站混同偏差。
+    const pm25s = validStations.map((s) => s.pm25);
+    const cityPm25Conc = Number((pm25s.reduce((a, b) => a + b, 0) / pm25s.length).toFixed(1));
 
     if (cityPm25Conc <= 0) continue;
 

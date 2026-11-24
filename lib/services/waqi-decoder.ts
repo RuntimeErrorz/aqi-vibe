@@ -1,4 +1,4 @@
-import { HourlyTrendPoint } from './history-data';
+import { HourlyTrendPoint } from './realtime-trend';
 import { StandardType } from '../types';
 import { evaluateAQI, convertIAQIToConcentration, calculateCNIAQI } from '../aqi-calculator';
 
