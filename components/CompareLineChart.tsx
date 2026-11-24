@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { getAnnualTrends } from '@/lib/services/history-data';
+import { getAnnualTrends, isHistorySummaryLoaded, loadHistorySummary } from '@/lib/services/history-data';
 import { useStandard } from './StandardContext';
 
 interface CompareLineChartProps {
@@ -12,13 +12,36 @@ interface CompareLineChartProps {
 export const CompareLineChart: React.FC<CompareLineChartProps> = ({ cities }) => {
   const { standard } = useStandard();
   const [mounted, setMounted] = useState(false);
+  const [summaryReady, setSummaryReady] = useState(() => isHistorySummaryLoaded());
 
   useEffect(() => {
     setMounted(true);
+    if (!isHistorySummaryLoaded()) {
+      loadHistorySummary().then(() => setSummaryReady(true));
+    }
   }, []);
 
-  if (!mounted) {
-    return <div className="h-64 flex items-center justify-center text-slate-400 text-sm">加载对比折线图中...</div>;
+  if (!mounted || !summaryReady) {
+    return (
+      <div className="w-full h-80 sm:h-[360px] rounded-xl bg-slate-50/70 border border-slate-100 p-4 flex flex-col justify-between animate-pulse">
+        <div className="flex justify-center gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-3 w-12 bg-slate-200 rounded" />
+          ))}
+        </div>
+        <div className="flex-1 flex flex-col justify-around py-4">
+          <div className="h-px w-full bg-slate-200/70" />
+          <div className="h-px w-full bg-slate-200/70" />
+          <div className="h-px w-full bg-slate-200/70" />
+          <div className="h-px w-full bg-slate-200/70" />
+        </div>
+        <div className="flex justify-between px-2">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-2.5 w-8 bg-slate-200/70 rounded" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   // 收集所选对比城市中实际存在的全部年份并升序排列
@@ -81,7 +104,7 @@ export const CompareLineChart: React.FC<CompareLineChartProps> = ({ cities }) =>
   };
 
   return (
-    <div className="w-full h-72 sm:h-80">
+    <div className="w-full h-80 sm:h-[360px]">
       <ReactECharts option={option} style={{ height: '100%', width: '100%' }} notMerge={true} />
     </div>
   );

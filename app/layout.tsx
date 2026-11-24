@@ -13,7 +13,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: 'AQI Vibe | 空气质量监测与历史统计',
-  description: '高精度实时监控 375 座国内城市、564 座全球城市与 2026+ 国控站点，回溯 2014 年至今的长期环境数据趋势。支持中国国标与美标一键切换。',
+  description: '高精度实时监控 383 座国内城市、557 座全球城市与 2026+ 国控站点，回溯 2014 年至今的长期环境数据趋势。支持中国国标 (HJ 633-2012) 与美国标准 (US EPA 2024) 一键切换。',
   icons: {
     icon: [
       { url: '/icon.svg', type: 'image/svg+xml' },

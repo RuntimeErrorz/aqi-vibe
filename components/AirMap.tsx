@@ -3,14 +3,22 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { fetchWAQIMapBounds, WaqiBoundStation, getDistanceKm, extractCleanStationName, fetchWAQICityData } from '@/lib/services/waqi';
+import {
+  fetchWAQIMapBounds,
+  WaqiBoundStation,
+  extractCleanStationName,
+  fetchWAQICityCompositeData,
+  fetchWAQIStationByUid,
+  enrichStationsWithPM25,
+  getWAQIMapTileUrl,
+} from '@/lib/services/waqi';
+import { filterStationsForCity, getDistanceKm } from '@/lib/services/geo-filter';
 import { CityMeta, StandardType, AirQualityRecord } from '@/lib/types';
 import { useStandard } from '@/components/StandardContext';
-import { convertIAQIToConcentration, evaluateAQI, getCNEvaluation, getUSEvaluation } from '@/lib/aqi-calculator';
+import { convertIAQIToConcentration, evaluateAQI, getUSEvaluation } from '@/lib/aqi-calculator';
 import { iso1A2Code } from '@rapideditor/country-coder';
 
 const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_KEY || 'cb1_4bl6_1_dc1bbfd8426369beb577afe4';
-const WAQI_TOKEN = process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48';
 
 export interface FocusCityInfo {
   name: string;
@@ -19,10 +27,14 @@ export interface FocusCityInfo {
   stationName: string;
   stationUid: number;
   distKm?: number;
+  stationCount?: number;
 }
 
 interface AirMapProps {
   showStations?: boolean;
+  showHeatmap?: boolean;
+  heatmapOpacity?: number;
+  basemapTheme?: 'light' | 'dark';
   center?: [number, number];
   zoom?: number;
   focusCity?: CityMeta;
@@ -33,7 +45,22 @@ interface AirMapProps {
   ) => void;
 }
 
-function getStationPinEvaluation(rawAqi: number, standard: StandardType, onlyPm25 = false) {
+function getBoxClassByAqi(aqi: number): string {
+  if (isNaN(aqi) || aqi <= 0) return 'aqi-pin-nodata';
+  if (aqi <= 50) return 'aqi-pin-good';
+  if (aqi <= 100) return 'aqi-pin-moderate';
+  if (aqi <= 150) return 'aqi-pin-usg';
+  if (aqi <= 200) return 'aqi-pin-unhealthy';
+  if (aqi <= 300) return 'aqi-pin-very-unhealthy';
+  return 'aqi-pin-hazardous';
+}
+
+function getStationPinEvaluation(
+  st: WaqiBoundStation,
+  standard: StandardType,
+  onlyPm25 = false
+) {
+  const rawAqi = parseInt(st.aqi, 10);
   if (isNaN(rawAqi) || rawAqi <= 0) {
     return {
       displayAqi: '-',
@@ -41,69 +68,46 @@ function getStationPinEvaluation(rawAqi: number, standard: StandardType, onlyPm2
       levelText: '暂无数据',
       colorHex: '#64748b',
       pm25: undefined as number | undefined,
+      isRealPm25: false,
     };
   }
 
-  const pm25 = convertIAQIToConcentration('pm25', rawAqi, 'US');
-
-  // 若开启「只看 PM2.5」纯净模式：严格以单项 PM2.5 浓度折算标准 AQI 与等级
-  if (onlyPm25) {
-    const evalPm25 = evaluateAQI({ pm25 }, standard, true);
-    const aqi = evalPm25.aqi;
-
-    let boxClass = 'aqi-pin-good';
-    if (aqi <= 50) boxClass = 'aqi-pin-good';
-    else if (aqi <= 100) boxClass = 'aqi-pin-moderate';
-    else if (aqi <= 150) boxClass = 'aqi-pin-usg';
-    else if (aqi <= 200) boxClass = 'aqi-pin-unhealthy';
-    else if (aqi <= 300) boxClass = 'aqi-pin-very-unhealthy';
-    else boxClass = 'aqi-pin-hazardous';
-
+  // 开启「只看 PM2.5」时：仅当该站点已有真实实测 PM2.5 时按 PM2.5 渲染；
+  // 严禁乘以硬编码 0.3 或借用其他城市比例系数伪造！未补齐时诚实展示 WAQI 综合指数并标注。
+  if (onlyPm25 && st.pm25 !== undefined && st.pm25 > 0) {
+    const evalPm25 = evaluateAQI({ pm25: st.pm25 }, standard, true);
     return {
-      displayAqi: String(aqi),
-      boxClass,
+      displayAqi: String(evalPm25.aqi),
+      boxClass: getBoxClassByAqi(evalPm25.aqi),
       levelText: evalPm25.level,
       colorHex: evalPm25.color,
-      pm25,
+      pm25: st.pm25,
+      isRealPm25: true,
     };
   }
+
+  const realPm25 = st.pm25 !== undefined && st.pm25 > 0 ? st.pm25 : undefined;
 
   if (standard === 'US') {
     const evaluation = getUSEvaluation(rawAqi);
-    let boxClass = 'aqi-pin-good';
-    if (rawAqi <= 50) boxClass = 'aqi-pin-good';
-    else if (rawAqi <= 100) boxClass = 'aqi-pin-moderate';
-    else if (rawAqi <= 150) boxClass = 'aqi-pin-usg';
-    else if (rawAqi <= 200) boxClass = 'aqi-pin-unhealthy';
-    else if (rawAqi <= 300) boxClass = 'aqi-pin-very-unhealthy';
-    else boxClass = 'aqi-pin-hazardous';
-
     return {
       displayAqi: String(rawAqi),
-      boxClass,
+      boxClass: getBoxClassByAqi(rawAqi),
       levelText: evaluation.level,
       colorHex: evaluation.color,
-      pm25,
+      pm25: realPm25,
+      isRealPm25: realPm25 !== undefined,
     };
   } else {
-    // 国标 HJ 633-2012: 从 WAQI 美标 IAQI 逆算物理质量浓度，再折算国标 AQI 与级别
-    const evalCN = evaluateAQI({ pm25 }, 'CN');
-    const cnAqi = evalCN.aqi;
-
-    let boxClass = 'aqi-pin-good';
-    if (cnAqi <= 50) boxClass = 'aqi-pin-good';
-    else if (cnAqi <= 100) boxClass = 'aqi-pin-moderate';
-    else if (cnAqi <= 150) boxClass = 'aqi-pin-usg';
-    else if (cnAqi <= 200) boxClass = 'aqi-pin-unhealthy';
-    else if (cnAqi <= 300) boxClass = 'aqi-pin-very-unhealthy';
-    else boxClass = 'aqi-pin-hazardous';
-
+    const estConc = realPm25 ?? convertIAQIToConcentration('pm25', rawAqi, 'US');
+    const evalCN = evaluateAQI({ pm25: estConc }, 'CN');
     return {
-      displayAqi: String(cnAqi),
-      boxClass,
+      displayAqi: String(evalCN.aqi),
+      boxClass: getBoxClassByAqi(evalCN.aqi),
       levelText: evalCN.level,
       colorHex: evalCN.color,
-      pm25,
+      pm25: realPm25,
+      isRealPm25: realPm25 !== undefined,
     };
   }
 }
@@ -117,24 +121,14 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;');
 }
 
-/**
- * 屏幕空间网格抽稀：
- * 在宏观或中观缩放（Zoom 3~7）下，根据屏幕物理像素将密集重叠测站自适应精简，
- * 优先保留高污染值站点，确保无论宏观还是微观，所有徽章均清晰整洁、间距合理且 100% 矢量锐利。
- */
 function filterVisibleStationsByGrid(
   stations: WaqiBoundStation[],
   map: L.Map,
   zoom: number
 ): WaqiBoundStation[] {
-  if (zoom >= 8) {
-    return stations; // 微观街区/城市级：全量展示，不进行抽稀
-  }
-
-  // 宏观网格单元像素大小 (px)：自适应匹配放大后的标牌 (28px 宽)，确保间距适度且无过度重叠
+  if (zoom >= 8) return stations;
   const cellSize = zoom <= 4 ? 38 : zoom <= 6 ? 28 : 18;
 
-  // 降序排序：高污染数值或有异常读数的测站优先被代表性展示
   const sorted = [...stations].sort((a, b) => {
     const aVal = parseInt(a.aqi, 10) || 0;
     const bVal = parseInt(b.aqi, 10) || 0;
@@ -149,20 +143,14 @@ function filterVisibleStationsByGrid(
     const gx = Math.floor(pt.x / cellSize);
     const gy = Math.floor(pt.y / cellSize);
     const key = `${gx},${gy}`;
-
     if (!grid.has(key)) {
       grid.set(key, true);
       filtered.push(st);
     }
   }
-
   return filtered;
 }
 
-/**
- * 纯几何物理球面距离选取离市中心最近的在册核心基准站：
- * 规则与排行榜 (realtime-ranking.ts) 100% 同源对齐
- */
 function findNearestStationForCity(
   city: CityMeta,
   stationPool: WaqiBoundStation[]
@@ -171,7 +159,6 @@ function findNearestStationForCity(
     .filter((s) => {
       const a = parseInt(s.aqi, 10);
       if (isNaN(a) || a <= 0 || a > 500) return false;
-      // 纯经纬度主权国家排他：防止紧邻国境线双子城出现跨国抢站
       const stCountry = iso1A2Code([s.lon, s.lat]);
       if (stCountry && city.country && city.country !== stCountry) return false;
       return true;
@@ -182,27 +169,109 @@ function findNearestStationForCity(
     }))
     .filter((s) => s.distKm <= 35);
 
-  // 严格按距城市中心物理几何球面距离升序排序，第一名为市中心核心基准站 (与排行榜、城市实况 100% 规则对齐)
   const sorted = [...valid].sort((a, b) => a.distKm - b.distKm);
   return sorted[0] || null;
 }
 
+function buildStationDetailPopupHtml(
+  st: WaqiBoundStation,
+  rec: AirQualityRecord | null,
+  standard: StandardType,
+  onlyPm25: boolean,
+  fallbackStyle: ReturnType<typeof getStationPinEvaluation>,
+  loadingDetail = false
+): string {
+  const formattedTime = rec?.updateTime
+    ? rec.updateTime.slice(5, 16)
+    : st.station?.time
+    ? new Date(st.station.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : '实时';
+
+  const ev = rec
+    ? onlyPm25
+      ? evaluateAQI({ pm25: rec.pollutants.pm25 }, standard, true)
+      : standard === 'CN'
+      ? rec.evaluationCN
+      : rec.evaluationUS
+    : null;
+
+  const displayAqi = ev ? (ev.aqi > 0 ? String(ev.aqi) : '-') : fallbackStyle.displayAqi;
+  const levelText = ev ? ev.level : fallbackStyle.levelText;
+  const colorHex = ev ? ev.color : fallbackStyle.colorHex;
+
+  const pollutantsGrid = rec
+    ? `<div class="mt-2.5 grid grid-cols-3 gap-1.5 text-[10px]">
+        ${[
+          { label: 'PM2.5', val: rec.pollutants.pm25, unit: 'μg/m³' },
+          { label: 'PM10', val: rec.pollutants.pm10, unit: 'μg/m³' },
+          { label: 'O₃', val: rec.pollutants.o3, unit: 'μg/m³' },
+          { label: 'NO₂', val: rec.pollutants.no2, unit: 'μg/m³' },
+          { label: 'SO₂', val: rec.pollutants.so2, unit: 'μg/m³' },
+          { label: 'CO', val: rec.pollutants.co, unit: 'mg/m³' },
+        ]
+          .filter((p) => p.val !== undefined && p.val > 0)
+          .map(
+            (p) => `<div class="bg-slate-50 rounded-md px-1.5 py-1 border border-slate-100">
+              <div class="text-slate-400">${p.label}</div>
+              <div class="font-mono font-bold text-slate-800">${p.val} <span class="font-normal text-[9px] text-slate-400">${p.unit}</span></div>
+            </div>`
+          )
+          .join('')}
+      </div>`
+    : loadingDetail
+    ? `<div class="mt-2 text-[11px] text-sky-600">正在拉取该站点六项分项实测...</div>`
+    : fallbackStyle.pm25 !== undefined
+    ? `<div class="text-[11px] text-slate-500 mt-1">实测 PM2.5: <span class="font-bold text-slate-700">${fallbackStyle.pm25} μg/m³</span></div>`
+    : `<div class="text-[10px] text-slate-400 mt-1">${onlyPm25 ? '当前展示综合 AQI，正在按需拉取 PM2.5 实测' : '点击后已同步官方监测实况'}</div>`;
+
+  return `
+    <div class="p-3.5 min-w-[248px] max-w-[290px]">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <span class="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">官方实测站点 #${st.uid}</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold" style="background-color: ${colorHex}20; color: ${colorHex};">
+          ${escapeHtml(levelText)}
+        </span>
+      </div>
+      <div class="mt-2.5">
+        <h4 class="text-sm font-bold text-slate-900 leading-snug">${escapeHtml(st.station?.name || '实时空气质量站点')}</h4>
+        <div class="mt-2 flex items-baseline space-x-2">
+          <span class="text-2xl font-black text-slate-900">${displayAqi}</span>
+          <span class="text-xs font-semibold text-slate-500">${onlyPm25 && (rec || fallbackStyle.isRealPm25) ? 'PM2.5 AQI' : '综合 AQI'}</span>
+        </div>
+        ${pollutantsGrid}
+      </div>
+      <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+        <span>更新: ${escapeHtml(formattedTime)}</span>
+        <span class="font-medium text-sky-600">WAQI 官方实测</span>
+      </div>
+    </div>
+  `;
+}
+
 export default function AirMap({
   showStations = true,
+  showHeatmap = false,
+  heatmapOpacity = 0.55,
+  basemapTheme = 'light',
   center = [35.0, 105.0],
   zoom = 4,
   focusCity,
   onStationCountChange,
 }: AirMapProps) {
-  const { standard, onlyPm25 } = useStandard();
+  const { standard, onlyPm25, cityCompositeRecords, reportCityCompositeRecord } = useStandard();
   const standardRef = useRef<StandardType>(standard);
   const onlyPm25Ref = useRef<boolean>(onlyPm25);
+  const compositeRecordsRef = useRef<Record<string, AirQualityRecord>>(cityCompositeRecords);
+  compositeRecordsRef.current = cityCompositeRecords;
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const basemapLayerRef = useRef<L.TileLayer | null>(null);
+  const heatmapLayerRef = useRef<L.TileLayer | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
-  const focusMarkerLayerRef = useRef<L.LayerGroup | null>(null);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const enrichAbortRef = useRef<AbortController | null>(null);
   const stationCacheRef = useRef<Map<number, WaqiBoundStation>>(new Map());
+  const stationDetailRecRef = useRef<Map<number, AirQualityRecord>>(new Map());
   const showStationsRef = useRef(showStations);
   const nearestStationRef = useRef<(WaqiBoundStation & { distKm: number }) | null>(null);
   const focusCityDataMap = useRef<Map<string, AirQualityRecord>>(new Map());
@@ -216,7 +285,6 @@ export default function AirMap({
     showStationsRef.current = showStations;
   }, [showStations]);
 
-  // 渲染测站标记到地图（支持国标/美标自适应）
   const renderStations = (stationsToRender: WaqiBoundStation[]) => {
     const map = mapInstanceRef.current;
     const markersLayer = markersLayerRef.current;
@@ -233,25 +301,9 @@ export default function AirMap({
 
     markersLayer.clearLayers();
 
-    // 计算当前焦点城市/区域的 PM2.5 真实比率 (若有实测则精准对齐)
-    const currentCityRec = focusCity ? focusCityDataMap.current.get(focusCity.id) : null;
-    let pm25Ratio = 0.3;
-    if (currentCityRec && currentCityRec.pollutants.pm25 !== undefined && currentCityRec.evaluationUS.aqi > 0) {
-      const basePm25Aqi = evaluateAQI({ pm25: currentCityRec.pollutants.pm25 }, 'US', true).aqi;
-      pm25Ratio = Math.min(1.0, Math.max(0.1, basePm25Aqi / currentCityRec.evaluationUS.aqi));
-    }
-
     displayStations.forEach((st: WaqiBoundStation) => {
-      const aqiVal = parseInt(st.aqi, 10);
-      let style;
-      if (onlyPm25Ref.current) {
-        const estPm25Aqi = Math.max(1, Math.round(aqiVal * pm25Ratio));
-        style = getStationPinEvaluation(estPm25Aqi, standardRef.current, true);
-      } else {
-        style = getStationPinEvaluation(aqiVal, standardRef.current, false);
-      }
+      const style = getStationPinEvaluation(st, standardRef.current, onlyPm25Ref.current);
 
-      // 原版标牌指针拟真矢量标记 (针尖直指站点经纬度，高分屏超锐利)
       const icon = L.divIcon({
         className: 'aqi-pin-container',
         html: `
@@ -268,35 +320,48 @@ export default function AirMap({
       });
 
       const marker = L.marker([st.lat, st.lon], { icon });
+      const cachedDetail = stationDetailRecRef.current.get(st.uid) || null;
+      const initialPopupHtml = buildStationDetailPopupHtml(
+        st,
+        cachedDetail,
+        standardRef.current,
+        onlyPm25Ref.current,
+        style,
+        !cachedDetail
+      );
 
-      const formattedTime = st.station?.time
-        ? new Date(st.station.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        : '实时';
+      marker.bindPopup(initialPopupHtml, { maxWidth: 300, closeButton: false });
 
-      const pm25Html = style.pm25 !== undefined ? `<div class="text-[11px] text-slate-500 mt-1">PM2.5: <span class="font-bold text-slate-700">${style.pm25} μg/m³</span></div>` : '';
-
-      marker.bindPopup(`
-        <div class="p-3.5 min-w-[240px] max-w-[280px]">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-            <span class="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">官方实测站点</span>
-            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold" style="background-color: ${style.colorHex}20; color: ${style.colorHex};">
-              ${style.levelText}
-            </span>
-          </div>
-          <div class="mt-2.5">
-            <h4 class="text-sm font-bold text-slate-900 leading-snug">${escapeHtml(st.station?.name || '实时空气质量站点')}</h4>
-            <div class="mt-2 flex items-baseline space-x-2">
-              <span class="text-2xl font-black text-slate-900">${style.displayAqi}</span>
-              <span class="text-xs font-semibold text-slate-500">AQI 实时指数</span>
-            </div>
-            ${pm25Html}
-          </div>
-          <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-            <span>更新时间: ${formattedTime}</span>
-            <span class="font-medium text-sky-600">WAQI 官方数据</span>
-          </div>
-        </div>
-      `, { maxWidth: 300, closeButton: false });
+      // 点击测站弹窗时按需拉取真实六项分项实测（零伪造，按需请求）
+      marker.on('popupopen', () => {
+        const existing = stationDetailRecRef.current.get(st.uid);
+        if (existing) {
+          marker.setPopupContent(
+            buildStationDetailPopupHtml(st, existing, standardRef.current, onlyPm25Ref.current, style, false)
+          );
+          return;
+        }
+        fetchWAQIStationByUid(st.uid)
+          .then((rec) => {
+            stationDetailRecRef.current.set(st.uid, rec);
+            if (rec.pollutants.pm25 !== undefined) {
+              stationCacheRef.current.set(st.uid, {
+                ...st,
+                pm25: rec.pollutants.pm25,
+                pm25IaqiUS: rec.iaqiUS?.pm25,
+                pm25IaqiCN: rec.iaqiCN?.pm25,
+              });
+            }
+            marker.setPopupContent(
+              buildStationDetailPopupHtml(st, rec, standardRef.current, onlyPm25Ref.current, style, false)
+            );
+          })
+          .catch(() => {
+            marker.setPopupContent(
+              buildStationDetailPopupHtml(st, null, standardRef.current, onlyPm25Ref.current, style, false)
+            );
+          });
+      });
 
       markersLayer.addLayer(marker);
     });
@@ -304,44 +369,55 @@ export default function AirMap({
     onStationCountChange?.(displayStations.length, false);
   };
 
-  // 渲染市中心核心基准站地标（纯几何最短距离同源计算）
-  const renderFocusMarker = (
+  // 微观缩放 (zoom >= 9) 且开启「只看 PM2.5」时，受控并发拉取视野内最多 15 个站点的真实 PM2.5
+  const enrichViewportStationsIfNeeded = (stationsInView: WaqiBoundStation[]) => {
+    const map = mapInstanceRef.current;
+    if (!map || !onlyPm25Ref.current || map.getZoom() < 9) return;
+
+    const missing = stationsInView.filter((s) => s.pm25 === undefined).slice(0, 15);
+    if (missing.length === 0) return;
+
+    if (enrichAbortRef.current) {
+      enrichAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    enrichAbortRef.current = controller;
+
+    enrichStationsWithPM25(missing, { concurrency: 5, signal: controller.signal })
+      .then((enriched) => {
+        if (controller.signal.aborted || !mapInstanceRef.current) return;
+        let updated = false;
+        enriched.forEach((st) => {
+          if (st.pm25 !== undefined) {
+            stationCacheRef.current.set(st.uid, st);
+            updated = true;
+          }
+        });
+        if (updated && showStationsRef.current) {
+          const bounds = mapInstanceRef.current.getBounds();
+          const allInView: WaqiBoundStation[] = [];
+          stationCacheRef.current.forEach((st) => {
+            if (
+              st.lat >= bounds.getSouth() &&
+              st.lat <= bounds.getNorth() &&
+              st.lon >= bounds.getWest() &&
+              st.lon <= bounds.getEast()
+            ) {
+              allInView.push(st);
+            }
+          });
+          renderStationsRef.current(allInView);
+        }
+      })
+      .catch(() => {});
+  };
+
+  // 仅同步焦点城市的聚合状态信息给顶部控制栏，不在地图画布上额外叠加悬浮城市地标胶囊
+  const syncFocusCityInfo = (
     station: (WaqiBoundStation & { distKm: number }) | null,
     city: CityMeta
   ) => {
-    const layer = focusMarkerLayerRef.current;
-    if (!layer || !mapInstanceRef.current) return;
-
-    layer.clearLayers();
-
     if (!station) {
-      const style = {
-        displayAqi: '-',
-        boxClass: 'aqi-pin-nodata',
-        levelText: '暂无测站',
-        colorHex: '#64748b',
-      };
-      const initialHtml = `
-        <div class="aqi-focus-city-pin">
-          <div class="aqi-focus-badge ${style.boxClass} shadow-xl ring-2 ring-white">
-            <span class="font-black text-xs tracking-tight">${escapeHtml(city.nameZh)}</span>
-            <span class="mx-1 opacity-60 font-normal">|</span>
-            <span class="font-black text-xs">-</span>
-          </div>
-          <div class="aqi-focus-pin-pole"></div>
-        </div>
-      `;
-      const marker = L.marker([city.latitude, city.longitude], {
-        icon: L.divIcon({
-          className: 'aqi-focus-container',
-          html: initialHtml,
-          iconSize: [96, 42],
-          iconAnchor: [48, 42],
-          popupAnchor: [0, -44],
-        }),
-        zIndexOffset: 3000,
-      });
-      layer.addLayer(marker);
       onStationCountChange?.(-1, false, {
         name: city.nameZh,
         aqi: 0,
@@ -352,112 +428,41 @@ export default function AirMap({
       return;
     }
 
-    const cityRecord = focusCityDataMap.current.get(city.id);
-    const rawAqi = parseInt(station.aqi, 10);
-    let aqiNum: number;
-    let pm25Conc: number;
-    let levelText: string;
-    let colorHex: string;
-    let boxClass: string;
+    const cityRecord =
+      compositeRecordsRef.current[city.id] || focusCityDataMap.current.get(city.id);
+
+    const validCityStations = filterStationsForCity(
+      Array.from(stationCacheRef.current.values()).filter((s) => {
+        const a = parseInt(s.aqi, 10);
+        return !isNaN(a) && a > 0 && a <= 500;
+      }),
+      city
+    );
+
+    const stationCount = cityRecord?.compositeStationCount ?? (validCityStations.length || 1);
+    let aqiNum = 0;
+    let levelText = '暂无实测';
 
     if (onlyPm25Ref.current) {
-      if (cityRecord && cityRecord.pollutants.pm25 !== undefined) {
-        pm25Conc = cityRecord.pollutants.pm25;
-        const evalRes = evaluateAQI({ pm25: pm25Conc }, standardRef.current, true);
+      const realPm25 = cityRecord?.pollutants.pm25;
+      if (realPm25 !== undefined && realPm25 > 0) {
+        const evalRes = evaluateAQI({ pm25: realPm25 }, standardRef.current, true);
         aqiNum = evalRes.aqi;
         levelText = evalRes.level;
-        colorHex = evalRes.color;
+      } else if (!cityRecord) {
+        levelText = '聚合全城均值中';
       } else {
-        const estIaqi = Math.max(1, Math.round(rawAqi * 0.3));
-        pm25Conc = convertIAQIToConcentration('pm25', estIaqi, 'US');
-        const evalRes = evaluateAQI({ pm25: pm25Conc }, standardRef.current, true);
-        aqiNum = evalRes.aqi;
-        levelText = evalRes.level;
-        colorHex = evalRes.color;
+        levelText = '暂无 PM2.5 实测';
       }
+    } else if (cityRecord) {
+      const evalRes = standardRef.current === 'CN' ? cityRecord.evaluationCN : cityRecord.evaluationUS;
+      aqiNum = evalRes.aqi;
+      levelText = evalRes.level;
     } else {
-      if (cityRecord) {
-        const evalRes = standardRef.current === 'CN' ? cityRecord.evaluationCN : cityRecord.evaluationUS;
-        aqiNum = evalRes.aqi;
-        levelText = evalRes.level;
-        colorHex = evalRes.color;
-        pm25Conc = cityRecord.pollutants.pm25 ?? 2.2;
-      } else {
-        pm25Conc = convertIAQIToConcentration('pm25', rawAqi, 'US');
-        aqiNum = standardRef.current === 'CN' ? evaluateAQI({ pm25: pm25Conc }, 'CN').aqi : rawAqi;
-        const style = getStationPinEvaluation(rawAqi, standardRef.current, false);
-        levelText = style.levelText;
-        colorHex = style.colorHex;
-      }
+      levelText = '聚合全城均值中';
     }
 
-    if (aqiNum <= 50) boxClass = 'aqi-pin-good';
-    else if (aqiNum <= 100) boxClass = 'aqi-pin-moderate';
-    else if (aqiNum <= 150) boxClass = 'aqi-pin-usg';
-    else if (aqiNum <= 200) boxClass = 'aqi-pin-unhealthy';
-    else if (aqiNum <= 300) boxClass = 'aqi-pin-very-unhealthy';
-    else boxClass = 'aqi-pin-hazardous';
-
     const cleanName = extractCleanStationName(station.station?.name || '', city.nameZh);
-    const distText = station.distKm < 1 ? '<1km' : `${station.distKm.toFixed(1)}km`;
-
-    const updatedHtml = `
-      <div class="aqi-focus-city-pin">
-        <div class="aqi-focus-badge ${boxClass} shadow-xl ring-2 ring-white">
-          <span class="font-black text-xs tracking-tight">${escapeHtml(city.nameZh)}</span>
-          <span class="mx-1 opacity-60 font-normal">|</span>
-          <span class="font-black text-xs">${aqiNum}</span>
-        </div>
-        <div class="aqi-focus-pin-pole"></div>
-        <div class="aqi-focus-pulse" style="border-color: ${colorHex};"></div>
-      </div>
-    `;
-
-    const activeIcon = L.divIcon({
-      className: 'aqi-focus-container',
-      html: updatedHtml,
-      iconSize: [96, 42],
-      iconAnchor: [48, 42],
-      popupAnchor: [0, -44],
-    });
-
-    const activeMarker = L.marker([city.latitude, city.longitude], {
-      icon: activeIcon,
-      zIndexOffset: 3000,
-    });
-
-    const formattedTime = station.station?.time
-      ? new Date(station.station.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      : '刚刚';
-
-    activeMarker.bindPopup(`
-      <div class="p-3 text-slate-800 min-w-[240px]">
-        <div class="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100">
-          <div class="font-black text-sm text-slate-900">${escapeHtml(city.nameZh)} (${escapeHtml(city.nameEn)})</div>
-          <span class="text-xs font-mono font-bold px-1.5 py-0.5 rounded text-white" style="background-color: ${colorHex};">AQI ${aqiNum}</span>
-        </div>
-        <div class="mt-2 text-xs space-y-1">
-          <div class="flex items-center justify-between text-slate-600">
-            <span class="text-slate-400">市中心基准站:</span>
-            <span class="font-bold text-slate-800">${escapeHtml(cleanName)} (${distText})</span>
-          </div>
-          <div class="flex items-center justify-between text-slate-600">
-            <span class="text-slate-400">综合级别:</span>
-            <span class="font-bold" style="color: ${colorHex}">${levelText}</span>
-          </div>
-          <div class="flex items-center justify-between text-slate-600">
-            <span class="text-slate-400">实测 PM2.5:</span>
-            <span class="font-mono font-bold text-slate-800">${pm25Conc} μg/m³</span>
-          </div>
-          <div class="flex items-center justify-between text-slate-400 text-[10px] pt-1 border-t border-slate-100">
-            <span>更新时间: ${formattedTime}</span>
-            <span>站号 #${station.uid}</span>
-          </div>
-        </div>
-      </div>
-    `, { maxWidth: 280, closeButton: false });
-
-    layer.addLayer(activeMarker);
 
     onStationCountChange?.(-1, false, {
       name: city.nameZh,
@@ -466,14 +471,18 @@ export default function AirMap({
       stationName: cleanName,
       stationUid: station.uid,
       distKm: station.distKm,
+      stationCount,
     });
   };
 
   const renderStationsRef = useRef(renderStations);
   renderStationsRef.current = renderStations;
 
-  const renderFocusMarkerRef = useRef(renderFocusMarker);
-  renderFocusMarkerRef.current = renderFocusMarker;
+  const syncFocusCityInfoRef = useRef(syncFocusCityInfo);
+  syncFocusCityInfoRef.current = syncFocusCityInfo;
+
+  const enrichViewportRef = useRef(enrichViewportStationsIfNeeded);
+  enrichViewportRef.current = enrichViewportStationsIfNeeded;
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -481,7 +490,6 @@ export default function AirMap({
     let resizeObserver: ResizeObserver | null = null;
 
     if (!mapInstanceRef.current) {
-      // 1. 初始化 Leaflet 地图 (开启整数缩放锁定，杜绝次像素双线性插值模糊)
       const map = L.map(mapContainerRef.current, {
         center,
         zoom,
@@ -490,26 +498,21 @@ export default function AirMap({
         zoomDelta: 1,
       });
 
-      // 2. 底图：CARTO Voyager @2x 官方高清视网膜底图 (512px 视网膜切片 + zoomOffset: -1)
-      L.tileLayer(
-        `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png?key=${CARTO_KEY}`,
-        {
-          attribution: '&copy; OpenStreetMap &copy; CARTO',
-          maxZoom: 19,
-          tileSize: 512,
-          zoomOffset: -1,
-        }
-      ).addTo(map);
+      const baseUrl =
+        basemapTheme === 'dark'
+          ? `https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png?key=${CARTO_KEY}`
+          : `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png?key=${CARTO_KEY}`;
 
-      // 3. 专属主城市焦点地标矢量图层 (独立图层，置顶显示，纯矢量微标)
-      const focusMarkerLayer = L.layerGroup().addTo(map);
-      focusMarkerLayerRef.current = focusMarkerLayer;
+      basemapLayerRef.current = L.tileLayer(baseUrl, {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        maxZoom: 19,
+        tileSize: 512,
+        zoomOffset: -1,
+      }).addTo(map);
 
-      // 4. 全局纯 CSS 矢量测站微标图层 (周围国控/海外微站散点，100% 矢量指针)
       const markersLayer = L.layerGroup().addTo(map);
       markersLayerRef.current = markersLayer;
 
-      // 同步当前视口内的测站
       const syncStationsInViewport = async () => {
         if (!showStationsRef.current) {
           markersLayer.clearLayers();
@@ -523,7 +526,6 @@ export default function AirMap({
         const maxLat = bounds.getNorth();
         const maxLng = bounds.getEast();
 
-        // 优先使用内存缓存中的已有站点立即渲染（0 毫秒即时响应，平移无缝）
         const cachedStationsInView: WaqiBoundStation[] = [];
         stationCacheRef.current.forEach((st) => {
           if (st.lat >= minLat && st.lat <= maxLat && st.lon >= minLng && st.lon <= maxLng) {
@@ -537,15 +539,18 @@ export default function AirMap({
           onStationCountChange?.(0, true);
         }
 
-        // 异步向官方接口请求最新高精站点
         try {
           const freshStations = await fetchWAQIMapBounds(minLat, minLng, maxLat, maxLng);
-
           freshStations.forEach((st: WaqiBoundStation) => {
-            stationCacheRef.current.set(st.uid, st);
+            const prev = stationCacheRef.current.get(st.uid);
+            stationCacheRef.current.set(st.uid, {
+              ...st,
+              pm25: prev?.pm25,
+              pm25IaqiUS: prev?.pm25IaqiUS,
+              pm25IaqiCN: prev?.pm25IaqiCN,
+            });
           });
 
-          // 取当前视口内的最新站点全集重新渲染
           const allInView: WaqiBoundStation[] = [];
           stationCacheRef.current.forEach((st) => {
             if (st.lat >= minLat && st.lat <= maxLat && st.lon >= minLng && st.lon <= maxLng) {
@@ -554,6 +559,7 @@ export default function AirMap({
           });
 
           renderStationsRef.current(allInView);
+          enrichViewportRef.current(allInView);
         } catch (e) {
           console.warn('[AirMap] Failed to sync bounds stations:', e);
           if (cachedStationsInView.length > 0) {
@@ -565,20 +571,15 @@ export default function AirMap({
       };
 
       const handleMoveEnd = () => {
-        if (fetchTimeoutRef.current) {
-          clearTimeout(fetchTimeoutRef.current);
-        }
+        if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
         fetchTimeoutRef.current = setTimeout(() => {
           syncStationsInViewport();
         }, 200);
       };
 
       map.on('moveend', handleMoveEnd);
-
-      // 初次挂载加载可视区域站点
       syncStationsInViewport();
 
-      // 5. 监听容器尺寸自适应变化 (与右侧榜单卡片高度联动，零间隙自适应)
       if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
         resizeObserver = new ResizeObserver(() => {
           map.invalidateSize();
@@ -590,12 +591,9 @@ export default function AirMap({
     }
 
     return () => {
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-      }
+      if (resizeObserver) resizeObserver.disconnect();
+      if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
+      if (enrichAbortRef.current) enrichAbortRef.current.abort();
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -603,7 +601,47 @@ export default function AirMap({
     };
   }, []);
 
-  // 响应视图中心与缩放变更 (平滑飞行漫游)
+  // 响应浅色 / 深色底图切换
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    if (basemapLayerRef.current) {
+      map.removeLayer(basemapLayerRef.current);
+    }
+    const baseUrl =
+      basemapTheme === 'dark'
+        ? `https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png?key=${CARTO_KEY}`
+        : `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png?key=${CARTO_KEY}`;
+    basemapLayerRef.current = L.tileLayer(baseUrl, {
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      maxZoom: 19,
+      tileSize: 512,
+      zoomOffset: -1,
+    }).addTo(map);
+    basemapLayerRef.current.bringToBack();
+  }, [basemapTheme]);
+
+  // 响应 WAQI 全球污染热力瓦片层开关与透明度
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (showHeatmap) {
+      if (!heatmapLayerRef.current) {
+        heatmapLayerRef.current = L.tileLayer(getWAQIMapTileUrl(), {
+          opacity: heatmapOpacity,
+          maxZoom: 16,
+          zIndex: 400,
+        }).addTo(map);
+      } else {
+        heatmapLayerRef.current.setOpacity(heatmapOpacity);
+      }
+    } else if (heatmapLayerRef.current) {
+      map.removeLayer(heatmapLayerRef.current);
+      heatmapLayerRef.current = null;
+    }
+  }, [showHeatmap, heatmapOpacity]);
+
   useEffect(() => {
     if (mapInstanceRef.current && center) {
       mapInstanceRef.current.flyTo(center, zoom || 9, {
@@ -613,7 +651,6 @@ export default function AirMap({
     }
   }, [center, zoom]);
 
-  // 响应开关切换
   useEffect(() => {
     const map = mapInstanceRef.current;
     const markersLayer = markersLayerRef.current;
@@ -623,27 +660,24 @@ export default function AirMap({
       markersLayer.clearLayers();
       onStationCountChange?.(0, false);
     } else {
-      // 重新触发一次渲染
       const bounds = map.getBounds();
-      const minLat = bounds.getSouth();
-      const minLng = bounds.getWest();
-      const maxLat = bounds.getNorth();
-      const maxLng = bounds.getEast();
-
       const inView: WaqiBoundStation[] = [];
       stationCacheRef.current.forEach((st) => {
-        if (st.lat >= minLat && st.lat <= maxLat && st.lon >= minLng && st.lon <= maxLng) {
+        if (
+          st.lat >= bounds.getSouth() &&
+          st.lat <= bounds.getNorth() &&
+          st.lon >= bounds.getWest() &&
+          st.lon <= bounds.getEast()
+        ) {
           inView.push(st);
         }
       });
-
       if (inView.length > 0) {
         renderStationsRef.current(inView);
       }
     }
   }, [showStations]);
 
-  // 响应标准切换或「只看 PM2.5」切换：重新渲染视野内测站微标与焦点城市微标
   useEffect(() => {
     standardRef.current = standard;
     onlyPm25Ref.current = onlyPm25;
@@ -651,37 +685,35 @@ export default function AirMap({
     if (!map) return;
 
     const bounds = map.getBounds();
-    const minLat = bounds.getSouth();
-    const minLng = bounds.getWest();
-    const maxLat = bounds.getNorth();
-    const maxLng = bounds.getEast();
-
     const inView: WaqiBoundStation[] = [];
     stationCacheRef.current.forEach((st) => {
-      if (st.lat >= minLat && st.lat <= maxLat && st.lon >= minLng && st.lon <= maxLng) {
+      if (
+        st.lat >= bounds.getSouth() &&
+        st.lat <= bounds.getNorth() &&
+        st.lon >= bounds.getWest() &&
+        st.lon <= bounds.getEast()
+      ) {
         inView.push(st);
       }
     });
 
     if (inView.length > 0 && showStationsRef.current) {
       renderStationsRef.current(inView);
+      enrichViewportRef.current(inView);
     }
 
     if (nearestStationRef.current && focusCity) {
-      renderFocusMarkerRef.current(nearestStationRef.current, focusCity);
+      syncFocusCityInfoRef.current(nearestStationRef.current, focusCity);
     }
-  }, [standard, onlyPm25, focusCity]);
+  }, [standard, onlyPm25, focusCity, cityCompositeRecords]);
 
-  // 响应焦点城市变更：计算距该城市市中心经纬度最近的在册核心站点并渲染地标
   useEffect(() => {
     const map = mapInstanceRef.current;
-    const layer = focusMarkerLayerRef.current;
-    if (!map || !layer || !focusCity) return;
+    if (!map || !focusCity) return;
 
-    layer.clearLayers();
+    let isCancelled = false;
     nearestStationRef.current = null;
 
-    // 1. 优先从已有在册站点缓存中查找市中心最近站立即渲染 (0 毫秒即时展示)
     const cachedNearest = findNearestStationForCity(
       focusCity,
       Array.from(stationCacheRef.current.values())
@@ -689,47 +721,23 @@ export default function AirMap({
 
     if (cachedNearest) {
       nearestStationRef.current = cachedNearest;
-      renderFocusMarkerRef.current(cachedNearest, focusCity);
-    } else {
-      const initialHtml = `
-        <div class="aqi-focus-city-pin">
-          <div class="aqi-focus-badge bg-sky-600 text-white shadow-xl">
-            <span class="font-extrabold text-xs tracking-tight">${escapeHtml(focusCity.nameZh)}</span>
-            <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping ml-1"></span>
-          </div>
-          <div class="aqi-focus-pin-pole"></div>
-        </div>
-      `;
-
-      const initialIcon = L.divIcon({
-        className: 'aqi-focus-container',
-        html: initialHtml,
-        iconSize: [88, 38],
-        iconAnchor: [44, 38],
-        popupAnchor: [0, -40],
-      });
-
-      const tempMarker = L.marker([focusCity.latitude, focusCity.longitude], {
-        icon: initialIcon,
-        zIndexOffset: 3000,
-      });
-      layer.addLayer(tempMarker);
+      syncFocusCityInfoRef.current(cachedNearest, focusCity);
     }
 
-    // 异步拉取焦点城市官方实测数据 (获取实测 PM2.5 与分项指标)
-    if (!focusCityDataMap.current.has(focusCity.id)) {
-      fetchWAQICityData(focusCity.id).then((rec: AirQualityRecord) => {
-        if (rec) {
+    const focusAbort = new AbortController();
+    if (!compositeRecordsRef.current[focusCity.id] && !focusCityDataMap.current.has(focusCity.id)) {
+      fetchWAQICityCompositeData(focusCity.id, focusAbort.signal)
+        .then((rec: AirQualityRecord) => {
+          if (isCancelled || !rec) return;
           focusCityDataMap.current.set(focusCity.id, rec);
+          reportCityCompositeRecord(focusCity.id, rec);
           if (nearestStationRef.current) {
-            renderFocusMarkerRef.current(nearestStationRef.current, focusCity);
+            syncFocusCityInfoRef.current(nearestStationRef.current, focusCity);
           }
-        }
-      }).catch(() => {});
+        })
+        .catch(() => {});
     }
 
-    // 2. 异步向 bounds 网格切片接口请求该城市中心周边 ±0.35° 范围站点，精准补全最近站
-    let isCancelled = false;
     fetchWAQIMapBounds(
       focusCity.latitude - 0.35,
       focusCity.longitude - 0.35,
@@ -737,27 +745,41 @@ export default function AirMap({
       focusCity.longitude + 0.35
     )
       .then((stations) => {
-        if (isCancelled || !layer || !mapInstanceRef.current) return;
-        stations.forEach((st) => stationCacheRef.current.set(st.uid, st));
+        if (isCancelled || !mapInstanceRef.current) return;
+        stations.forEach((st) => {
+          const prev = stationCacheRef.current.get(st.uid);
+          stationCacheRef.current.set(st.uid, {
+            ...st,
+            pm25: prev?.pm25,
+            pm25IaqiUS: prev?.pm25IaqiUS,
+            pm25IaqiCN: prev?.pm25IaqiCN,
+          });
+        });
 
         const freshNearest = findNearestStationForCity(
           focusCity,
           Array.from(stationCacheRef.current.values())
         );
         nearestStationRef.current = freshNearest;
-        renderFocusMarkerRef.current(freshNearest, focusCity);
+        syncFocusCityInfoRef.current(freshNearest, focusCity);
       })
       .catch((err) => {
-        console.warn('[AirMap] Failed to sync focus city nearest station:', err);
-        if (!isCancelled && !cachedNearest) {
-          renderFocusMarkerRef.current(null, focusCity);
-        }
+        console.warn('[AirMap] Focus bounds lookup failed:', err);
       });
 
     return () => {
       isCancelled = true;
+      focusAbort.abort();
     };
   }, [focusCity]);
 
-  return <div ref={mapContainerRef} className="w-full h-full rounded-2xl overflow-hidden" />;
+  return (
+    <div className="relative w-full h-full">
+      <div
+        ref={mapContainerRef}
+        className="w-full h-full rounded-2xl overflow-hidden shadow-inner bg-slate-100"
+        style={{ minHeight: '100%' }}
+      />
+    </div>
+  );
 }

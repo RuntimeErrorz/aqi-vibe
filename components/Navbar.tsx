@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useStandard } from './StandardContext';
+import { HeaderCitySwitcher } from './HeaderCitySwitcher';
 import {
   Wind,
   Map,
@@ -60,25 +61,34 @@ export const Navbar: React.FC = () => {
   return (
     <header className="sticky top-0 z-[9999] w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
       {/* 主导航条 */}
-      <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <Link
-          href="/"
-          onClick={() => setIsMobileMenuOpen(false)}
-          className="flex items-center space-x-2.5 sm:space-x-3 group shrink-0"
-        >
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-sky-600 flex items-center justify-center shadow-md shadow-sky-600/20 group-hover:scale-105 transition-transform shrink-0">
-            <Wind className="w-5 h-5 text-white stroke-[2.5]" />
-          </div>
-          <div>
-            <span className="font-bold text-base sm:text-lg tracking-tight text-slate-900 group-hover:text-sky-600 transition-colors">
-              AQI Vibe
-            </span>
-          </div>
-        </Link>
+      <div className="max-w-[1380px] mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+        {/* 左侧：Logo + 全局城市检索与关注胶囊 */}
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+          <Link
+            href="/"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="flex items-center space-x-2 sm:space-x-2.5 group shrink-0"
+          >
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-600 flex items-center justify-center shadow-md shadow-sky-600/20 group-hover:scale-105 transition-transform shrink-0">
+              <Wind className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[2.5]" />
+            </div>
+            <div className="hidden sm:block">
+              <span className="font-bold text-base sm:text-lg tracking-tight text-slate-900 group-hover:text-sky-600 transition-colors whitespace-nowrap">
+                AQI Vibe
+              </span>
+            </div>
+          </Link>
 
-        {/* 桌面端菜单项 (中大屏展示) */}
-        <nav className="hidden md:flex items-center space-x-1 lg:space-x-1.5">
+          <div className="hidden lg:block">
+            <HeaderCitySwitcher />
+          </div>
+          <div className="lg:hidden">
+            <HeaderCitySwitcher compact={true} />
+          </div>
+        </div>
+
+        {/* 桌面端菜单项 (lg 及以上展示，避免 768px 平板竖屏挤压折行) */}
+        <nav className="hidden lg:flex items-center space-x-0.5 xl:space-x-1.5">
           {navLinks.map((link, idx) => {
             const Icon = link.icon;
             const isActive = pathname === link.href;
@@ -86,19 +96,19 @@ export const Navbar: React.FC = () => {
               <React.Fragment key={link.href}>
                 {idx === 2 && (
                   <div
-                    className="h-4 w-px bg-slate-200 mx-1 sm:mx-1.5 self-center"
+                    className="h-4 w-px bg-slate-200 mx-1 self-center"
                     aria-hidden="true"
                   />
                 )}
                 <Link
                   href={link.href}
-                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center space-x-1.5 px-2 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium whitespace-nowrap shrink-0 transition-all ${
                     isActive
                       ? 'bg-sky-50 text-sky-600 border border-sky-200 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
                   <span>{link.label}</span>
                 </Link>
               </React.Fragment>
@@ -106,14 +116,14 @@ export const Navbar: React.FC = () => {
           })}
         </nav>
 
-        {/* 桌面端控制组：只看 PM2.5 开关 + 标准切换开关 (仅 md 及以上展示) */}
-        <div className="hidden md:flex items-center space-x-2.5 shrink-0">
+        {/* 桌面端控制组：只看 PM2.5 开关 + 标准切换开关 (仅 lg 及以上展示) */}
+        <div className="hidden lg:flex items-center space-x-1.5 xl:space-x-2.5 shrink-0">
           {/* 美标左侧：只看 PM2.5 纯净模式开关 */}
           <div className="relative group/pm25">
             <button
               type="button"
               onClick={toggleOnlyPm25}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none shadow-2xs ${
+              className={`flex items-center space-x-1.5 px-2.5 xl:px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none shadow-2xs whitespace-nowrap ${
                 onlyPm25
                   ? 'bg-sky-600 text-white border-sky-600 shadow-sky-600/25 ring-2 ring-sky-300/40'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
@@ -153,21 +163,21 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* 右侧：标准切换开关与独立悬停 Tip */}
-          <div className="flex w-[186px] shrink-0 items-center justify-between rounded-xl border border-slate-200 bg-white shadow-sm hover:border-slate-300 transition-colors">
+          <div className="flex w-auto xl:w-[186px] shrink-0 items-center justify-between rounded-xl border border-slate-200 bg-white shadow-sm hover:border-slate-300 transition-colors">
             {/* 左侧主体：点击切换标准 */}
             <button
               onClick={toggleStandard}
-              className="flex-1 flex items-center space-x-1.5 px-3 py-1.5 text-xs transition-colors hover:bg-slate-50 rounded-l-xl cursor-pointer select-none"
+              className="flex-1 flex items-center space-x-1.5 px-2.5 xl:px-3 py-1.5 text-xs transition-colors hover:bg-slate-50 rounded-l-xl cursor-pointer select-none whitespace-nowrap"
               title="点击切换 AQI 计算标准 (美国 EPA / 中国国标)"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span className="text-slate-500 shrink-0">标准:</span>
-              <span className="w-20 inline-flex items-center text-left shrink-0">
+              <span className="hidden xl:inline text-slate-500 shrink-0">标准:</span>
+              <span className="xl:w-20 inline-flex items-center text-left shrink-0">
                 {!mounted ? (
-                  <span className="h-3.5 w-16 bg-slate-200/90 rounded-md animate-pulse inline-block" />
+                  <span className="h-3.5 w-14 xl:w-16 bg-slate-200/90 rounded-md animate-pulse inline-block" />
                 ) : (
                   <span className="font-bold text-slate-900 whitespace-nowrap">
-                    {standard === 'US' ? '美标 (US EPA)' : '国标 (HJ 633)'}
+                    {standard === 'US' ? '美标 (EPA)' : '国标 (HJ633)'}
                   </span>
                 )}
               </span>
@@ -208,7 +218,7 @@ export const Navbar: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-slate-900">美国标准 (US EPA NowCast)</span>
+                      <span className="font-bold text-slate-900">美国标准 (US EPA 2024)</span>
                       {standard === 'US' && (
                         <span className="text-[10px] bg-amber-600 text-white px-1.5 py-0.5 rounded font-bold">
                           当前生效
@@ -216,7 +226,7 @@ export const Navbar: React.FC = () => {
                       )}
                     </div>
                     <p className="text-[11px] leading-relaxed">
-                      标准限值更严苛，<b>一级优</b> 仅对应 PM2.5 ≤ 12 μg/m³，<b>二级良</b> 对应 PM2.5 ≤ 35.4 μg/m³，超过 35.4 即进入不健康超标区间。
+                      采用 2024 年 5 月生效的最新修订标准：<b>一级优</b> 收紧至 PM2.5 ≤ 9.0 μg/m³，<b>二级良</b> 对应 PM2.5 ≤ 35.4 μg/m³，超过 35.4 进入不健康超标区间。
                     </p>
                   </div>
 
@@ -237,7 +247,7 @@ export const Navbar: React.FC = () => {
                       )}
                     </div>
                     <p className="text-[11px] leading-relaxed">
-                      优良门槛为 <b>AQI ≤ 100</b>（包含一级优 PM2.5 ≤ 35 μg/m³、二级良 PM2.5 ≤ 75 μg/m³），更符合国内日常通报口径。
+                      严格区分<b>实时小时</b>与<b>历史日均/O₃-8h</b>双套断点，优良门槛为 <b>AQI ≤ 100</b>（一级优 PM2.5 ≤ 35、二级良 ≤ 75 μg/m³）。
                     </p>
                   </div>
 
@@ -250,13 +260,13 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* 移动端顶栏右侧快捷区域：紧凑 PM2.5 切换 + 标准切换键 + 汉堡按钮 */}
-        <div className="flex md:hidden items-center space-x-1.5">
+        {/* 移动端/平板竖屏顶栏右侧快捷区域：紧凑 PM2.5 切换 + 标准切换键 + 汉堡按钮 */}
+        <div className="flex lg:hidden items-center space-x-1.5 shrink-0">
           {/* 移动端 PM2.5 纯净模式快捷切换 */}
           <button
             type="button"
             onClick={toggleOnlyPm25}
-            className={`flex items-center space-x-1 px-2 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none shadow-2xs ${
+            className={`flex items-center space-x-1 px-2 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none shadow-2xs whitespace-nowrap shrink-0 ${
               onlyPm25
                 ? 'bg-sky-600 text-white border-sky-600'
                 : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -270,11 +280,11 @@ export const Navbar: React.FC = () => {
           {/* 移动端 1 键快速切换胶囊 */}
           <button
             onClick={toggleStandard}
-            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 shadow-xs text-xs font-bold transition-all cursor-pointer select-none"
+            className="flex items-center space-x-1 px-2 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 shadow-xs text-xs font-bold transition-all cursor-pointer select-none whitespace-nowrap shrink-0"
             title="点击快速切换标准"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <span className="text-slate-800">
+            <span className="text-slate-800 whitespace-nowrap">
               {!mounted ? (
                 <span className="inline-block w-6 h-3 bg-slate-200 rounded animate-pulse" />
               ) : standard === 'US' ? (
@@ -304,7 +314,7 @@ export const Navbar: React.FC = () => {
       {/* 移动端背景半透明遮罩 (点击可直接关闭抽屉) */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 top-16 bg-slate-900/30 backdrop-blur-xs z-40 md:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 top-16 bg-slate-900/30 backdrop-blur-xs z-40 lg:hidden animate-in fade-in duration-200"
           onClick={() => setIsMobileMenuOpen(false)}
           aria-hidden="true"
         />
@@ -312,7 +322,7 @@ export const Navbar: React.FC = () => {
 
       {/* 移动端折叠抽屉面板 (Mobile Navigation Drawer) */}
       {isMobileMenuOpen && (
-        <div className="md:hidden relative z-50 border-t border-slate-200/90 bg-white shadow-2xl animate-in slide-in-from-top-2 duration-200 max-h-[calc(100vh-4rem)] overflow-y-auto">
+        <div className="lg:hidden relative z-50 border-t border-slate-200/90 bg-white shadow-2xl animate-in slide-in-from-top-2 duration-200 max-h-[calc(100vh-4rem)] overflow-y-auto">
           <div className="px-4 py-4 space-y-4">
             {/* 移动端导航主链接 */}
             <div className="space-y-1">

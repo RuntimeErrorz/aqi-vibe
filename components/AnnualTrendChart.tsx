@@ -20,7 +20,25 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
   }, []);
 
   if (!mounted) {
-    return <div className="h-80 flex items-center justify-center text-slate-400 text-sm">加载趋势图表中...</div>;
+    return (
+      <div className="w-full h-72 sm:h-80 rounded-xl bg-slate-50/70 border border-slate-100 p-4 flex flex-col justify-between animate-pulse">
+        <div className="flex justify-center gap-4">
+          <div className="h-3 w-20 bg-slate-200 rounded" />
+          <div className="h-3 w-20 bg-slate-100 rounded" />
+          <div className="h-3 w-20 bg-slate-100 rounded" />
+        </div>
+        <div className="flex items-end justify-between gap-3 flex-1 pt-6 pb-2 px-4">
+          {[55, 62, 68, 74, 78, 82, 85, 88].map((h, i) => (
+            <div key={i} className="flex-1 rounded-t-md bg-slate-200/70" style={{ height: `${h}%` }} />
+          ))}
+        </div>
+        <div className="flex justify-between px-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="h-2.5 w-7 bg-slate-200/70 rounded" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const years = data.map((d) => d.year.toString());

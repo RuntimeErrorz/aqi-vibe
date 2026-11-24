@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { Activity } from 'lucide-react';
-import { HourlyTrendPoint } from '@/lib/services/history-data';
+import { HourlyTrendPoint } from '@/lib/services/realtime-trend';
 import { useStandard } from './StandardContext';
 import { calculatePM25AQI } from '@/lib/aqi-calculator';
 
@@ -11,6 +11,7 @@ interface TrendChartProps {
   data: HourlyTrendPoint[];
   city: string;
   isReal?: boolean;
+  loading?: boolean;
 }
 
 const DEFAULT_SELECTED_MAP: Record<string, boolean> = {
@@ -23,7 +24,7 @@ const DEFAULT_SELECTED_MAP: Record<string, boolean> = {
   '一氧化碳 CO (mg/m³)': false,
 };
 
-export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = true }) => {
+export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = true, loading = false }) => {
   const { standard, onlyPm25 } = useStandard();
   const [mounted, setMounted] = useState(false);
   const [selectedHours, setSelectedHours] = useState<number>(24);
@@ -61,11 +62,38 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = tru
     } catch {}
   };
 
-  if (!mounted) {
+  if (!mounted || loading) {
     return (
-      <div className="h-64 flex flex-col items-center justify-center text-slate-400 text-sm space-y-2">
-        <div className="w-5 h-5 border-2 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
-        <span>同步逐小时时序数据中...</span>
+      <div className="w-full space-y-3 animate-pulse">
+        <div className="flex items-center justify-between pt-0.5">
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-20 bg-slate-200/80 rounded" />
+            <div className="h-4 w-20 bg-slate-100 rounded" />
+            <div className="h-4 w-16 bg-slate-100 rounded hidden sm:block" />
+          </div>
+          <div className="h-6 w-36 bg-slate-100 rounded-lg" />
+        </div>
+        <div className="w-full h-64 sm:h-72 rounded-xl bg-slate-50/80 border border-slate-100 p-4 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="h-px w-full bg-slate-200/60" />
+            <div className="h-px w-full bg-slate-200/60" />
+            <div className="h-px w-full bg-slate-200/60" />
+          </div>
+          <div className="flex items-end justify-between gap-2 h-32 px-2">
+            {[42, 58, 65, 50, 74, 82, 68, 55, 48, 60, 72, 64].map((h, i) => (
+              <div
+                key={i}
+                className="flex-1 rounded-t-md bg-slate-200/70"
+                style={{ height: `${h}%` }}
+              />
+            ))}
+          </div>
+          <div className="flex items-center justify-between pt-2">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-2.5 w-8 bg-slate-200/70 rounded" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -205,11 +233,12 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = tru
 
         const activeSeries = new Set(params.map((p: any) => p.seriesName));
 
-        // AQI 综合大行（仅在勾选时显示）
-        if (activeSeries.has('AQI 综合指数')) {
+        // AQI 指数大行（兼容综合全项与「只看 PM2.5」模式，均在勾选时精准显示当前口径数值）
+        if (activeSeries.has(aqiSeriesName)) {
+          const displayedAqi = aqiVals[idx];
           html += `<div style="display:flex; justify-content:space-between; gap:16px; font-size:12px; line-height:1.7; font-weight:bold; border-bottom:1px solid #f1f5f9; padding-bottom:4px; margin-bottom:4px;">
-            <span style="color:#0284c7;">● AQI 综合指数:</span>
-            <span style="color:#0f172a; font-size:13px;">${item.aqi}</span>
+            <span style="color:#0284c7;">● ${aqiSeriesName}:</span>
+            <span style="color:#0f172a; font-size:13px;">${displayedAqi}</span>
           </div>`;
         }
 
@@ -240,7 +269,14 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = tru
     legend: {
       type: 'scroll',
       data: legendData,
-      selected: selectedMap,
+      selected: {
+        ...selectedMap,
+        [aqiSeriesName]:
+          selectedMap[aqiSeriesName] ??
+          selectedMap['AQI 综合指数'] ??
+          selectedMap['PM2.5 AQI 指数'] ??
+          true,
+      },
       top: 0,
       textStyle: { color: '#475569', fontSize: 11 },
       pageIconColor: '#0284c7',

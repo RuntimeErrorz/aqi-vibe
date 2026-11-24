@@ -9,10 +9,10 @@ import {
   Leaf,
   Globe,
   Navigation,
-  RefreshCw,
   Search,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   X,
   Users,
 } from 'lucide-react';
@@ -149,17 +149,30 @@ const PageJumper: React.FC<{
 };
 
 export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSelectCity, className }) => {
-  const { standard, onlyPm25 } = useStandard();
+  const { standard, onlyPm25, cityCompositeRecords, reportRankingCities } = useStandard();
   const [scope, setScope] = useState<'global' | 'domestic'>('global');
   const [data, setData] = useState<RankingData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 搜索框与即时下拉预览
   const [searchQuery, setSearchQuery] = useState('');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFetchAtRef = useRef<number>(0);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // 分页状态与测站统计口径
   const [cleanPage, setCleanPage] = useState(1);
@@ -185,42 +198,51 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
     } catch {}
   };
 
-  const fetchRankings = async (isManual?: boolean | unknown, silent = false) => {
+  const fetchRankings = async (silent = false) => {
     if (!silent && !data) {
       setLoading(true);
     }
-    if (isManual === true) {
-      setIsSyncing(true);
-    }
     setError(null);
-    let apiJson: RankingData | null = null;
+    lastFetchAtRef.current = Date.now();
     try {
-      // 直连同源服务端聚合接口 (Node.js 16 并发管道 + SWR 内存快照，0ms 瞬间秒回)
-      const apiUrl = `/api/ranking/realtime${isManual === true ? '?refresh=true' : ''}`;
-      const apiRes = await fetch(apiUrl);
+      // 优先直连同源 Cloudflare Worker 边缘缓存 + KV 快照接口 (0ms 边缘直出，防刷零压力)
+      const apiRes = await fetch('/api/ranking/realtime');
       if (!apiRes.ok) {
-        if (apiRes.status === 404) {
-          // 纯静态站点导出托管兜底 (如 GitHub Pages 静态导出无 Node.js API 时动态按需加载)
+        if (apiRes.status === 404 || apiRes.status === 503) {
+          // 纯静态站点导出或 Worker KV 首次冷启动尚未完成首轮 Cron 时，平滑回退至前端按需拉取
           const { getRealtimeRanking } = await import('@/lib/services/realtime-ranking');
-          const clientData = await getRealtimeRanking(isManual === true);
+          const clientData = await getRealtimeRanking(false);
           if (clientData && clientData.success && clientData.totalCities > 0) {
             setData(clientData);
+            if (clientData.global?.cleanest?.length) {
+              reportRankingCities(clientData.global.cleanest);
+            }
+            if (clientData.isRefreshing && isMountedRef.current) {
+              if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+              refreshTimerRef.current = setTimeout(() => {
+                if (isMountedRef.current) {
+                  fetchRankings(true);
+                }
+              }, 5000);
+            }
             return;
           }
         }
         throw new Error(`排行榜服务响应异常 (${apiRes.status})`);
       }
-      apiJson = (await apiRes.json()) as RankingData;
+      const apiJson = (await apiRes.json()) as RankingData;
       if (apiJson && apiJson.success && apiJson.totalCities > 0) {
         setData(apiJson);
-        // 若服务端返回 isRefreshing: true，表明后台已触发静默增量拉取，客户端在 5 秒后无感静默收取最新数据
-        if (apiJson.isRefreshing) {
-          setIsSyncing(true);
-          setTimeout(() => {
-            fetchRankings(false, true);
+        if (apiJson.global?.cleanest?.length) {
+          reportRankingCities(apiJson.global.cleanest);
+        }
+        if (apiJson.isRefreshing && isMountedRef.current) {
+          if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+          refreshTimerRef.current = setTimeout(() => {
+            if (isMountedRef.current) {
+              fetchRankings(true);
+            }
           }, 5000);
-        } else {
-          setIsSyncing(false);
         }
         return;
       }
@@ -230,14 +252,20 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
       setError(err?.message || '获取实时排行失败，请检查网络后重试');
     } finally {
       setLoading(false);
-      if (!apiJson?.isRefreshing) {
-        setIsSyncing(false);
-      }
     }
   };
 
   useEffect(() => {
     fetchRankings();
+
+    // 页面切回前台时静默同步最新一期 KV 快照（60 秒节流，杜绝频繁切屏浪费请求）
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastFetchAtRef.current >= 60_000) {
+        fetchRankings(true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   // 点击搜索外部自动关闭预览下拉
@@ -282,8 +310,20 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
   }, [activeCategory, populationTier, onlyPm25, metricMode, standard]);
 
   // 2. 为当前人口池赋予真实、固定的阶梯排名 (1 .. N)，依据选定标准与测站口径动态排序
-  // 在 100万+ 默认视图下：全部 442 座百万大城已在 Phase 1 全部就绪，长尾小城绝不会进入此池，名次 100% 绝对恒定永不跳变！
+  // 当客户端已有该城逐站精测全城均值 (cityCompositeRecords) 时，在「全市均值」模式下自动对齐，确保首页/Header/地图/榜单四处绝对一致
   const getCityCurrentAqi = (c: RankedCityItem) => {
+    if (metricMode === 'avg') {
+      const exactComp = cityCompositeRecords[c.id];
+      if (exactComp) {
+        const ev = onlyPm25
+          ? evaluateAQI({ pm25: exactComp.pollutants.pm25 }, standard, true)
+          : standard === 'CN'
+          ? exactComp.evaluationCN
+          : exactComp.evaluationUS;
+        if (ev.aqi > 0) return ev.aqi;
+      }
+    }
+
     if (onlyPm25) {
       if (metricMode === 'rep') {
         if (c.repPm25AqiUS !== undefined) {
@@ -318,7 +358,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
       cleanRank: idx + 1,
       pollutedRank: total - idx,
     }));
-  }, [populationFilteredCities, standard, metricMode, onlyPm25]);
+  }, [populationFilteredCities, standard, metricMode, onlyPm25, cityCompositeRecords]);
 
   // 3. 即时搜索匹配列表（携带保留的绝对名次）
   const searchMatchedCities = useMemo(() => {
@@ -343,17 +383,10 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
   }, [filteredCleanest]);
 
   const filteredPolluted = useMemo(() => {
-    const getVal = (c: RankedCityItem) => {
-      if (metricMode === 'rep') {
-        return standard === 'CN' ? (c.repAqiCN ?? c.aqiCN ?? c.aqi) : (c.repAqiUS ?? c.aqiUS ?? c.aqi);
-      }
-      return standard === 'CN' ? (c.aqiCN ?? c.aqi) : (c.aqiUS ?? c.aqi);
-    };
-
     if (!searchQuery.trim()) {
       return [...allCitiesWithRank].reverse();
     }
-    // 搜索时按当前标准下的污染程度降序排
+    // 搜索时按当前标准与口径下的污染程度降序排
     return [...searchMatchedCities].sort((a, b) => getCityCurrentAqi(b) - getCityCurrentAqi(a));
   }, [allCitiesWithRank, searchMatchedCities, searchQuery, standard, metricMode, onlyPm25]);
 
@@ -446,7 +479,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
               </div>
               {data?.updatedAt && (
                 <p className="text-[11px] text-slate-400 font-normal">
-                  更新于 {new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  更新于 {new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · 每30分钟同步
                 </p>
               )}
             </div>
@@ -483,28 +516,19 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
             </div>
 
             {/* 每页条数选择：桌面端常驻第一行 */}
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="hidden sm:block px-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:border-slate-300 shadow-2xs cursor-pointer shrink-0 transition-colors"
-              title="设置每页显示数量"
-            >
-              <option value={10}>10条/页</option>
-              <option value={20}>20条/页</option>
-              <option value={50}>50条/页</option>
-            </select>
-
-            {/* 刷新按钮：全尺寸响应式 (移动端纯图标极简按钮，桌面端带文字提示) */}
-            <button
-              type="button"
-              onClick={() => fetchRankings(true)}
-              disabled={isSyncing}
-              className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors shadow-2xs disabled:opacity-75 cursor-pointer text-xs font-semibold shrink-0"
-              title={isSyncing ? "正在后台同步最新全网数据..." : "手动刷新实时榜单"}
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-sky-600' : ''}`} />
-              <span className="hidden sm:inline">{isSyncing ? '同步中' : '刷新'}</span>
-            </button>
+            <div className="relative hidden sm:inline-flex items-center shrink-0">
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="appearance-none h-8 pl-2.5 pr-6 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:border-slate-300 shadow-2xs cursor-pointer whitespace-nowrap transition-colors"
+                title="设置每页显示数量"
+              >
+                <option value={10}>10条/页</option>
+                <option value={20}>20条/页</option>
+                <option value={50}>50条/页</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-1.5" />
+            </div>
           </div>
         </div>
 
@@ -711,16 +735,19 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
             </div>
 
             {/* 每页条数选择 */}
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:border-slate-300 shadow-2xs cursor-pointer shrink-0 transition-colors"
-              title="设置每页显示数量"
-            >
-              <option value={10}>10条/页</option>
-              <option value={20}>20条/页</option>
-              <option value={50}>50条/页</option>
-            </select>
+            <div className="relative inline-flex items-center shrink-0">
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="appearance-none h-8 pl-2.5 pr-6 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:border-slate-300 shadow-2xs cursor-pointer whitespace-nowrap transition-colors"
+                title="设置每页显示数量"
+              >
+                <option value={10}>10条/页</option>
+                <option value={20}>20条/页</option>
+                <option value={50}>50条/页</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-1.5" />
+            </div>
           </div>
         </div>
       </div>
@@ -742,7 +769,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
         <div className="p-8 text-center space-y-2 text-slate-500 text-xs flex-1 flex flex-col items-center justify-center">
           <p className="text-rose-500 font-semibold">{error}</p>
           <button
-            onClick={() => fetchRankings(true)}
+            onClick={() => fetchRankings(false)}
             className="px-3.5 py-1.5 rounded-lg bg-sky-50 text-sky-600 font-bold hover:bg-sky-100 transition-colors cursor-pointer"
           >
             重新尝试拉取
@@ -775,7 +802,10 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                 ) : (
                   currentCleanList.map((c) => {
                     const currentAqi = getCityCurrentAqi(c);
-                    const currentPm25 = metricMode === 'rep' ? (c.repPm25 ?? c.pm25) : c.pm25;
+                    const exactComp = metricMode === 'avg' ? cityCompositeRecords[c.id] : undefined;
+                    const currentPm25 = metricMode === 'rep'
+                      ? (c.repPm25 ?? c.pm25)
+                      : (exactComp?.pollutants.pm25 ?? c.pm25);
                     const evaluation = standard === 'CN' ? getCNEvaluation(currentAqi) : getUSEvaluation(currentAqi);
                     const showProvince = !c.isDomestic && c.country !== 'CN' && Boolean(c.province);
                     const popPrefix = c.population ? `👥 ${formatPopulation(c.population)} · ` : '';
@@ -877,7 +907,10 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                 ) : (
                   currentPollutedList.map((c) => {
                     const currentAqi = getCityCurrentAqi(c);
-                    const currentPm25 = metricMode === 'rep' ? (c.repPm25 ?? c.pm25) : c.pm25;
+                    const exactComp = metricMode === 'avg' ? cityCompositeRecords[c.id] : undefined;
+                    const currentPm25 = metricMode === 'rep'
+                      ? (c.repPm25 ?? c.pm25)
+                      : (exactComp?.pollutants.pm25 ?? c.pm25);
                     const evaluation = standard === 'CN' ? getCNEvaluation(currentAqi) : getUSEvaluation(currentAqi);
                     const showProvince = !c.isDomestic && c.country !== 'CN' && Boolean(c.province);
                     const popPrefix = c.population ? `👥 ${formatPopulation(c.population)} · ` : '';

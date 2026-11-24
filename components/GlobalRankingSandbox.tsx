@@ -5,9 +5,12 @@ import { useStandard } from './StandardContext';
 import {
   getAllCitiesRanking,
   getAllCountriesRanking,
+  isHistorySummaryLoaded,
+  loadHistorySummary,
   CityRankingItem,
   CountryRankingItem,
 } from '@/lib/services/history-data';
+import { PaginationJumper } from './PaginationJumper';
 import { COUNTRIES_META } from '@/lib/constants/countries';
 import { getCNEvaluation, getUSEvaluation } from '@/lib/aqi-calculator';
 import {
@@ -31,7 +34,7 @@ import {
   Flame,
   Users,
 } from 'lucide-react';
-import { formatPopulation } from '@/lib/constants/cities';
+import { formatPopulation, DOMESTIC_CITY_COUNT, GLOBAL_CITY_COUNT } from '@/lib/constants/cities';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -57,71 +60,11 @@ const POPULATION_THRESHOLDS: Record<PopulationTier, number> = {
 
 const AVAILABLE_YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019];
 
-interface PageJumperProps {
+const PageJumper: React.FC<{
   currentPage: number;
   totalPages: number;
   onPageChange: (p: number) => void;
-}
-
-const PageJumper: React.FC<PageJumperProps> = ({ currentPage, totalPages, onPageChange }) => {
-  const [inputVal, setInputVal] = useState(String(currentPage));
-
-  useEffect(() => {
-    setInputVal(String(currentPage));
-  }, [currentPage]);
-
-  const handleCommit = () => {
-    const val = parseInt(inputVal, 10);
-    if (!isNaN(val) && val >= 1 && val <= totalPages) {
-      onPageChange(val);
-    } else {
-      setInputVal(String(currentPage));
-    }
-  };
-
-  return (
-    <div className="inline-flex items-center space-x-1.5 text-xs text-slate-600 select-none">
-      <button
-        type="button"
-        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-        disabled={currentPage <= 1}
-        className="h-7 flex items-center space-x-1 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors shadow-2xs cursor-pointer shrink-0"
-        title="上一页"
-      >
-        <ChevronLeft className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline text-xs leading-none">上一页</span>
-      </button>
-
-      <div className="inline-flex items-center space-x-1 px-1">
-        <span className="text-slate-400 text-xs leading-none flex items-center">第</span>
-        <input
-          type="number"
-          min={1}
-          max={Math.max(1, totalPages)}
-          value={inputVal}
-          onChange={(e) => setInputVal(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleCommit();
-          }}
-          onBlur={handleCommit}
-          className="h-7 w-12 px-1 text-center text-xs leading-none bg-white border border-slate-200 rounded-lg font-bold text-slate-800 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 shadow-2xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none tabular-nums"
-        />
-        <span className="text-slate-400 text-xs leading-none flex items-center">/ {totalPages} 页</span>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-        disabled={currentPage >= totalPages}
-        className="h-7 flex items-center space-x-1 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-slate-700 transition-colors shadow-2xs cursor-pointer shrink-0"
-        title="下一页"
-      >
-        <span className="hidden sm:inline text-xs leading-none">下一页</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-      </button>
-    </div>
-  );
-};
+}> = (props) => <PaginationJumper {...props} compact={false} />;
 
 export function GlobalRankingSandbox({
   selectedCityIds,
@@ -130,6 +73,13 @@ export function GlobalRankingSandbox({
 }: GlobalRankingSandboxProps) {
   const { standard, onlyPm25, mounted } = useStandard();
   const router = useRouter();
+  const [summaryReady, setSummaryReady] = useState(() => isHistorySummaryLoaded());
+
+  useEffect(() => {
+    if (!isHistorySummaryLoaded()) {
+      loadHistorySummary().then(() => setSummaryReady(true));
+    }
+  }, []);
 
   // 当前主 Tab: 城市榜单 vs 国家榜单
   const [activeTab, setActiveTab] = useState<TabType>('cities');
@@ -183,14 +133,16 @@ export function GlobalRankingSandbox({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 1. 获取基础数据
+  // 1. 获取基础数据（等待 history_summary.json 按需异步加载完毕后即时派生）
   const rawCities = useMemo(() => {
+    if (!summaryReady) return [];
     return getAllCitiesRanking(selectedYear, standard, onlyPm25);
-  }, [selectedYear, standard, onlyPm25]);
+  }, [selectedYear, standard, onlyPm25, summaryReady]);
 
   const rawCountries = useMemo(() => {
+    if (!summaryReady) return [];
     return getAllCountriesRanking(selectedYear, standard, onlyPm25);
-  }, [selectedYear, standard, onlyPm25]);
+  }, [selectedYear, standard, onlyPm25, summaryReady]);
 
   // 2. 统计并收集可选国家列表（按纳入城市数量排序）
   const countryOptions = useMemo(() => {
@@ -426,7 +378,8 @@ export function GlobalRankingSandbox({
             }`}
           >
             <Building2 className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">城市精细榜 (928城)</span>
+            <span className="sm:hidden whitespace-nowrap">城市榜 ({rawCities.length || 928})</span>
+            <span className="hidden sm:inline whitespace-nowrap">城市精细榜 ({rawCities.length || 928}城)</span>
           </button>
           <button
             onClick={() => handleTabSwitch('countries')}
@@ -437,7 +390,8 @@ export function GlobalRankingSandbox({
             }`}
           >
             <Globe className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">国家/地区综合榜 (93国)</span>
+            <span className="sm:hidden whitespace-nowrap">国家榜 ({rawCountries.length || 93})</span>
+            <span className="hidden sm:inline whitespace-nowrap">国家/地区综合榜 ({rawCountries.length || 93}国)</span>
           </button>
         </div>
       </div>
@@ -473,7 +427,7 @@ export function GlobalRankingSandbox({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                中国国内 (375)
+                中国国内 ({DOMESTIC_CITY_COUNT})
               </button>
               <button
                 onClick={() => {
@@ -486,7 +440,7 @@ export function GlobalRankingSandbox({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                海外国际 (564)
+                海外国际 ({GLOBAL_CITY_COUNT})
               </button>
             </div>
           )}
@@ -788,21 +742,21 @@ export function GlobalRankingSandbox({
       {/* 榜单表格展示 */}
       {activeTab === 'cities' ? (
         <div className="overflow-x-auto rounded-xl border border-slate-200/80 shadow-sm bg-white custom-scrollbar">
-          <table className="w-full min-w-[780px] text-left text-sm text-slate-700">
-            <thead className="bg-slate-50/90 text-xs sm:text-[13px] font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200">
+          <table className="w-full min-w-[740px] text-left text-sm text-slate-700">
+            <thead className="bg-slate-50/90 text-xs font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200">
               <tr>
-                <th className="py-3.5 px-3 w-14 text-center whitespace-nowrap">排名</th>
-                <th className="py-3.5 px-3 min-w-[180px] whitespace-nowrap">城市 / 国家</th>
-                <th className="py-3.5 px-3 min-w-[110px] whitespace-nowrap">{onlyPm25 ? 'PM2.5 AQI' : '综合 AQI'}</th>
-                <th className="py-3.5 px-3 min-w-[120px] whitespace-nowrap">PM2.5 年均 (μg/m³)</th>
-                <th className="py-3.5 px-3 min-w-[120px] whitespace-nowrap">PM10 年均 (μg/m³)</th>
-                <th className="py-3.5 px-3 min-w-[130px] whitespace-nowrap">优良达标率</th>
-                <th className="py-3.5 px-3 min-w-[140px] whitespace-nowrap">改善幅度 (较基准)</th>
-                <th className="py-3.5 px-3 min-w-[90px] text-right whitespace-nowrap">沙盘操作</th>
+                <th className="py-3 px-2.5 w-12 text-center whitespace-nowrap">排名</th>
+                <th className="py-3 px-2.5 min-w-[155px] whitespace-nowrap">城市 / 国家</th>
+                <th className="py-3 px-2.5 min-w-[96px] whitespace-nowrap">{onlyPm25 ? 'PM2.5 AQI' : '综合 AQI'}</th>
+                <th className="py-3 px-2.5 min-w-[96px] whitespace-nowrap">PM2.5 年均</th>
+                <th className="py-3 px-2.5 min-w-[96px] whitespace-nowrap">PM10 年均</th>
+                <th className="py-3 px-2.5 min-w-[100px] whitespace-nowrap">优良达标率</th>
+                <th className="py-3 px-2.5 min-w-[110px] whitespace-nowrap">较基准改善</th>
+                <th className="py-3 px-2.5 min-w-[80px] text-right whitespace-nowrap">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {!mounted ? (
+              {!mounted || !summaryReady ? (
                 [...Array(pageSize)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
                     <td className="py-3.5 px-3 text-center"><div className="h-6 w-6 bg-slate-100 rounded mx-auto" /></td>
@@ -1002,7 +956,7 @@ export function GlobalRankingSandbox({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {!mounted ? (
+              {!mounted || !summaryReady ? (
                 [...Array(pageSize)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
                     <td className="py-3.5 px-3 text-center"><div className="h-6 w-6 bg-slate-100 rounded mx-auto" /></td>

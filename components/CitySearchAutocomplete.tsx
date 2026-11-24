@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { CityMeta } from '@/lib/types';
-import { searchCities, HOT_CITY_IDS, formatPopulation } from '@/lib/constants/cities';
+import { searchCities, HOT_CITY_IDS, formatPopulation, DOMESTIC_CITY_COUNT, GLOBAL_CITY_COUNT } from '@/lib/constants/cities';
 import { getCountryInfo } from '@/lib/constants/countries';
+import { useStandard } from '@/components/StandardContext';
+import { evaluateAQI, getCNEvaluation, getUSEvaluation } from '@/lib/aqi-calculator';
 import { Search, MapPin, Globe, X, ChevronRight } from 'lucide-react';
 
 interface CitySearchAutocompleteProps {
@@ -12,6 +14,7 @@ interface CitySearchAutocompleteProps {
   placeholder?: string;
   className?: string;
   filterCity?: (city: CityMeta) => boolean;
+  showCachedAqi?: boolean;
 }
 
 export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
@@ -20,7 +23,9 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
   placeholder = '搜索国家或城市 (如: 美国 / 日本 / 英国 / 成都 / 巴黎 / Tokyo)...',
   className = '',
   filterCity,
+  showCachedAqi = false,
 }) => {
+  const { standard, onlyPm25, cityCompositeRecords, rankingAqiMap, ensureRankingAqiLoaded } = useStandard();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<CityMeta[]>([]);
@@ -28,6 +33,36 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (showCachedAqi && isOpen) {
+      ensureRankingAqiLoaded();
+    }
+  }, [showCachedAqi, isOpen, ensureRankingAqiLoaded]);
+
+  const getCachedEval = (cid: string) => {
+    if (!showCachedAqi) return null;
+    const rec = cityCompositeRecords[cid];
+    if (rec) {
+      const ev = onlyPm25
+        ? evaluateAQI({ pm25: rec.pollutants.pm25 }, standard, true)
+        : standard === 'CN'
+        ? rec.evaluationCN
+        : rec.evaluationUS;
+      if (ev && ev.aqi > 0) return ev;
+    }
+    const snap = rankingAqiMap[cid];
+    if (!snap) return null;
+    const val = onlyPm25
+      ? standard === 'CN'
+        ? (snap.pm25AqiCN ?? snap.aqiCN)
+        : (snap.pm25AqiUS ?? snap.aqiUS)
+      : standard === 'CN'
+      ? snap.aqiCN
+      : snap.aqiUS;
+    if (!val || val <= 0) return null;
+    return standard === 'CN' ? getCNEvaluation(val) : getUSEvaluation(val);
+  };
 
   // 随着 query 变化即时检索 (Algolia 风格响应)
   useEffect(() => {
@@ -88,6 +123,10 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
         <input
           ref={inputRef}
           type="text"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-autocomplete="list"
+          aria-label="搜索城市或国家"
           value={isOpen ? query : `${selectedCity.nameZh} (${selectedCity.nameEn})`}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -128,7 +167,7 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
             <span className="hidden sm:inline shrink-0">按 ↑↓ 选择，Enter 确认</span>
           </div>
 
-          <div className="max-h-72 overflow-y-auto py-1">
+          <div className="max-h-72 overflow-y-auto py-1" role="listbox" aria-label="城市匹配列表">
             {results.length > 0 ? (
               results.map((c, idx) => {
                 const isSelected = activeIndex === idx;
@@ -138,6 +177,8 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
                 return (
                   <div
                     key={c.id}
+                    role="option"
+                    aria-selected={isSelected}
                     onMouseEnter={() => setActiveIndex(idx)}
                     onClick={() => handleSelect(c)}
                     className={`px-3 sm:px-3.5 py-2 sm:py-2.5 flex items-center justify-between cursor-pointer transition-colors ${
@@ -189,15 +230,38 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
                     </div>
 
                     <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
-                      <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border hidden xs:inline-block ${
-                          c.isDomestic
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-purple-50 text-purple-700 border-purple-200'
-                        }`}
-                      >
-                        {c.isDomestic ? '国内 375 城' : '全球 564 城'}
-                      </span>
+                      {(() => {
+                        const cachedEval = getCachedEval(c.id);
+                        if (cachedEval && cachedEval.aqi > 0) {
+                          return (
+                            <span
+                              className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md text-[11px] font-bold font-mono tabular-nums shrink-0"
+                              style={{
+                                backgroundColor: cachedEval.color + '18',
+                                color: cachedEval.color,
+                                border: `1px solid ${cachedEval.color}35`,
+                              }}
+                              title={`当前实时 AQI ${cachedEval.aqi} (${cachedEval.level})`}
+                            >
+                              <span>AQI {cachedEval.aqi}</span>
+                              <span className="font-sans text-[10px] font-semibold hidden xs:inline">
+                                · {cachedEval.level}
+                              </span>
+                            </span>
+                          );
+                        }
+                        return (
+                          <span
+                            className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border hidden xs:inline-block ${
+                              c.isDomestic
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : 'bg-purple-50 text-purple-700 border-purple-200'
+                            }`}
+                          >
+                            {c.isDomestic ? `国内 ${DOMESTIC_CITY_COUNT} 城` : `全球 ${GLOBAL_CITY_COUNT} 城`}
+                          </span>
+                        );
+                      })()}
                       <ChevronRight className="w-4 h-4 text-slate-300" />
                     </div>
                   </div>

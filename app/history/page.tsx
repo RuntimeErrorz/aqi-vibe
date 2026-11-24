@@ -1,31 +1,80 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useStandard } from '@/components/StandardContext';
-import { CITIES_REGISTRY, findCity } from '@/lib/constants/cities';
-import { getAnnualTrends, get365CalendarHeatmap, getCityAvailableYears, fetchCityDailyHistory, hasCityHistory } from '@/lib/services/history-data';
+import { CITIES_REGISTRY, findCity, DOMESTIC_CITY_COUNT, GLOBAL_CITY_COUNT } from '@/lib/constants/cities';
+import {
+  getAnnualTrends,
+  get365CalendarHeatmap,
+  getCityAvailableYears,
+  fetchCityDailyHistory,
+  hasCityHistory,
+  isHistorySummaryLoaded,
+  loadHistorySummary,
+  aggregateMonthlySeasonality,
+} from '@/lib/services/history-data';
 import { CalendarHeatmap } from '@/components/CalendarHeatmap';
 import { AnnualTrendChart } from '@/components/AnnualTrendChart';
+import { SeasonalChart } from '@/components/SeasonalChart';
 import { CitySearchAutocomplete } from '@/components/CitySearchAutocomplete';
-import { History, Download, TrendingDown, TrendingUp, CheckCircle2, AlertCircle, Loader2, Gauge } from 'lucide-react';
+import {
+  History,
+  Download,
+  TrendingDown,
+  TrendingUp,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Gauge,
+} from 'lucide-react';
 import { getCNEvaluation, getUSEvaluation, calculatePM25AQI } from '@/lib/aqi-calculator';
 
 function HistoryPageContent() {
-  const { standard, onlyPm25, mounted } = useStandard();
+  const { standard, onlyPm25, favoriteCityId, activeCityId, setActiveCityId, mounted } = useStandard();
   const searchParams = useSearchParams();
   const cityParam = searchParams.get('city');
   const yearParam = searchParams.get('year');
 
+  const [summaryReady, setSummaryReady] = useState(() => isHistorySummaryLoaded());
+  const [initReady, setInitReady] = useState(false);
   const [selectedCityId, setSelectedCityId] = useState<string>(() => {
     if (cityParam) {
       const found = findCity(cityParam);
+      if (found) return found.id;
+    }
+    const active = findCity(activeCityId);
+    if (active) return active.id;
+    return 'cn-chengdu';
+  });
+  const initStartedRef = React.useRef(false);
+
+  // 挂载且摘要就绪后，单次完成初始城市对齐（避免在 URL replaceState 前后与 cityParam 形成双向循环）
+  useEffect(() => {
+    if (!mounted || !summaryReady || initStartedRef.current) return;
+    initStartedRef.current = true;
+    if (cityParam) {
+      const found = findCity(cityParam);
       if (found && hasCityHistory(found.id)) {
-        return found.id;
+        setSelectedCityId(found.id);
+        if (found.id !== activeCityId) setActiveCityId(found.id);
+      }
+    } else {
+      const targetId = hasCityHistory(activeCityId) ? activeCityId : favoriteCityId;
+      if (targetId && hasCityHistory(targetId)) {
+        setSelectedCityId(targetId);
       }
     }
-    return 'cn-chengdu'; // 默认展示成都
-  });
+    setInitReady(true);
+  }, [mounted, summaryReady, cityParam, activeCityId, favoriteCityId, setActiveCityId]);
+
+  // 响应 Header 全局城市切换器
+  useEffect(() => {
+    if (!initReady || !summaryReady) return;
+    if (activeCityId && activeCityId !== selectedCityId && hasCityHistory(activeCityId)) {
+      setSelectedCityId(activeCityId);
+    }
+  }, [activeCityId, initReady, summaryReady, selectedCityId]);
 
   const [selectedYear, setSelectedYear] = useState<number>(() => {
     if (yearParam) {
@@ -38,40 +87,63 @@ function HistoryPageContent() {
   const [dailyRecords, setDailyRecords] = useState<Record<string, any>>({});
   const [loadingDaily, setLoadingDaily] = useState(false);
 
-  // 当 URL 参数变化时同步更新状态（如从排行榜点击不同城市或年份跳转过来）
+  // 异步按需加载 1.8MB history_summary.json（绝不静态打包进 JS）
   useEffect(() => {
-    if (cityParam) {
-      const found = findCity(cityParam);
-      if (found && hasCityHistory(found.id)) {
-        setSelectedCityId(found.id);
-      }
+    if (!isHistorySummaryLoaded()) {
+      loadHistorySummary().then(() => setSummaryReady(true));
     }
-  }, [cityParam]);
+  }, []);
 
   useEffect(() => {
-    if (yearParam) {
+    if (yearParam && !initReady) {
       const parsedYear = Number(yearParam);
       if (!isNaN(parsedYear)) {
         setSelectedYear(parsedYear);
       }
     }
-  }, [yearParam]);
+  }, [yearParam, initReady]);
 
   const rawCity = findCity(selectedCityId);
-  const city = rawCity && hasCityHistory(rawCity.id) ? rawCity : (findCity('cn-chengdu') || CITIES_REGISTRY[0]);
-  const annualTrends = getAnnualTrends(city.id, standard, onlyPm25);
-  const availableYears = getCityAvailableYears(city.id);
+  const city =
+    rawCity && (!summaryReady || hasCityHistory(rawCity.id))
+      ? rawCity
+      : findCity('cn-chengdu') || CITIES_REGISTRY[0];
 
-  // 当切换城市时，若当前选中的年份在目标城市中不存在，自动调整为该城市最新年份
+  const annualTrends = useMemo(
+    () => (summaryReady ? getAnnualTrends(city.id, standard, onlyPm25) : []),
+    [summaryReady, city.id, standard, onlyPm25]
+  );
+
+  const availableYears = useMemo(
+    () => (summaryReady ? getCityAvailableYears(city.id) : []),
+    [summaryReady, city.id]
+  );
+
+  // 切换城市时若年份不存在则自动对齐最新年份
   useEffect(() => {
     if (availableYears.length > 0 && !availableYears.includes(selectedYear)) {
       setSelectedYear(availableYears[0]);
     }
   }, [city.id, availableYears, selectedYear]);
 
-  // 异步获取当前选中国内或全球城市的逐日实测全量历史
+  // URL 深度链接同步 (?city=...&year=...)：仅在初始化完成后且 URL 确实不一致时才更新，杜绝 replaceState 乒乓循环
   useEffect(() => {
+    if (typeof window === 'undefined' || !summaryReady || !initReady) return;
+    const url = new URL(window.location.href);
+    const nextYearStr = String(selectedYear);
+    if (url.searchParams.get('city') === city.id && url.searchParams.get('year') === nextYearStr) {
+      return;
+    }
+    url.searchParams.set('city', city.id);
+    url.searchParams.set('year', nextYearStr);
+    window.history.replaceState({}, '', url.toString());
+  }, [city.id, selectedYear, summaryReady, initReady]);
+
+  // 异步获取逐日实测全量历史：切换城市时立即清空旧城市逐日记录，彻底杜绝旧城市日历/季节图残留
+  useEffect(() => {
+    if (!summaryReady) return;
     let active = true;
+    setDailyRecords({});
     setLoadingDaily(true);
     fetchCityDailyHistory(city.id).then((daily) => {
       if (active) {
@@ -82,29 +154,41 @@ function HistoryPageContent() {
     return () => {
       active = false;
     };
-  }, [city.id]);
+  }, [city.id, summaryReady]);
 
-  const calendarData = get365CalendarHeatmap(city.id, selectedYear, standard, dailyRecords, onlyPm25);
+  const calendarData = useMemo(
+    () => get365CalendarHeatmap(city.id, selectedYear, standard, dailyRecords, onlyPm25),
+    [city.id, selectedYear, standard, dailyRecords, onlyPm25]
+  );
 
-  // 动态获取当前年份的预聚合历史基准（首屏立即可用，避免逐日数据异步加载期间出现 0 天/0% 的错误占位）
+  const monthlySelectedYear = useMemo(
+    () => aggregateMonthlySeasonality(dailyRecords, standard, onlyPm25, selectedYear),
+    [dailyRecords, standard, onlyPm25, selectedYear]
+  );
+
+  const monthlyAllYears = useMemo(
+    () => aggregateMonthlySeasonality(dailyRecords, standard, onlyPm25),
+    [dailyRecords, standard, onlyPm25]
+  );
+
   const firstYearObj = annualTrends[0];
   const currentYearObj = annualTrends.find((t) => t.year === selectedYear);
   const prevYearObj = annualTrends.find((t) => t.year === selectedYear - 1);
 
-  // 统计不同标准下的天数分布与年均 AQI
-  const validTotalDays = calendarData.length > 0 ? calendarData.length : (currentYearObj?.daysCount ?? 365);
+  const validTotalDays = calendarData.length > 0 ? calendarData.length : (currentYearObj?.daysCount ?? 0);
   const compliantDaysCount =
     calendarData.length > 0
-      ? calendarData.filter((d) => d.aqi <= 100).length
+      ? calendarData.filter((d) => d.aqi > 0 && d.aqi <= 100).length
       : Math.max(0, validTotalDays - (currentYearObj?.pollutedDays ?? 0));
   const compliantRatio =
-    calendarData.length > 0
+    calendarData.length > 0 && validTotalDays > 0
       ? Math.round((compliantDaysCount / validTotalDays) * 100)
       : (currentYearObj?.goodDaysRatio ?? 0);
   const pollutedDaysCount =
     calendarData.length > 0
       ? calendarData.filter((d) => d.aqi > 100).length
       : (currentYearObj?.pollutedDays ?? 0);
+
   const firstYearPM25 = firstYearObj?.pm25Avg || 0;
   const currentYearPM25 =
     currentYearObj?.pm25Avg ??
@@ -112,74 +196,87 @@ function HistoryPageContent() {
       ? Math.round((calendarData.reduce((acc, d) => acc + (d.pm25 || 0), 0) / validTotalDays) * 10) / 10
       : 0);
 
-  // 逐日 AQI 算术平均值（即全年逐日 AQI 累加求均值）
   const dailyAvgAQI =
     validTotalDays > 0 && calendarData.length > 0
       ? Math.round(calendarData.reduce((acc, d) => acc + d.aqi, 0) / validTotalDays)
       : (currentYearObj?.aqiAvg ?? 0);
 
-  // 当开启“只看 PM2.5”时，年综合等效 AQI 统一采用与排行榜、生态环境年报完全一致的权威口径：由全年 PM2.5 年均实测浓度折算
   const avgAQI = onlyPm25
-    ? (currentYearPM25 > 0 ? calculatePM25AQI(currentYearPM25, standard) : dailyAvgAQI)
+    ? currentYearPM25 > 0
+      ? calculatePM25AQI(currentYearPM25, standard)
+      : dailyAvgAQI
     : dailyAvgAQI;
 
   const avgEvaluation = standard === 'CN' ? getCNEvaluation(avgAQI) : getUSEvaluation(avgAQI);
-
   const isBaselineYear = Boolean(firstYearObj && selectedYear === firstYearObj.year);
 
-  // 较基准年累积削减改善率
   const baselineRate =
     !isBaselineYear && firstYearPM25 > 0 && currentYearPM25 > 0
       ? (((currentYearPM25 - firstYearPM25) / firstYearPM25) * 100).toFixed(1)
       : null;
 
-  // 较上一年环比变化率
   const yoyRate =
     prevYearObj && prevYearObj.pm25Avg > 0 && currentYearPM25 > 0
       ? (((currentYearPM25 - prevYearObj.pm25Avg) / prevYearObj.pm25Avg) * 100).toFixed(1)
       : null;
 
-  // 导出 CSV 功能
+  // 安全可靠的 Blob CSV 导出（支持大文件与任意特殊字符）
   const handleExportCSV = () => {
-    let csvContent = 'data:text/csv;charset=utf-8,\uFEFF';
-    csvContent += '日期,AQI,质量等级,首要污染物,PM2.5(ug/m3),PM10(ug/m3),O3(ug/m3),NO2(ug/m3),SO2(ug/m3),CO(mg/m3)\n';
-    calendarData.forEach((row) => {
-      const primary = row.aqi <= 50 ? '无' : (row.primaryPollutantName || row.primaryPollutant || 'PM2.5');
-      csvContent += `${row.date},${row.aqi},${row.level},${primary},${row.pm25 ?? '--'},${row.pm10 ?? '--'},${row.o3 ?? '--'},${row.no2 ?? '--'},${row.so2 ?? '--'},${row.co ?? '--'}\n`;
-    });
+    const rows = [
+      '日期,AQI,质量等级,首要污染物,PM2.5(ug/m3),PM10(ug/m3),O3(ug/m3),NO2(ug/m3),SO2(ug/m3),CO(mg/m3)',
+      ...calendarData.map((row) => {
+        const primary = row.aqi <= 50 ? '无' : (row.primaryPollutantName || row.primaryPollutant || 'PM2.5');
+        return [
+          row.date,
+          row.aqi,
+          row.level,
+          `"${String(primary).replace(/"/g, '""')}"`,
+          row.pm25 ?? '--',
+          row.pm10 ?? '--',
+          row.o3 ?? '--',
+          row.no2 ?? '--',
+          row.so2 ?? '--',
+          row.co ?? '--',
+        ].join(',');
+      }),
+    ];
 
-    const encodedUri = encodeURI(csvContent);
+    const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `${city.nameZh}_${selectedYear}_空气质量历史统计_${standard}${onlyPm25 ? '_仅PM2.5' : ''}.csv`);
+    link.href = url;
+    link.download = `${city.nameZh}_${selectedYear}_空气质量历史统计_${standard}${onlyPm25 ? '_仅PM2.5' : ''}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
     <div className="space-y-6">
       {/* 顶部控制栏 */}
       <div className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-        {/* 左侧简洁标题 */}
         <div className="flex items-center space-x-2 shrink-0">
           <History className="w-5 h-5 text-sky-600" />
           <h1 className="text-lg font-bold text-slate-900 tracking-tight">空气质量历史数据</h1>
         </div>
 
-        {/* 城市与年份选择器 (给足横向宽度与呼吸空间) */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 text-xs flex-1 md:max-w-3xl justify-end">
           <CitySearchAutocomplete
             selectedCity={city}
-            onSelectCity={(newCity) => setSelectedCityId(newCity.id)}
-            placeholder="搜索国内 375 城市或全球 553 城市历史数据 (如: 成都 / 北京 / Tokyo / 巴黎)..."
+            onSelectCity={(newCity) => {
+              setSelectedCityId(newCity.id);
+              setActiveCityId(newCity.id);
+            }}
+            placeholder={`搜索国内 ${DOMESTIC_CITY_COUNT} 城市或全球 ${GLOBAL_CITY_COUNT} 城市历史档案 (如: 成都 / 北京 / Tokyo)...`}
             className="w-full sm:flex-1"
-            filterCity={(c) => hasCityHistory(c.id)}
+            filterCity={(c) => !summaryReady || hasCityHistory(c.id)}
           />
 
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
+            aria-label="选择统计年份"
             className="px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-sky-500 shadow-sm shrink-0 cursor-pointer hover:bg-slate-100 transition-colors"
           >
             {availableYears.map((y) => (
@@ -190,6 +287,7 @@ function HistoryPageContent() {
           </select>
 
           <button
+            type="button"
             onClick={handleExportCSV}
             disabled={calendarData.length === 0}
             className="flex items-center justify-center space-x-1.5 px-3.5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white font-semibold transition-colors shrink-0 shadow-sm cursor-pointer"
@@ -201,14 +299,13 @@ function HistoryPageContent() {
         </div>
       </div>
 
-      {/* 年度总体成就 Scorecard: 4 卡片现代化权威看板 */}
+      {/* 年度总体成就 Scorecard */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* 卡片 1: 年度综合等效 AQI (独立大字显眼看板) */}
         <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between">
           <div className="flex-1 min-w-0 pr-3">
             <p className="text-xs text-slate-500 font-medium">年度综合等效 AQI</p>
             <div className="flex items-baseline space-x-2 mt-1 sm:mt-1.5 min-h-[32px]">
-              {!mounted ? (
+              {!mounted || !summaryReady ? (
                 <span className="h-7 w-20 bg-slate-200/70 rounded-md animate-pulse inline-block" />
               ) : (
                 <>
@@ -224,24 +321,25 @@ function HistoryPageContent() {
                 </>
               )}
             </div>
-            <p className="text-[11px] sm:text-xs text-slate-400 mt-1">{onlyPm25 ? '基于年均浓度折算' : '全年在册实测均值'}</p>
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
+              {onlyPm25 ? '基于年均 PM2.5 浓度折算' : '全年在册日均实测均值'}
+            </p>
           </div>
           <Gauge className="w-7 h-7 sm:w-8 sm:h-8 shrink-0" style={{ color: `${avgEvaluation.color}50` }} />
         </div>
 
-        {/* 卡片 2: 优良/达标天数比例 */}
         <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between">
           <div className="flex-1 min-w-0 pr-3">
             <p className="text-xs text-slate-500 font-medium">优良天数比例</p>
             <div className="flex items-baseline space-x-2 mt-1 sm:mt-1.5 min-h-[32px]">
-              {!mounted ? (
+              {!mounted || !summaryReady ? (
                 <span className="h-7 w-16 bg-slate-200/70 rounded-md animate-pulse inline-block" />
               ) : (
                 <span className="text-2xl sm:text-3xl font-black text-emerald-600">{compliantRatio}%</span>
               )}
             </div>
             <p className="text-[11px] sm:text-xs text-slate-500 mt-1">
-              {!mounted ? (
+              {!mounted || !summaryReady ? (
                 <span className="h-3.5 w-28 bg-slate-100 rounded animate-pulse inline-block" />
               ) : (
                 `共 ${compliantDaysCount} 天达标 / 实测 ${validTotalDays} 天`
@@ -251,19 +349,18 @@ function HistoryPageContent() {
           <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-500/20 shrink-0" />
         </div>
 
-        {/* 卡片 3: 超标污染天数 */}
         <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between">
           <div className="flex-1 min-w-0 pr-3">
             <p className="text-xs text-slate-500 font-medium">超标污染天数</p>
             <div className="flex items-baseline space-x-2 mt-1 sm:mt-1.5 min-h-[32px]">
-              {!mounted ? (
+              {!mounted || !summaryReady ? (
                 <span className="h-7 w-16 bg-slate-200/70 rounded-md animate-pulse inline-block" />
               ) : (
                 <span className="text-2xl sm:text-3xl font-black text-rose-600">{pollutedDaysCount} 天</span>
               )}
             </div>
             <p className="text-[11px] sm:text-xs text-slate-500 mt-1">
-              {!mounted ? (
+              {!mounted || !summaryReady ? (
                 <span className="h-3.5 w-24 bg-slate-100 rounded animate-pulse inline-block" />
               ) : (
                 `超标占比 ${validTotalDays > 0 ? ((pollutedDaysCount / validTotalDays) * 100).toFixed(1) : 0}%`
@@ -273,16 +370,13 @@ function HistoryPageContent() {
           <AlertCircle className="w-7 h-7 sm:w-8 sm:h-8 text-rose-500/20 shrink-0" />
         </div>
 
-        {/* 卡片 4: 治理改善成效 (随选中年份动态联动) */}
         <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between">
           <div className="flex-1 min-w-0 pr-3">
             <p className="text-xs text-slate-500 font-medium">
-              {isBaselineYear
-                ? '治理监测基准'
-                : `治理改善成效 ${firstYearObj ? `(较 ${firstYearObj.year})` : ''}`}
+              {isBaselineYear ? '治理监测基准' : `治理改善成效 ${firstYearObj ? `(较 ${firstYearObj.year})` : ''}`}
             </p>
             <div className="flex items-baseline space-x-2 mt-1 sm:mt-1.5 min-h-[32px]">
-              {!mounted ? (
+              {!mounted || !summaryReady ? (
                 <span className="h-7 w-16 bg-slate-200/70 rounded-md animate-pulse inline-block" />
               ) : isBaselineYear ? (
                 <span className="text-xl sm:text-2xl md:text-3xl font-black text-slate-700">基准首年</span>
@@ -299,7 +393,7 @@ function HistoryPageContent() {
               )}
             </div>
             <p className="text-[11px] sm:text-xs text-slate-500 mt-1 truncate">
-              {!mounted ? (
+              {!mounted || !summaryReady ? (
                 <span className="h-3.5 w-28 bg-slate-100 rounded animate-pulse inline-block" />
               ) : isBaselineYear ? (
                 `起始首年 PM2.5: ${firstYearPM25} μg/m³`
@@ -317,15 +411,15 @@ function HistoryPageContent() {
               )}
             </p>
           </div>
-            {isBaselineYear ? (
-              <Gauge className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400/20 shrink-0" />
-            ) : Number(baselineRate ?? 0) <= 0 ? (
-              <TrendingDown className="w-7 h-7 sm:w-8 sm:h-8 text-sky-500/20 shrink-0" />
-            ) : (
-              <TrendingUp className="w-7 h-7 sm:w-8 sm:h-8 text-rose-500/20 shrink-0" />
-            )}
-          </div>
+          {isBaselineYear ? (
+            <Gauge className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400/20 shrink-0" />
+          ) : Number(baselineRate ?? 0) <= 0 ? (
+            <TrendingDown className="w-7 h-7 sm:w-8 sm:h-8 text-sky-500/20 shrink-0" />
+          ) : (
+            <TrendingUp className="w-7 h-7 sm:w-8 sm:h-8 text-rose-500/20 shrink-0" />
+          )}
         </div>
+      </div>
 
       {/* 核心图表 1: 365 天时间机器日历热力图 */}
       <section className="glass-panel rounded-2xl p-4 sm:p-5">
@@ -335,18 +429,31 @@ function HistoryPageContent() {
           standard={standard}
           onlyPm25={onlyPm25}
           cityName={city.nameZh}
-          loadingDaily={loadingDaily}
+          loadingDaily={loadingDaily || !summaryReady}
           availableYears={availableYears}
         />
       </section>
 
-      {/* 核心图表 2: 长期治理改善折线与优良率柱状图 */}
+      {/* 核心图表 2: 12 个月季节污染律动 */}
+      <section className="glass-panel rounded-2xl p-4 sm:p-5">
+        <SeasonalChart
+          monthlySelectedYear={monthlySelectedYear}
+          monthlyAllYears={monthlyAllYears}
+          selectedYear={selectedYear}
+          cityName={city.nameZh}
+          loading={loadingDaily || !summaryReady}
+        />
+      </section>
+
+      {/* 核心图表 3: 长期治理改善折线与优良率柱状图 */}
       <section className="glass-panel rounded-2xl p-4 sm:p-5">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center space-x-2">
             <TrendingDown className="w-4 h-4 text-emerald-600" />
             <span>
-              {annualTrends.length > 0 ? `${annualTrends[0].year} ~ ${annualTrends[annualTrends.length - 1].year} 年` : '年际趋势'}
+              {annualTrends.length > 0
+                ? `${annualTrends[0].year} ~ ${annualTrends[annualTrends.length - 1].year} 年际长期趋势`
+                : '年际趋势'}
             </span>
           </h3>
         </div>
@@ -354,7 +461,7 @@ function HistoryPageContent() {
           <AnnualTrendChart data={annualTrends} cityName={city.nameZh} standard={standard} onlyPm25={onlyPm25} />
         ) : (
           <div className="h-64 flex items-center justify-center text-slate-400 text-sm">
-            暂无该城市的长期年度实测记录
+            {!summaryReady ? '正在加载年度历史统计...' : '暂无该城市的长期年度实测记录'}
           </div>
         )}
       </section>

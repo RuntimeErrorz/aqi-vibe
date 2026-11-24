@@ -13,6 +13,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { StandardType, CalendarHeatmapDay } from '@/lib/types';
+import { PaginationJumper } from './PaginationJumper';
 
 interface CalendarHeatmapProps {
   data: CalendarHeatmapDay[];
@@ -24,73 +25,12 @@ interface CalendarHeatmapProps {
   availableYears?: number[];
 }
 
-interface PageJumperProps {
+const PageJumper: React.FC<{
   currentPage: number;
   totalPages: number;
   onPageChange: (p: number) => void;
   labelPrefix?: string;
-}
-
-const PageJumper: React.FC<PageJumperProps> = ({
-  currentPage,
-  totalPages,
-  onPageChange,
-  labelPrefix = '',
-}) => {
-  const [inputVal, setInputVal] = useState(String(currentPage));
-
-  useEffect(() => {
-    setInputVal(String(currentPage));
-  }, [currentPage]);
-
-  const handleCommit = () => {
-    const val = parseInt(inputVal, 10);
-    if (!isNaN(val) && val >= 1 && val <= totalPages) {
-      onPageChange(val);
-    } else {
-      setInputVal(String(currentPage));
-    }
-  };
-
-  return (
-    <div className="inline-flex items-center space-x-1.5 text-xs text-slate-500 select-none">
-      <button
-        type="button"
-        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-        disabled={currentPage <= 1}
-        className="h-6 w-6 flex items-center justify-center p-0 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 transition-colors shadow-2xs cursor-pointer shrink-0"
-        title="上一页"
-      >
-        <ChevronLeft className="w-3.5 h-3.5" />
-      </button>
-
-      <span className="text-slate-400 text-[11px] leading-none flex items-center">{labelPrefix}第</span>
-      <input
-        type="number"
-        min={1}
-        max={Math.max(1, totalPages)}
-        value={inputVal}
-        onChange={(e) => setInputVal(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') handleCommit();
-        }}
-        onBlur={handleCommit}
-        className="h-6 w-10 px-1 text-center text-xs leading-none bg-white border border-slate-200 rounded-lg font-bold text-slate-800 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 shadow-2xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none tabular-nums"
-      />
-      <span className="text-slate-400 text-[11px] leading-none flex items-center">/ {totalPages} 页</span>
-
-      <button
-        type="button"
-        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-        disabled={currentPage >= totalPages}
-        className="h-6 w-6 flex items-center justify-center p-0 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 transition-colors shadow-2xs cursor-pointer shrink-0"
-        title="下一页"
-      >
-        <ChevronRight className="w-3.5 h-3.5" />
-      </button>
-    </div>
-  );
-};
+}> = (props) => <PaginationJumper {...props} compact={true} />;
 
 function formatDateMeta(dateStr: string) {
   const parts = dateStr.split('-');
@@ -816,11 +756,21 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
         </div>
       </div>
 
-      {/* 2. 365 天日历矩阵热力全景图 (移动端支持平滑横向滚动，确保 53 周方格不被压缩挤扁) */}
-      {!mounted ? (
-        <div className="h-44 flex items-center justify-center text-slate-400 text-sm">
-          <Loader2 className="w-4 h-4 animate-spin mr-2 text-sky-600" />
-          <span>加载日历热力图中...</span>
+      {/* 2. 365 天日历矩阵热力全景图 (加载期呈现 1:1 鱼骨占位，绝不误闪暂无记录或残留旧城) */}
+      {!mounted || (loadingDaily && totalDays === 0) ? (
+        <div className="space-y-2.5 py-2 animate-pulse">
+          <div className="h-[142px] w-full rounded-xl bg-slate-50/90 border border-slate-100 p-3 flex flex-col justify-between">
+            <div className="flex justify-between px-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
+                <div key={m} className="h-2.5 w-5 bg-slate-200/80 rounded" />
+              ))}
+            </div>
+            <div className="grid grid-cols-12 gap-1.5 flex-1 py-2">
+              {Array.from({ length: 48 }).map((_, idx) => (
+                <div key={idx} className="rounded-xs bg-slate-200/60 h-full" />
+              ))}
+            </div>
+          </div>
         </div>
       ) : totalDays > 0 ? (
         <div className="w-full overflow-x-auto pb-1 custom-scrollbar">
