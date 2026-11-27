@@ -633,6 +633,10 @@ describe('Individual Data Source Provider Adapters', () => {
 
     expect(trend?.isReal).toBe(true);
     expect(trend?.points.length).toBe(4);
+    // Chengdu 15:00 CST (UTC+8) -> 2026-11-27T07:00:00Z
+    expect(trend?.points[trend.points.length - 1].timestampMs).toBe(
+      Date.parse('2026-11-27T07:00:00Z')
+    );
   });
 
   it('extracts secrets from non-enumerable Cloudflare Worker env objects without object spread loss', () => {
@@ -812,6 +816,11 @@ describe('Individual Data Source Provider Adapters', () => {
       '11-27 02:00',
       '11-27 03:00',
       '11-27 04:00',
+    ]);
+    expect(trend?.points.map((p) => p.timestampMs)).toEqual([
+      Date.parse('2026-11-27T07:00:00Z'),
+      Date.parse('2026-11-27T08:00:00Z'),
+      Date.parse('2026-11-27T09:00:00Z'),
     ]);
   });
 

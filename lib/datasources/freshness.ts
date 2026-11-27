@@ -356,9 +356,12 @@ export function isPlausibleLocalOffsetForCity(
 }
 
 /**
- * Format an observed UTC timestamp in the user's own browser local timezone for clear hover tooltips.
+ * Format an observed UTC timestamp in the user's own browser local timezone.
  */
-export function formatInUserLocalTime(observedAtMs: number): { localTime: string; timezoneOffset: string } {
+export function formatInUserLocalTime(
+  observedAtMs: number,
+  includeSeconds = false
+): { localTime: string; timezoneOffset: string } {
   const d = new Date(observedAtMs);
   const pad = (n: number) => String(n).padStart(2, '0');
   const offsetMin = -d.getTimezoneOffset();
@@ -372,12 +375,40 @@ export function formatInUserLocalTime(observedAtMs: number): { localTime: string
       : m > 0
       ? `UTC${sign}${h}:${pad(m)}`
       : `UTC${sign}${h}`;
+  const secPart = includeSeconds ? `:${pad(d.getSeconds())}` : '';
   return {
     localTime: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
       d.getHours()
-    )}:${pad(d.getMinutes())}`,
+    )}:${pad(d.getMinutes())}${secPart}`,
     timezoneOffset,
   };
+}
+
+/**
+ * Format an observed UTC timestamp into short browser-local chart labels ("HH:mm" & "MM-DD HH:mm").
+ */
+export function formatBrowserLocalChartTime(observedAtMs: number): {
+  hour: string;
+  fullTime: string;
+} {
+  const d = new Date(observedAtMs);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const hour = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const fullTime = `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hour}`;
+  return { hour, fullTime };
+}
+
+/**
+ * Resolve a city's exact UTC offset in minutes at a given reference epoch (DST-aware).
+ */
+export function getCityUtcOffsetMinutes(
+  refUtcMs: number,
+  country?: string,
+  longitude?: number,
+  latitude?: number
+): number {
+  const { timezoneOffset } = formatLocalTimeForCityWithTz(refUtcMs, country, longitude, latitude);
+  return parseUtcOffsetLabelMinutes(timezoneOffset) ?? 0;
 }
 
 /**

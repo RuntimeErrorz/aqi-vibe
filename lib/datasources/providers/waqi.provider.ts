@@ -13,6 +13,7 @@ import {
   computeFreshness,
   extractUtcOffsetLabel,
   formatLocalTimeForCityWithTz,
+  getCityUtcOffsetMinutes,
   parseObservedTimeMs,
 } from '../freshness';
 import { filterAndRankStationsForCity } from '../orchestrator';
@@ -102,7 +103,8 @@ async function resolveWaqiStationIdxForCity(
 async function fetchWaqiHourlyWithFetch(
   stationIdx: number,
   standard: 'CN' | 'US',
-  ctx: ProviderRuntimeContext
+  ctx: ProviderRuntimeContext,
+  cityUtcOffsetMinutes?: number
 ) {
   for (let attempt = 0; attempt < 2; attempt++) {
     if (ctx.signal?.aborted) return null;
@@ -131,7 +133,7 @@ async function fetchWaqiHourlyWithFetch(
       const obs = feedJson?.rxs?.obs?.[0]?.msg?.obs;
       if (!obs || !obs.pm25) continue;
 
-      const pts = build24HourPointsFromWaqiObs(obs, standard);
+      const pts = build24HourPointsFromWaqiObs(obs, standard, cityUtcOffsetMinutes);
       if (pts.length >= 3) return pts;
     } catch {
       // Retry once on transient TLS / timeout hiccup
@@ -443,6 +445,13 @@ export const waqiProvider: AirQualityProvider = {
         uid = resolved;
       }
 
+      const cityUtcOffsetMinutes = getCityUtcOffsetMinutes(
+        ctx.nowMs,
+        query.city.country,
+        query.city.longitude,
+        query.city.latitude
+      );
+
       const racers: Promise<ReturnType<typeof build24HourPointsFromWaqiObs>>[] = [];
 
       if (ctx.origin && !ctx.isServer) {
@@ -455,7 +464,7 @@ export const waqiProvider: AirQualityProvider = {
             const waqiJson = (await res.json()) as any;
             const obs = waqiJson?.rxs?.obs?.[0]?.msg?.obs;
             if (!obs || !obs.pm25) throw new Error('Empty edge obs');
-            const pts = build24HourPointsFromWaqiObs(obs, query.standard);
+            const pts = build24HourPointsFromWaqiObs(obs, query.standard, cityUtcOffsetMinutes);
             if (pts.length < 3) throw new Error('Insufficient edge points');
             return pts;
           })()
@@ -466,8 +475,8 @@ export const waqiProvider: AirQualityProvider = {
         (async () => {
           const pts =
             ctx.fetchImpl === fetch && !ctx.isServer
-              ? await fetchWaqiHourlyDirect(uid, query.standard)
-              : await fetchWaqiHourlyWithFetch(uid, query.standard, ctx);
+              ? await fetchWaqiHourlyDirect(uid, query.standard, cityUtcOffsetMinutes)
+              : await fetchWaqiHourlyWithFetch(uid, query.standard, ctx, cityUtcOffsetMinutes);
           if (!pts || pts.length < 3) throw new Error('Insufficient direct points');
           return pts;
         })()

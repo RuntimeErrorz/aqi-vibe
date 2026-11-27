@@ -13,6 +13,11 @@ import {
   getWAQIMapTileUrl,
 } from '@/lib/services/waqi';
 import { filterStationsForCity, getDistanceKm } from '@/lib/services/geo-filter';
+import {
+  formatBrowserLocalChartTime,
+  isSameSovereignCountry,
+  parseObservedTimeMs,
+} from '@/lib/datasources/freshness';
 import { CityMeta, StandardType, AirQualityRecord } from '@/lib/types';
 import { useStandard } from '@/components/StandardContext';
 import { convertIAQIToConcentration, evaluateAQI, getUSEvaluation } from '@/lib/aqi-calculator';
@@ -169,7 +174,7 @@ function findNearestStationForCity(
       const a = parseInt(s.aqi, 10);
       if (isNaN(a) || a <= 0 || a > 500) return false;
       const stCountry = iso1A2Code([s.lon, s.lat]);
-      if (stCountry && city.country && city.country !== stCountry) return false;
+      if (!isSameSovereignCountry(stCountry, city.country)) return false;
       return true;
     })
     .map((s) => ({
@@ -190,10 +195,13 @@ function buildStationDetailPopupHtml(
   fallbackStyle: ReturnType<typeof getStationPinEvaluation>,
   loadingDetail = false
 ): string {
-  const formattedTime = rec?.updateTime
+  const obsMs =
+    rec?.freshness?.observedAtMs ??
+    parseObservedTimeMs(st.station?.time);
+  const formattedTime = obsMs
+    ? formatBrowserLocalChartTime(obsMs).fullTime
+    : rec?.updateTime
     ? rec.updateTime.slice(5, 16)
-    : st.station?.time
-    ? new Date(st.station.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : '实时';
 
   const ev = rec

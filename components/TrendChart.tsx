@@ -6,6 +6,10 @@ import { Activity } from 'lucide-react';
 import { HourlyTrendPoint } from '@/lib/services/realtime-trend';
 import { useStandard } from './StandardContext';
 import { calculatePM25AQI } from '@/lib/aqi-calculator';
+import {
+  formatBrowserLocalChartTime,
+  parseUtcOffsetLabelMinutes,
+} from '@/lib/datasources/freshness';
 
 interface TrendChartProps {
   data: HourlyTrendPoint[];
@@ -114,8 +118,32 @@ export const TrendChart: React.FC<TrendChartProps> = ({
     );
   }
 
-  // 根据当前选择的时间跨度截取实测数据
-  const activePoints = data.slice(-selectedHours);
+  // 根据当前选择的时间跨度截取实测数据，并将所有时间点统一换算为当前浏览器本地时区
+  const fallbackSourceOffsetMin = parseUtcOffsetLabelMinutes(timezoneOffset);
+  const activePoints = data.slice(-selectedHours).map((d) => {
+    if (typeof d.timestampMs === 'number' && Number.isFinite(d.timestampMs)) {
+      const local = formatBrowserLocalChartTime(d.timestampMs);
+      return { ...d, hour: local.hour, fullTime: local.fullTime };
+    }
+    // 兼容旧边缘缓存中尚未带 timestampMs 的点位：用来源时区偏移折算至浏览器本地时区
+    if (fallbackSourceOffsetMin !== null && d.fullTime) {
+      const m = d.fullTime.match(/^(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/);
+      if (m) {
+        const nowYear = new Date().getFullYear();
+        const wallUtcMs = Date.UTC(
+          nowYear,
+          Number(m[1]) - 1,
+          Number(m[2]),
+          Number(m[3]),
+          Number(m[4])
+        );
+        const epochMs = wallUtcMs - fallbackSourceOffsetMin * 60_000;
+        const local = formatBrowserLocalChartTime(epochMs);
+        return { ...d, hour: local.hour, fullTime: local.fullTime };
+      }
+    }
+    return d;
+  });
   const hours = activePoints.map((d) => (selectedHours > 24 && d.fullTime ? d.fullTime : d.hour));
   const aqiSeriesName = onlyPm25 ? 'PM2.5 AQI 指数' : 'AQI 综合指数';
   const aqiVals = activePoints.map((d) => {
@@ -227,8 +255,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({
         const idx = params[0].dataIndex;
         const isLatest = idx === hours.length - 1;
         const item = activePoints[idx];
-        const rawTimeDisplay = item?.fullTime || params[0].name;
-        const timeDisplay = timezoneOffset ? `${rawTimeDisplay} (${timezoneOffset})` : rawTimeDisplay;
+        const timeDisplay = item?.fullTime || params[0].name;
 
         let html = `<div style="font-weight: bold; margin-bottom: 6px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
           <span>${timeDisplay}</span>

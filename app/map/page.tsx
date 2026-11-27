@@ -132,6 +132,12 @@ function MapPageContent() {
                 <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight whitespace-nowrap">
                   全景空气质量
                 </h1>
+                <span
+                  className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200/80 whitespace-nowrap"
+                  title="全球站点徽标与污染热力瓦片来源：WAQI，地图底图来源：CartoDB"
+                >
+                  来源: WAQI
+                </span>
               </div>
 
               <div className="flex items-center justify-start sm:justify-end gap-1.5 text-xs flex-wrap w-full sm:w-auto">

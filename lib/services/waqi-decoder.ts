@@ -69,7 +69,8 @@ export function decodeWaqiObsSeries(obsItem?: WaqiObsSeries): { timestamp: numbe
  */
 export function build24HourPointsFromWaqiObs(
   obs: Record<string, WaqiObsSeries>,
-  standard: StandardType
+  standard: StandardType,
+  cityUtcOffsetMinutes?: number
 ): HourlyTrendPoint[] {
   if (!obs || !obs.pm25) return [];
 
@@ -165,6 +166,9 @@ export function build24HourPointsFromWaqiObs(
     return {
       hour: hourLabel,
       fullTime: fullTimeLabel,
+      ...(typeof cityUtcOffsetMinutes === 'number' && Number.isFinite(cityUtcOffsetMinutes)
+        ? { timestampMs: pt.timestamp - cityUtcOffsetMinutes * 60_000 }
+        : {}),
       aqi: aqiVal,
       // 客观物理质量浓度（微克 μg/m³，CO 为 mg/m³）
       pm25: concPm25,
@@ -188,7 +192,8 @@ export function build24HourPointsFromWaqiObs(
  */
 export async function fetchWaqiHourlyDirect(
   stationIdx: number,
-  standard: StandardType
+  standard: StandardType,
+  cityUtcOffsetMinutes?: number
 ): Promise<HourlyTrendPoint[] | null> {
   try {
     const uid = 'u' + Date.now();
@@ -221,7 +226,7 @@ export async function fetchWaqiHourlyDirect(
     const obs = feedJson?.rxs?.obs?.[0]?.msg?.obs;
     if (!obs || !obs.pm25) return null;
 
-    const points = build24HourPointsFromWaqiObs(obs, standard);
+    const points = build24HourPointsFromWaqiObs(obs, standard, cityUtcOffsetMinutes);
     return points.length >= 3 ? points : (points.length > 0 ? points : null);
   } catch (err) {
     console.warn('Failed to fetch/decode WAQI hourly directly:', err);

@@ -1085,34 +1085,31 @@ function DashboardPageContent() {
                   <span>{selectedCity.nameEn}</span>
                   <span>·</span>
                   {(() => {
-                    const tzLabel =
+                    const obsMs = record.freshness?.observedAtMs;
+                    const userLocal = obsMs ? formatInUserLocalTime(obsMs, true) : null;
+                    const displayTime = userLocal ? userLocal.localTime : record.updateTime;
+                    const cityTzLabel =
                       record.freshness?.timezoneOffset ||
-                      formatLocalTimeForCityWithTz(
-                        record.freshness?.observedAtMs || Date.now(),
-                        selectedCity.country,
-                        selectedCity.longitude,
-                        selectedCity.latitude
-                      ).timezoneOffset;
-                    const userLocal = record.freshness?.observedAtMs
-                      ? formatInUserLocalTime(record.freshness.observedAtMs)
-                      : null;
+                      (obsMs
+                        ? formatLocalTimeForCityWithTz(
+                            obsMs,
+                            selectedCity.country,
+                            selectedCity.longitude,
+                            selectedCity.latitude
+                          ).timezoneOffset
+                        : undefined);
                     const timeTooltip = userLocal
-                      ? `当地观测时间：${record.updateTime} (${tzLabel})${
-                          userLocal.timezoneOffset !== tzLabel
-                            ? ` ｜ 您的本地时间：${userLocal.localTime} (${userLocal.timezoneOffset})`
+                      ? `本地时间：${userLocal.localTime} (${userLocal.timezoneOffset})${
+                          cityTzLabel && cityTzLabel !== userLocal.timezoneOffset
+                            ? ` ｜ 城市当地时间：${record.updateTime} (${cityTzLabel})`
                             : ''
                         }${
                           record.freshness
                             ? ` ｜ 距今约 ${record.freshness.delayMinutes} 分钟`
                             : ''
                         }`
-                      : `当地观测时间：${record.updateTime} (${tzLabel})`;
-                    return (
-                      <span title={timeTooltip}>
-                        更新时间: {record.updateTime}
-                        <span className="text-slate-400 ml-1">({tzLabel})</span>
-                      </span>
-                    );
+                      : `更新时间：${displayTime}`;
+                    return <span title={timeTooltip}>更新时间: {displayTime}</span>;
                   })()}
                   {(() => {
                     const delayBadge = formatDelayBadge(record.freshness);
@@ -1155,21 +1152,6 @@ function DashboardPageContent() {
                       <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200/80 text-amber-800 font-medium text-[11px]">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                         <span>站点停更 · 历史实测</span>
-                      </span>
-                    </>
-                  )}
-                  {selectedStationMode !== 'default' && selectedStationMode !== 'composite' && (
-                    <>
-                      <span>·</span>
-                      <span className="text-indigo-700 font-semibold bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200/80 text-[11px]">
-                        单站实测:{' '}
-                        {(() => {
-                          const found = cityStations.find((s) => String(s.uid) === selectedStationMode);
-                          const clean = found
-                            ? extractCleanStationName(found.station?.name || '', selectedCity.nameZh)
-                            : '在册微站';
-                          return clean;
-                        })()}
                       </span>
                     </>
                   )}
@@ -1421,20 +1403,13 @@ function DashboardPageContent() {
                     ? 'bg-sky-50 text-sky-700 border-sky-200/80'
                     : 'bg-slate-100 text-slate-500 border-slate-200'
                 }`}
-                title={
-                  trendResult.timezoneOffset
-                    ? `时间轴采用城市当地时间 (${trendResult.timezoneOffset})`
-                    : undefined
-                }
+                title="时间轴已统一换算为当前浏览器本地时区"
               >
                 {trendResult.isReal && (
                   <span className="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block shrink-0" />
                 )}
                 <span>
                   {trendResult.isReal ? `来源: ${trendResult.source}` : trendResult.source}
-                  {trendResult.isReal && trendResult.timezoneOffset
-                    ? ` · ${trendResult.timezoneOffset}`
-                    : ''}
                 </span>
               </span>
             )}

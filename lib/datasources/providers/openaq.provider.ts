@@ -356,6 +356,7 @@ export const openaqProvider: AirQualityProvider = {
         points.push({
           hour,
           fullTime,
+          ...(obsMs ? { timestampMs: obsMs } : {}),
           aqi: ev.aqi,
           pm25,
           o3: 0,

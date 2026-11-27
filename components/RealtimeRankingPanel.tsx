@@ -479,7 +479,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
               </div>
               {data?.updatedAt && (
                 <p className="text-[11px] text-slate-400 font-normal">
-                  更新于 {new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · 每30分钟同步
+                  更新于 {new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · 每30分钟同步 · 来源: WAQI
                 </p>
               )}
             </div>

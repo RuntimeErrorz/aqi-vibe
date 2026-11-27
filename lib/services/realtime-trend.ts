@@ -1,10 +1,12 @@
 import { StandardType, ForecastDay, ProviderId } from '../types';
 import { build24HourPointsFromWaqiObs, fetchWaqiHourlyDirect } from './waqi-decoder';
-import { fetch5DayForecastMultiSource } from '../datasources';
+import { fetch5DayForecastMultiSource, getCityUtcOffsetMinutes } from '../datasources';
+import { findCity } from '../constants/cities';
 
 export interface HourlyTrendPoint {
   hour: string;
   fullTime?: string;
+  timestampMs?: number; // Exact UTC epoch milliseconds for uniform browser-timezone formatting
   aqi: number;
   pm25: number;   // μg/m³
   pm10?: number;  // μg/m³
@@ -86,6 +88,13 @@ export async function fetch24HourHourlyTrend(
   }
 
   if (stationIdx) {
+    const cityMeta = options?.cityId ? findCity(options.cityId) : undefined;
+    const cityOffsetMin = getCityUtcOffsetMinutes(
+      Date.now(),
+      cityMeta?.country,
+      cityMeta?.longitude ?? lng,
+      cityMeta?.latitude ?? lat
+    );
     const racers: Promise<HourlyTrendResult>[] = [];
 
     // 通道 1：同源 Cloudflare Worker 边缘缓存专线网关 (10分钟缓存)
@@ -99,7 +108,7 @@ export async function fetch24HourHourlyTrend(
           const waqiJson = await edgeRes.json();
           const obs = waqiJson?.rxs?.obs?.[0]?.msg?.obs;
           if (!obs || !obs.pm25) throw new Error('Empty edge obs');
-          const edgePoints = build24HourPointsFromWaqiObs(obs, standard);
+          const edgePoints = build24HourPointsFromWaqiObs(obs, standard, cityOffsetMin);
           if (edgePoints.length < 3) throw new Error('Insufficient edge points');
           return {
             points: edgePoints,
@@ -115,7 +124,7 @@ export async function fetch24HourHourlyTrend(
     // 通道 2：前端直连 WAQI 官方底层双步鉴权与差分解码协议
     racers.push(
       (async () => {
-        const directPoints = await fetchWaqiHourlyDirect(stationIdx, standard);
+        const directPoints = await fetchWaqiHourlyDirect(stationIdx, standard, cityOffsetMin);
         if (!directPoints || directPoints.length < 3) {
           throw new Error('Insufficient direct points');
         }

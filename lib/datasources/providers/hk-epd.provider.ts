@@ -230,6 +230,7 @@ export const hkEpdProvider: AirQualityProvider = {
         return {
           hour,
           fullTime,
+          timestampMs: row.obsMs,
           aqi: ev.aqi,
           pm25: row.pollutants.pm25 ?? 0,
           pm10: row.pollutants.pm10,
