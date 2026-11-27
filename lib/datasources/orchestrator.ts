@@ -594,6 +594,42 @@ export class DataSourceOrchestrator {
             provenance,
           };
 
+    // 2.5 若主源为 1x1km 融合源且未返回国控子站列表（如和风天气），按需花 1 次 WAQI bounds 补齐本地官方微站列表
+    // （所有辅助微站明确标注 providerId: 'waqi'，绝不混入或污染和风主卡片的 compositeRecord 均值！）
+    let finalStations = compositeStations;
+    if (
+      finalStations.length === 0 &&
+      best.snapshot.providerId !== 'waqi' &&
+      !ctx.signal?.aborted &&
+      ctx.env.waqiTokens &&
+      ctx.env.waqiTokens.length > 0
+    ) {
+      const waqiProv = this.registry.get('waqi');
+      if (waqiProv?.bounds && waqiProv.isAvailable(ctx) && !this.registry.breaker.isOpen('waqi', ctx.nowMs)) {
+        try {
+          const boundRaw = await waqiProv.bounds.fetchStationsInBounds(
+            {
+              minLat: city.latitude - 0.35,
+              minLon: city.longitude - 0.35,
+              maxLat: city.latitude + 0.35,
+              maxLon: city.longitude + 0.35,
+            },
+            { ...ctx, timeoutMs: 2200 }
+          );
+          const rankedAux = filterAndRankStationsForCity(
+            boundRaw.filter((s) => !s.isOffline),
+            city,
+            ctx.nowMs
+          );
+          if (rankedAux.length > 0) {
+            finalStations = rankedAux.map(toStationCompositeSample);
+          }
+        } catch {
+          // 辅助微站补齐失败不影响主实况卡片
+        }
+      }
+    }
+
     // 3. Best-effort free meteorological weather enrichment when AQI provider omits temp/humidity/wind/pressure
     const shouldEnrichWeather =
       allowWeatherEnrich &&
@@ -616,11 +652,11 @@ export class DataSourceOrchestrator {
       success: true,
       cityId: city.id,
       baseRecord,
-      stations: compositeStations,
+      stations: finalStations,
       compositeRecord,
-      totalOfficialStations: best.stations.length,
+      totalOfficialStations: finalStations.length,
       sampledStations:
-        compositeRecord.compositeStationCount || Math.max(1, best.stations.length),
+        compositeRecord.compositeStationCount || Math.max(1, finalStations.length),
       updatedAt: new Date(ctx.nowMs).toISOString(),
       provenance,
       freshness: best.freshness,

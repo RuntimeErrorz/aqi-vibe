@@ -60,7 +60,7 @@ const UNIFORM_HIGH_DENSITY_BOUNDS = [
 console.log('Total uniform tiles:', UNIFORM_HIGH_DENSITY_BOUNDS.length);
 
 async function testFetch() {
-  const WAQI_TOKEN = '50b0c272a11f35667dd0ef7de354d76e9560ac48';
+  const WAQI_TOKEN = process.env.WAQI_TOKEN || process.env.NEXT_PUBLIC_WAQI_TOKEN || '';
   // Let's test the Tokyo tile '34,134,38,142' and Shanghai tile '26,118,34,128'
   const [resTokyo, resShanghai, resBeijing, resLondon] = await Promise.all([
     fetch('https://api.waqi.info/v2/map/bounds/?latlng=34,134,38,142&token=' + WAQI_TOKEN).then(r=>r.json()),

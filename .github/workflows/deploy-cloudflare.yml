@@ -33,8 +33,8 @@ jobs:
 
       - name: 构建静态资源 (Static HTML Export)
         env:
-          NEXT_PUBLIC_WAQI_TOKEN: ${{ secrets.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48' }}
-          NEXT_PUBLIC_CARTO_KEY: ${{ secrets.NEXT_PUBLIC_CARTO_KEY || 'cb1_4bl6_1_dc1bbfd8426369beb577afe4' }}
+          NEXT_PUBLIC_WAQI_TOKEN: ${{ secrets.NEXT_PUBLIC_WAQI_TOKEN || '' }}
+          NEXT_PUBLIC_CARTO_KEY: ${{ secrets.NEXT_PUBLIC_CARTO_KEY || '' }}
         run: npm run build
 
       - name: 发布至 Cloudflare Workers (Assets + KV + Cron)

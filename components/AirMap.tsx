@@ -18,7 +18,8 @@ import { useStandard } from '@/components/StandardContext';
 import { convertIAQIToConcentration, evaluateAQI, getUSEvaluation } from '@/lib/aqi-calculator';
 import { iso1A2Code } from '@rapideditor/country-coder';
 
-const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_KEY || 'cb1_4bl6_1_dc1bbfd8426369beb577afe4';
+const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_KEY || '';
+const CARTO_KEY_QUERY = CARTO_KEY ? `?key=${CARTO_KEY}` : '';
 
 export interface FocusCityInfo {
   name: string;
@@ -500,8 +501,8 @@ export default function AirMap({
 
       const baseUrl =
         basemapTheme === 'dark'
-          ? `https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png?key=${CARTO_KEY}`
-          : `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png?key=${CARTO_KEY}`;
+          ? `https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png${CARTO_KEY_QUERY}`
+          : `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png${CARTO_KEY_QUERY}`;
 
       basemapLayerRef.current = L.tileLayer(baseUrl, {
         attribution: '&copy; OpenStreetMap &copy; CARTO',
@@ -610,8 +611,8 @@ export default function AirMap({
     }
     const baseUrl =
       basemapTheme === 'dark'
-        ? `https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png?key=${CARTO_KEY}`
-        : `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png?key=${CARTO_KEY}`;
+        ? `https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png${CARTO_KEY_QUERY}`
+        : `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png${CARTO_KEY_QUERY}`;
     basemapLayerRef.current = L.tileLayer(baseUrl, {
       attribution: '&copy; OpenStreetMap &copy; CARTO',
       maxZoom: 19,

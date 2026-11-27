@@ -251,11 +251,13 @@ function DashboardPageContent() {
       try {
         const found = targetStations.find((s) => s.uid === uidNum);
         const cleanName = found ? extractCleanStationName(found.station?.name || '', targetCity.nameZh) : undefined;
-        const activeProviderId = targetRecord.provenance?.providerId;
+        const stationProviderId = ((found as any)?.providerId || targetRecord.provenance?.providerId) as
+          | import('@/lib/types').ProviderId
+          | undefined;
         let stationData: AirQualityRecord;
 
-        if (activeProviderId && activeProviderId !== 'waqi' && found?.pollutants) {
-          // 非 WAQI 源（如香港环保署/和风/OpenAQ/台湾环境部）测站已自带完整物理浓度，直接无额外网络开销构建单站记录
+        if (stationProviderId && stationProviderId !== 'waqi' && found?.pollutants) {
+          // 非 WAQI 源（如香港环保署/OpenAQ/台湾环境部）测站已自带完整物理浓度，直接无额外网络开销构建单站记录
           const stPollutants = found.pollutants;
           stationData = {
             ...targetRecord,
@@ -290,10 +292,10 @@ function DashboardPageContent() {
           0,
           0,
           stationData.updateTime,
-          stationData.stationIdx || (activeProviderId && activeProviderId !== 'waqi' ? undefined : uidNum),
+          stationData.stationIdx || (stationProviderId && stationProviderId !== 'waqi' ? undefined : uidNum),
           {
             cityId: targetCity.id,
-            providerId: activeProviderId,
+            providerId: stationProviderId,
             stationRawId: (found as any)?.stationId?.split(':')[1],
           }
         );

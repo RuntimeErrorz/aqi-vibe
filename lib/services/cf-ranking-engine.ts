@@ -28,13 +28,8 @@ const MAX_EXTRA_RETRIES = 4;
 const FETCH_TIMEOUT_MS = 8500;
 const MAX_CITY_RADIUS_KM = 35.0; // 与城市实况 (cf-city-realtime / geo-filter) 严格统一 35km 物理边界红线
 
-export const DEFAULT_WAQI_TOKENS: readonly string[] = [
-  '50b0c272a11f35667dd0ef7de354d76e9560ac48',
-  'cf3c881dede05b146dac69b27aa6ef8ec0f46886',
-  'eabaffdde577add1382ca4619b72741eabded63e',
-  '9b38f69fe8f813149605f68ddfb5e4ea49199636',
-  '59c6cfc54957d81567376569de7c00bc058e07f7',
-];
+// 零源码硬编码 Token：所有 WAQI Token 均由 Cloudflare Workers Secret (`WAQI_TOKENS`) 或本地 `.env.local` 注入
+export const DEFAULT_WAQI_TOKENS: readonly string[] = [];
 
 export function parseWaqiTokens(raw?: string): string[] {
   if (raw && raw.trim().length > 0) {

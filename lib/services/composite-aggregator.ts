@@ -14,6 +14,7 @@ import {
 
 export interface StationCompositeSample {
   uid: number;
+  providerId?: string;
   lat: number;
   lon: number;
   aqi: string;
@@ -160,7 +161,12 @@ export function aggregateCompositeRecord(
   standard: StandardType = 'CN',
   onlyPm25 = false
 ): AirQualityRecord {
-  const pool = filterOutlierStationsByPm25(preferOfficialStations(stations));
+  // 若 stations 携带了 providerId（例如和风主卡片附带 WAQI 辅助子站列表），严格只聚合与主源同源的站点，绝不让旧源子站污染最新主卡片
+  const baseProviderId = baseRecord.provenance?.providerId;
+  const sameSourceStations = baseProviderId
+    ? stations.filter((s) => !s.providerId || s.providerId === baseProviderId)
+    : stations;
+  const pool = filterOutlierStationsByPm25(preferOfficialStations(sameSourceStations));
 
   const pollutants: PollutantValues = {
     pm25:

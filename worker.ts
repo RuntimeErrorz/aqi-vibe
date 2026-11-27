@@ -338,6 +338,122 @@ export default {
       }
     }
 
+    // 0.95 WAQI 零前端 Token 边缘代理（bounds / feed / tile），彻底告别前端源码硬编码 Token
+    if (url.pathname === '/api/waqi/bounds') {
+      const latlng = url.searchParams.get('latlng')?.trim() || '';
+      if (!/^-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(latlng)) {
+        return new Response(JSON.stringify({ status: 'error', data: 'Invalid latlng' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        });
+      }
+      const tokens = parseWaqiTokens(env.WAQI_TOKENS);
+      if (tokens.length === 0) {
+        return new Response(JSON.stringify({ status: 'error', data: 'WAQI_TOKENS not configured' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        });
+      }
+
+      const edgeCache = getEdgeDefaultCache();
+      const cacheKey = new Request(`${url.origin}/api/waqi/bounds?latlng=${encodeURIComponent(latlng)}`, {
+        method: 'GET',
+      });
+      if (edgeCache) {
+        const cached = await edgeCache.match(cacheKey);
+        if (cached) return cached;
+      }
+
+      const token = tokens[Math.floor(Math.random() * tokens.length)];
+      const upstream = await fetch(`https://api.waqi.info/v2/map/bounds?latlng=${latlng}&token=${token}`);
+      const body = await upstream.text();
+      const response = new Response(body, {
+        status: upstream.status,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': upstream.ok ? 'public, max-age=60, stale-while-revalidate=120' : 'no-store',
+        },
+      });
+      if (edgeCache && ctx && upstream.ok) {
+        ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
+      }
+      return response;
+    }
+
+    if (url.pathname === '/api/waqi/feed') {
+      const target = url.searchParams.get('target')?.trim() || '';
+      if (!/^(@-?\d+|[a-zA-Z0-9._\-\u4e00-\u9fa5% ]+)$/.test(target) || target.includes('..') || target.includes('/')) {
+        return new Response(JSON.stringify({ status: 'error', data: 'Invalid target' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        });
+      }
+      const tokens = parseWaqiTokens(env.WAQI_TOKENS);
+      if (tokens.length === 0) {
+        return new Response(JSON.stringify({ status: 'error', data: 'WAQI_TOKENS not configured' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        });
+      }
+
+      const edgeCache = getEdgeDefaultCache();
+      const cacheKey = new Request(`${url.origin}/api/waqi/feed?target=${encodeURIComponent(target)}`, {
+        method: 'GET',
+      });
+      if (edgeCache) {
+        const cached = await edgeCache.match(cacheKey);
+        if (cached) return cached;
+      }
+
+      const token = tokens[Math.floor(Math.random() * tokens.length)];
+      const upstream = await fetch(`https://api.waqi.info/feed/${encodeURIComponent(target)}/?token=${token}`);
+      const body = await upstream.text();
+      const response = new Response(body, {
+        status: upstream.status,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': upstream.ok ? 'public, max-age=120, stale-while-revalidate=240' : 'no-store',
+        },
+      });
+      if (edgeCache && ctx && upstream.ok) {
+        ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
+      }
+      return response;
+    }
+
+    const tileMatch = url.pathname.match(/^\/api\/waqi\/tile\/(\d{1,2})\/(\d+)\/(\d+)\.png$/);
+    if (tileMatch) {
+      const [, z, x, y] = tileMatch;
+      const tokens = parseWaqiTokens(env.WAQI_TOKENS);
+      if (tokens.length === 0) {
+        return new Response('WAQI_TOKENS not configured', { status: 503 });
+      }
+
+      const edgeCache = getEdgeDefaultCache();
+      const cacheKey = new Request(`${url.origin}/api/waqi/tile/${z}/${x}/${y}.png`, { method: 'GET' });
+      if (edgeCache) {
+        const cached = await edgeCache.match(cacheKey);
+        if (cached) return cached;
+      }
+
+      const token = tokens[Math.floor(Math.random() * tokens.length)];
+      const upstream = await fetch(`https://tiles.aqicn.org/tiles/usepa-aqi/${z}/${x}/${y}.png?token=${token}`);
+      const response = new Response(upstream.body, {
+        status: upstream.status,
+        headers: {
+          'Content-Type': upstream.headers.get('Content-Type') || 'image/png',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': upstream.ok ? 'public, max-age=600, stale-while-revalidate=600' : 'no-store',
+        },
+      });
+      if (edgeCache && ctx && upstream.ok) {
+        ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
+      }
+      return response;
+    }
+
     // 1. WAQI 24小时逐小时时序专线网关 (接入 Cloudflare Edge Cache 10 分钟真正缓存，彻底消除刷新时 2 次串行 POST)
     if (url.pathname === '/api/waqi-hourly') {
       const idx = url.searchParams.get('idx')?.trim();

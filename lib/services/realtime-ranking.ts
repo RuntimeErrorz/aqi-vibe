@@ -47,14 +47,14 @@ export interface RankingApiResponse {
   };
 }
 
-const WAQI_TOKENS: string[] = [
-  process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48',
-  'cf3c881dede05b146dac69b27aa6ef8ec0f46886',
-  'eabaffdde577add1382ca4619b72741eabded63e',
-  '9b38f69fe8f813149605f68ddfb5e4ea49199636',
-  '59c6cfc54957d81567376569de7c00bc058e07f7',
-].filter(Boolean);
-const WAQI_TOKEN = WAQI_TOKENS[0];
+const WAQI_TOKENS: string[] = (
+  process.env.WAQI_TOKENS ||
+  process.env.NEXT_PUBLIC_WAQI_TOKEN ||
+  ''
+)
+  .split(/[,\s]+/)
+  .map((t) => t.trim())
+  .filter(Boolean);
 
 interface CoreCityPM25Snapshot {
   pm25IaqiUS: number;

@@ -21,20 +21,40 @@ import {
   sortStationsByFreshnessAndDistance,
 } from '../datasources/freshness';
 
-const WAQI_TOKENS: string[] = [
-  process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48',
-  'cf3c881dede05b146dac69b27aa6ef8ec0f46886',
-  'eabaffdde577add1382ca4619b72741eabded63e',
-  '9b38f69fe8f813149605f68ddfb5e4ea49199636',
-  '59c6cfc54957d81567376569de7c00bc058e07f7',
-].filter(Boolean);
-const WAQI_TOKEN = WAQI_TOKENS[0];
+// 零源码硬编码 Token：本地 dev 读取 .env.local，线上静态产物自动走 Cloudflare Worker /api/waqi/* 零 Token 代理
+const WAQI_TOKENS: string[] = (
+  process.env.WAQI_TOKENS ||
+  process.env.NEXT_PUBLIC_WAQI_TOKEN ||
+  ''
+)
+  .split(/[,\s]+/)
+  .map((t) => t.trim())
+  .filter((t) => Boolean(t) && !t.startsWith('your_'));
+const WAQI_TOKEN = WAQI_TOKENS[0] || '';
 
 let waqiTokenCursor = 0;
 function getNextWaqiToken(): string {
+  if (WAQI_TOKENS.length === 0) return '';
   const token = WAQI_TOKENS[waqiTokenCursor % WAQI_TOKENS.length];
   waqiTokenCursor = (waqiTokenCursor + 1) % WAQI_TOKENS.length;
   return token;
+}
+
+function buildWaqiFeedUrl(target: string): string {
+  const token = getNextWaqiToken();
+  if (token) {
+    return `https://api.waqi.info/feed/${encodeURIComponent(target)}/?token=${token}`;
+  }
+  return `/api/waqi/feed?target=${encodeURIComponent(target)}`;
+}
+
+function buildWaqiBoundsUrl(minLat: number, minLng: number, maxLat: number, maxLng: number): string {
+  const latlng = `${minLat},${minLng},${maxLat},${maxLng}`;
+  const token = getNextWaqiToken();
+  if (token) {
+    return `https://api.waqi.info/v2/map/bounds?latlng=${latlng}&token=${token}`;
+  }
+  return `/api/waqi/bounds?latlng=${encodeURIComponent(latlng)}`;
 }
 
 export async function fetchWAQICityData(cityIdentifier: string): Promise<AirQualityRecord> {
@@ -56,7 +76,7 @@ export async function fetchWAQICityData(cityIdentifier: string): Promise<AirQual
     // 2. 若无活跃实测站 (例如全城测站暂时停更或维护)，优先检查官方 slug 并如实展示其离线/停更状态
     if (cityMeta.waqiSlug) {
       try {
-        const url = `https://api.waqi.info/feed/${encodeURIComponent(cityMeta.waqiSlug)}/?token=${getNextWaqiToken()}`;
+        const url = buildWaqiFeedUrl(cityMeta.waqiSlug);
         const res = await fetch(url, { cache: 'no-store' });
         if (res.ok) {
           const json = await res.json();
@@ -70,7 +90,7 @@ export async function fetchWAQICityData(cityIdentifier: string): Promise<AirQual
 
   // 兼容直接传入 slug 或非注册标识符的兜底场景
   const targetSlug = cityMeta?.waqiSlug || cityIdentifier;
-  const url = `https://api.waqi.info/feed/${encodeURIComponent(targetSlug)}/?token=${getNextWaqiToken()}`;
+  const url = buildWaqiFeedUrl(targetSlug);
 
   try {
     const res = await fetch(url, { cache: 'no-store' });
@@ -108,7 +128,7 @@ export async function fetchWAQIStationByUid(
   cityMeta?: CityMeta,
   stationName?: string
 ): Promise<AirQualityRecord> {
-  const url = `https://api.waqi.info/feed/@${uid}/?token=${getNextWaqiToken()}`;
+  const url = buildWaqiFeedUrl(`@${uid}`);
 
   try {
     const res = await fetch(url, { cache: 'no-store' });
@@ -139,7 +159,10 @@ export async function fetchWAQIStationByUid(
 }
 
 export function getWAQIMapTileUrl(): string {
-  return `https://tiles.aqicn.org/tiles/usepa-aqi/{z}/{x}/{y}.png?token=${WAQI_TOKEN}`;
+  if (WAQI_TOKEN) {
+    return `https://tiles.aqicn.org/tiles/usepa-aqi/{z}/{x}/{y}.png?token=${WAQI_TOKEN}`;
+  }
+  return '/api/waqi/tile/{z}/{x}/{y}.png';
 }
 
 export interface WaqiBoundStation {
@@ -254,7 +277,7 @@ function fetchSingleStationPm25(uid: number, signal?: AbortSignal): Promise<Stat
     }
 
     try {
-      const url = `https://api.waqi.info/feed/@${uid}/?token=${getNextWaqiToken()}`;
+      const url = buildWaqiFeedUrl(`@${uid}`);
       const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
       if (res.ok) {
         const json = await res.json();
@@ -350,7 +373,7 @@ export async function fetchWAQIMapBounds(
   maxLat: number,
   maxLng: number
 ): Promise<WaqiBoundStation[]> {
-  const url = `https://api.waqi.info/v2/map/bounds?latlng=${minLat},${minLng},${maxLat},${maxLng}&token=${getNextWaqiToken()}`;
+  const url = buildWaqiBoundsUrl(minLat, minLng, maxLat, maxLng);
   try {
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) {
