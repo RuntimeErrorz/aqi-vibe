@@ -504,6 +504,76 @@ export const waqiProvider: AirQualityProvider = {
     },
   },
 
+  forecast: {
+    async fetch5DayForecast(lat, lon, ctx, city) {
+      const tokens = ctx.env.waqiTokens || [];
+      if (tokens.length === 0) return null;
+
+      const timeoutMs = ctx.timeoutMs ?? 4500;
+      const cityTodayStr = formatLocalTimeForCityWithTz(
+        ctx.nowMs,
+        city?.country,
+        city?.longitude ?? lon,
+        city?.latitude ?? lat
+      ).localTime.slice(0, 10);
+
+      const extractValidForecast = (daily: any) => {
+        const parsed = parseWaqiForecast(daily);
+        const valid = (parsed?.pm25 || []).filter(
+          (f) => f.day >= cityTodayStr && typeof f.avg === 'number' && !isNaN(f.avg) && f.avg > 0
+        );
+        return valid.length >= 3 ? valid.slice(0, 5) : null;
+      };
+
+      const fetchForecastByTarget = async (target: string) => {
+        const res = await ctx.fetchImpl(
+          `https://api.waqi.info/feed/${encodeURIComponent(target)}/?token=${pickToken(tokens)}`,
+          { cache: 'no-store', signal: createTimeoutSignal(timeoutMs, ctx.signal) }
+        );
+        if (!res.ok) return null;
+        const json = (await res.json()) as any;
+        if (json?.status !== 'ok' || !json.data) return null;
+        if (city && typeof json.data.idx === 'number' && json.data.idx > 0) {
+          cityWaqiIdxCache.set(city.id, {
+            idx: json.data.idx,
+            expiresAtMs: ctx.nowMs + 24 * 3600 * 1000,
+          });
+        }
+        return extractValidForecast(json.data.forecast?.daily);
+      };
+
+      // 1. Prefer cached station idx or official city slug (1 subrequest, zero geo: spillover)
+      if (city) {
+        const cachedIdx = cityWaqiIdxCache.get(city.id);
+        if (cachedIdx && cachedIdx.expiresAtMs > ctx.nowMs) {
+          try {
+            const list = await fetchForecastByTarget(`@${cachedIdx.idx}`);
+            if (list) return { list, source: 'WAQI 官方站点扩散模型' };
+          } catch {}
+        }
+
+        const slug = city.waqiSlug || city.nameEn.toLowerCase();
+        if (slug) {
+          try {
+            const list = await fetchForecastByTarget(slug);
+            if (list) return { list, source: 'WAQI 官方站点扩散模型' };
+          } catch {}
+        }
+
+        // 2. Fallback: resolve freshest official station within ±0.35° urban boundary
+        const resolvedIdx = await resolveWaqiStationIdxForCity(city, tokens, ctx);
+        if (resolvedIdx) {
+          try {
+            const list = await fetchForecastByTarget(`@${resolvedIdx}`);
+            if (list) return { list, source: 'WAQI 官方站点扩散模型' };
+          } catch {}
+        }
+      }
+
+      return null;
+    },
+  },
+
   mapTiles: {
     getMapTileUrl(ctx: ProviderRuntimeContext): string {
       const token = ctx.env.waqiTokens?.[0] || '';

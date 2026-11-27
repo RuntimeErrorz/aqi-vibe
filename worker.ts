@@ -285,10 +285,12 @@ export default {
       }
     }
 
-    // 0.9 多数据源未来 5 天预报网关（Open-Meteo ECMWF/CAMS 主源，和风天气兜底，30 分钟边缘缓存）
+    // 0.9 多数据源未来 5 天预报网关（WAQI 官方站点扩散模型首选，自动回落 Open-Meteo ECMWF/CAMS，30 分钟边缘缓存）
     if (url.pathname === '/api/forecast') {
-      const lat = Number(url.searchParams.get('lat'));
-      const lon = Number(url.searchParams.get('lon'));
+      const cityParam = url.searchParams.get('city')?.trim();
+      const city = cityParam ? findCity(cityParam) : undefined;
+      const lat = Number(url.searchParams.get('lat') ?? city?.latitude);
+      const lon = Number(url.searchParams.get('lon') ?? city?.longitude);
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
         return new Response(JSON.stringify({ list: [], source: '参数无效' }), {
           status: 400,
@@ -298,7 +300,7 @@ export default {
 
       const edgeCache = getEdgeDefaultCache();
       const cacheKey = new Request(
-        `${url.origin}/api/forecast?lat=${lat.toFixed(2)}&lon=${lon.toFixed(2)}`,
+        `${url.origin}/api/forecast?city=${encodeURIComponent(city?.id || '')}&lat=${lat.toFixed(2)}&lon=${lon.toFixed(2)}`,
         { method: 'GET' }
       );
       if (edgeCache) {
@@ -307,10 +309,12 @@ export default {
       }
 
       try {
-        const result = await fetch5DayForecastMultiSource(lat, lon, {
-          rawEnv: env,
-          isServer: true,
-        });
+        const result = await fetch5DayForecastMultiSource(
+          lat,
+          lon,
+          { rawEnv: env, isServer: true },
+          city
+        );
         const response = new Response(JSON.stringify(result), {
           status: 200,
           headers: {

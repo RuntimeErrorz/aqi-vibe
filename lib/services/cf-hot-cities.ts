@@ -26,6 +26,10 @@ import {
   RawEnvBag,
   resolveProviderSecrets,
 } from '../datasources';
+import {
+  QWEATHER_STALL_THRESHOLD_MIN,
+  trackQWeatherContentTag,
+} from '../datasources/providers/qweather.provider';
 
 /**
  * 40 座全球核心大都市（国内 20 城 + 海外 20 城），按站群规模均衡混编为 10 个分包：
@@ -217,18 +221,30 @@ export async function runHotCitiesCronPack(
     const city = findCity(cityId);
     if (!city) continue;
 
-    // 若该城上轮由和风成功预热且距今 < 50 分钟，直接复用节省月度配额
+    // 若该城上轮由和风成功预热且距今 < 50 分钟（且指纹未卡死 > 3 小时），直接复用节省月度配额
     const prevCity = prevPackCities[city.id];
     const prevUpdatedMs = prevCity?.updatedAt ? Date.parse(prevCity.updatedAt) : 0;
+    const prevTag = prevCity?.freshness?.contentTag;
+    const prevTagFirstSeenMs = prevCity?.freshness?.tagFirstSeenMs ?? prevUpdatedMs;
+    const prevTagUnchangedMin =
+      prevTag && prevTagFirstSeenMs > 0
+        ? Math.round((nowMs - prevTagFirstSeenMs) / 60_000)
+        : 0;
     if (
       prevCity &&
       prevCity.success &&
       prevCity.provenance?.providerId === 'qweather' &&
       prevUpdatedMs > 0 &&
-      nowMs - prevUpdatedMs < QWEATHER_REUSE_WINDOW_MS
+      nowMs - prevUpdatedMs < QWEATHER_REUSE_WINDOW_MS &&
+      prevTagUnchangedMin < QWEATHER_STALL_THRESHOLD_MIN
     ) {
       multiSourceResults[city.id] = prevCity;
       continue;
+    }
+
+    // 把上一轮 KV 中的和风内容指纹种子注入跟踪器，用于跨 Cron 轮次检测和风是否连续 > 3h 卡死
+    if (prevTag && prevTagFirstSeenMs > 0) {
+      trackQWeatherContentTag(city.id, prevTag, prevTagFirstSeenMs);
     }
 
     const chain = getRealtimeChainForCountry(city.country);

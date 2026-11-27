@@ -512,13 +512,13 @@ function DashboardPageContent() {
         });
       } else {
         setForecastLoading(true);
-        fetch5DayForecast(city.latitude, city.longitude)
-          .then((ecForecast) => {
+        fetch5DayForecast(city.latitude, city.longitude, city.id)
+          .then((res) => {
             if (requestIdRef.current !== reqId) return;
-            if (ecForecast.length > 0) {
+            if (res.list.length > 0) {
               setForecastData({
-                list: ecForecast,
-                source: 'CAMS / ECMWF 全球数值预报',
+                list: res.list,
+                source: res.source || 'WAQI 官方站点扩散模型',
               });
             } else {
               setForecastData({

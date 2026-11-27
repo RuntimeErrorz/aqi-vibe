@@ -78,8 +78,9 @@ const HOURLY_CHAINS_BY_REGION: Record<string, readonly ProviderId[]> = {
   DEFAULT: ['waqi', 'openaq'],
 };
 
-// Decoupled 5-day forecast chain: Open-Meteo ECMWF/CAMS primary -> QWeather fallback
+// Decoupled 5-day forecast chain: WAQI station dispersion model primary -> Open-Meteo ECMWF/CAMS -> QWeather fallback
 const FORECAST_CHAIN: readonly ProviderId[] = [
+  'waqi',
   'open-meteo',
   'qweather',
 ];
@@ -358,12 +359,21 @@ function shouldSwitchToChallenger(
 
   const incDelay = incumbent.freshness?.delayMinutes;
   const chalDelay = challenger.freshness?.delayMinutes;
+  const incEstimated = Boolean(incumbent.freshness?.isEstimatedTime);
+  const chalEstimated = Boolean(challenger.freshness?.isEstimatedTime);
 
   // If challenger has a valid timestamp and incumbent does not
   if (incDelay === undefined && chalDelay !== undefined) return true;
   if (incDelay !== undefined && chalDelay === undefined) return false;
 
+  // Fairness rule for providers without explicit upstream timestamps (e.g. QWeather v1):
+  // Never let an estimated timestamp unfairly displace a verified, fresh (<= 90m) official observation!
   if (incDelay !== undefined && chalDelay !== undefined) {
+    const incVerifiedFresh = !incEstimated && incDelay <= staleThresholdMin;
+    const chalVerifiedFresh = !chalEstimated && chalDelay <= staleThresholdMin;
+    if (incVerifiedFresh && chalEstimated) return false;
+    if (incEstimated && chalVerifiedFresh) return true;
+
     // Incumbent is stale (> 90m) and challenger is fresh (<= 90m) -> definitely switch!
     if (incDelay > staleThresholdMin && chalDelay <= staleThresholdMin) {
       return true;
@@ -754,19 +764,20 @@ export class DataSourceOrchestrator {
   }
 
   /**
-   * Fetch 5-day air quality forecast (Open-Meteo CAMS primary, QWeather / Google AQ / OpenWeather fallback).
+   * Fetch 5-day air quality forecast (WAQI station dispersion primary, Open-Meteo CAMS / QWeather fallback).
    */
   async fetch5DayForecast(
     lat: number,
     lon: number,
-    ctx: ProviderRuntimeContext
+    ctx: ProviderRuntimeContext,
+    city?: CityMeta
   ): Promise<{ list: ForecastDay[]; source: string }> {
-    const candidates = this.registry.resolveCandidates(FORECAST_CHAIN, undefined, ctx, 'forecast');
+    const candidates = this.registry.resolveCandidates(FORECAST_CHAIN, city?.country, ctx, 'forecast');
 
     for (const provider of candidates) {
       if (ctx.signal?.aborted) break;
       try {
-        const result = await provider.forecast!.fetch5DayForecast(lat, lon, ctx);
+        const result = await provider.forecast!.fetch5DayForecast(lat, lon, ctx, city);
         if (result && result.list.length > 0) {
           this.registry.breaker.recordSuccess(provider.id);
           return result;

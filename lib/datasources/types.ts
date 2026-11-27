@@ -116,7 +116,8 @@ export interface ForecastCapability {
   fetch5DayForecast(
     lat: number,
     lon: number,
-    ctx: ProviderRuntimeContext
+    ctx: ProviderRuntimeContext,
+    city?: CityMeta
   ): Promise<{ list: ForecastDay[]; source: string } | null>;
 }
 

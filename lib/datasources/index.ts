@@ -108,15 +108,16 @@ export async function fetchHourlyTrendMultiSource(
 }
 
 /**
- * Unified multi-source 5-day forecast query.
+ * Unified multi-source 5-day forecast query (WAQI station dispersion primary -> Open-Meteo CAMS -> QWeather).
  */
 export async function fetch5DayForecastMultiSource(
   lat: number,
   lon: number,
-  ctxOptions?: Parameters<typeof createRuntimeContext>[0]
+  ctxOptions?: Parameters<typeof createRuntimeContext>[0],
+  city?: CityMeta
 ): Promise<{ list: ForecastDay[]; source: string }> {
   const ctx = createRuntimeContext(ctxOptions);
-  return defaultOrchestrator.fetch5DayForecast(lat, lon, ctx);
+  return defaultOrchestrator.fetch5DayForecast(lat, lon, ctx, city);
 }
 
 export {

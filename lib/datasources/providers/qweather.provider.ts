@@ -137,6 +137,47 @@ export async function signQWeatherJwt(params: {
   return token;
 }
 
+interface QWeatherTagRecord {
+  tag: string;
+  firstSeenMs: number;
+}
+
+// Per-isolate content fingerprint tracker: detects QWeather frozen feeds (> 3h unchanged metadata.tag)
+const qweatherTagTracker = new Map<string, QWeatherTagRecord>();
+export const QWEATHER_STALL_THRESHOLD_MIN = 180; // 3 hours unchanged tag -> suspected upstream stall
+
+export function clearQWeatherTagTracker(): void {
+  qweatherTagTracker.clear();
+}
+
+export function trackQWeatherContentTag(
+  cityId: string,
+  tag: string | undefined,
+  nowMs: number,
+  seed?: QWeatherTagRecord
+): { contentTag?: string; tagFirstSeenMs?: number; unchangedMinutes?: number; isStalled: boolean } {
+  if (!tag) return { isStalled: false };
+  const existing = qweatherTagTracker.get(cityId) || seed;
+  if (existing && existing.tag === tag) {
+    const firstSeenMs = Math.min(existing.firstSeenMs, nowMs);
+    qweatherTagTracker.set(cityId, { tag, firstSeenMs });
+    const unchangedMinutes = Math.max(0, Math.round((nowMs - firstSeenMs) / 60_000));
+    return {
+      contentTag: tag,
+      tagFirstSeenMs: firstSeenMs,
+      unchangedMinutes,
+      isStalled: unchangedMinutes >= QWEATHER_STALL_THRESHOLD_MIN,
+    };
+  }
+  qweatherTagTracker.set(cityId, { tag, firstSeenMs: nowMs });
+  return {
+    contentTag: tag,
+    tagFirstSeenMs: nowMs,
+    unchangedMinutes: 0,
+    isStalled: false,
+  };
+}
+
 export function clearQWeatherJwtCache(): void {
   cachedJwt = null;
 }
@@ -258,10 +299,29 @@ export const qweatherProvider: AirQualityProvider = {
       const pollutants = extractPollutantsFromQWeather(json?.pollutants);
       if (!hasValidPollutants(pollutants)) return null;
 
-      const obsMs =
-        parseObservedTimeMs(json?.updateTime || json?.metadata?.updateTime) ??
-        Math.floor(ctx.nowMs / 3_600_000) * 3_600_000;
-      const freshness = computeFreshness(obsMs, ctx.nowMs);
+      const explicitObsMs = parseObservedTimeMs(json?.updateTime || json?.metadata?.updateTime);
+      const isEstimatedTime = !explicitObsMs;
+      const rawTag = typeof json?.metadata?.tag === 'string' && json.metadata.tag.trim()
+        ? json.metadata.tag.trim()
+        : undefined;
+      const tagState = trackQWeatherContentTag(city.id, rawTag, ctx.nowMs);
+
+      const obsMs = explicitObsMs ?? Math.floor(ctx.nowMs / 3_600_000) * 3_600_000;
+      const baseFreshness = computeFreshness(obsMs, ctx.nowMs);
+      const freshness = baseFreshness
+        ? {
+            ...baseFreshness,
+            isEstimatedTime,
+            ...(tagState.contentTag ? { contentTag: tagState.contentTag } : {}),
+            ...(tagState.tagFirstSeenMs ? { tagFirstSeenMs: tagState.tagFirstSeenMs } : {}),
+            ...(tagState.isStalled
+              ? {
+                  delayMinutes: Math.max(baseFreshness.delayMinutes, tagState.unchangedMinutes ?? QWEATHER_STALL_THRESHOLD_MIN),
+                  isStale: true,
+                }
+              : {}),
+          }
+        : undefined;
 
       const usIndex = Array.isArray(json?.indexes)
         ? json.indexes.find((idx: any) => String(idx?.code || '').toLowerCase() === 'us-epa')

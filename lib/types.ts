@@ -16,6 +16,12 @@ export interface FreshnessMeta {
   observedAtIso: string;
   observedAtLocal?: string;
   timezoneOffset?: string; // e.g. "UTC+8", "UTC-5", "UTC+11", "UTC+5:30"
+  /** True when upstream does not provide an explicit observation timestamp (e.g. QWeather v1) */
+  isEstimatedTime?: boolean;
+  /** Upstream content hash (e.g. QWeather metadata.tag) for freeze/stall detection */
+  contentTag?: string;
+  /** Epoch ms when this contentTag was first observed */
+  tagFirstSeenMs?: number;
   delayMinutes: number;
   isStale: boolean;
   fetchedAtMs: number;

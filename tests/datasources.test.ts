@@ -21,6 +21,8 @@ import {
   qweatherProvider,
   signQWeatherJwt,
   clearQWeatherJwtCache,
+  clearQWeatherTagTracker,
+  trackQWeatherContentTag,
 } from '@/lib/datasources/providers/qweather.provider';
 import { waqiProvider } from '@/lib/datasources/providers/waqi.provider';
 import { openaqProvider } from '@/lib/datasources/providers/openaq.provider';
@@ -658,5 +660,195 @@ describe('Individual Data Source Provider Adapters', () => {
 
     expect(res?.list[0].day).toBe('2026-11-26');
     expect(res?.list.length).toBe(3);
+  });
+
+  it('detects QWeather frozen feed via unchanged metadata.tag (>3h) and triggers failover', async () => {
+    clearQWeatherTagTracker();
+    const chengdu = findCity('cn-chengdu')!;
+    const t0 = Date.parse('2026-11-27T06:00:00Z');
+    const t3h20m = t0 + 200 * 60_000;
+
+    // Seed tag seen 200 minutes ago
+    const first = trackQWeatherContentTag(chengdu.id, 'frozen-sha256-tag', t0);
+    expect(first.isStalled).toBe(false);
+
+    // Same tag 200 minutes later -> stalled!
+    const snap = await qweatherProvider.realtime!.fetchCitySnapshot(chengdu, {
+      env: { qweatherHost: 'https://test.qweatherapi.com', qweatherApiKey: 'k' },
+      fetchImpl: async () =>
+        new Response(
+          JSON.stringify({
+            metadata: { tag: 'frozen-sha256-tag' },
+            pollutants: [{ code: 'pm2p5', concentration: { value: 25, unit: 'μg/m³' } }],
+          }),
+          { status: 200 }
+        ),
+      nowMs: t3h20m,
+      isServer: true,
+    });
+
+    expect(snap?.directCityReading?.freshness?.isEstimatedTime).toBe(true);
+    expect(snap?.directCityReading?.freshness?.isStale).toBe(true);
+    expect(snap?.directCityReading?.freshness?.delayMinutes).toBe(200);
+    clearQWeatherTagTracker();
+  });
+
+  it('prefers verified fresh official timestamps (OpenAQ) over estimated timestamps (QWeather) during failover', async () => {
+    const london = findCity('gl-london')!;
+    const registry = new ProviderRegistry();
+    // Stale WAQI primary (150m old)
+    registry.register({
+      id: 'waqi',
+      name: 'WAQI',
+      shortName: 'WAQI',
+      tier: 'ground-official',
+      supportedCountries: '*',
+      supportsBrowserDirect: true,
+      isAvailable: () => true,
+      realtime: {
+        fetchCitySnapshot: async () => ({
+          providerId: 'waqi',
+          providerName: 'WAQI',
+          tier: 'ground-official',
+          stations: [
+            {
+              stationId: 'waqi:1',
+              providerId: 'waqi',
+              rawId: '1',
+              numericUid: 1,
+              name: 'London Stale',
+              latitude: london.latitude,
+              longitude: london.longitude,
+              isOfficial: true,
+              freshness: computeFreshness(NOW_MS - 150 * 60_000, NOW_MS),
+              pollutants: { pm25: 20 },
+            },
+          ],
+          subrequestsUsed: 1,
+        }),
+      },
+    });
+    // Verified fresh OpenAQ backup (55m old, isEstimatedTime = false)
+    registry.register({
+      id: 'openaq',
+      name: 'OpenAQ',
+      shortName: 'OpenAQ',
+      tier: 'ground-official',
+      supportedCountries: '*',
+      supportsBrowserDirect: false,
+      isAvailable: () => true,
+      realtime: {
+        fetchCitySnapshot: async () => ({
+          providerId: 'openaq',
+          providerName: 'OpenAQ',
+          tier: 'ground-official',
+          stations: [
+            {
+              stationId: 'openaq:10',
+              providerId: 'openaq',
+              rawId: '10',
+              numericUid: 100010,
+              name: 'London Verified',
+              latitude: london.latitude,
+              longitude: london.longitude,
+              isOfficial: true,
+              freshness: computeFreshness(NOW_MS - 55 * 60_000, NOW_MS),
+              pollutants: { pm25: 15 },
+            },
+          ],
+          subrequestsUsed: 1,
+        }),
+      },
+    });
+    // Estimated QWeather backup (5m estimated, isEstimatedTime = true)
+    registry.register({
+      id: 'qweather',
+      name: '和风天气',
+      shortName: '和风天气',
+      tier: 'station-grid-fusion',
+      supportedCountries: '*',
+      supportsBrowserDirect: false,
+      isAvailable: () => true,
+      realtime: {
+        fetchCitySnapshot: async () => ({
+          providerId: 'qweather',
+          providerName: '和风天气',
+          tier: 'station-grid-fusion',
+          stations: [],
+          directCityReading: {
+            stationId: 'qweather:gl-london',
+            providerId: 'qweather',
+            rawId: 'gl-london',
+            numericUid: 200010,
+            name: 'London Fusion',
+            latitude: london.latitude,
+            longitude: london.longitude,
+            isOfficial: true,
+            freshness: { ...computeFreshness(NOW_MS - 5 * 60_000, NOW_MS)!, isEstimatedTime: true },
+            pollutants: { pm25: 18 },
+          },
+          subrequestsUsed: 1,
+        }),
+      },
+    });
+
+    const orchestrator = new DataSourceOrchestrator(registry);
+    const result = await orchestrator.fetchCityRealtime(london, {
+      env: {},
+      fetchImpl: fetch,
+      nowMs: NOW_MS,
+      isServer: true,
+    });
+    expect(result?.provenance.providerId).toBe('openaq');
+  });
+
+  it('prioritizes WAQI station dispersion model over Open-Meteo CAMS in 5-day forecast chain', async () => {
+    const chengdu = findCity('cn-chengdu')!;
+    const registry = new ProviderRegistry();
+    registry.register(waqiProvider);
+    registry.register(openMeteoProvider);
+    const orchestrator = new DataSourceOrchestrator(registry);
+
+    const mockFetch: typeof fetch = async (input) => {
+      const url = String(input);
+      if (url.includes('api.waqi.info/feed/')) {
+        return new Response(
+          JSON.stringify({
+            status: 'ok',
+            data: {
+              idx: 1450,
+              forecast: {
+                daily: {
+                  pm25: [
+                    { day: '2026-11-27', avg: 89, min: 70, max: 100 },
+                    { day: '2026-11-28', avg: 124, min: 89, max: 138 },
+                    { day: '2026-11-29', avg: 125, min: 89, max: 138 },
+                    { day: '2026-11-30', avg: 138, min: 138, max: 138 },
+                  ],
+                },
+              },
+            },
+          }),
+          { status: 200 }
+        );
+      }
+      throw new Error('Should not hit Open-Meteo when WAQI forecast succeeds');
+    };
+
+    const res = await orchestrator.fetch5DayForecast(
+      chengdu.latitude,
+      chengdu.longitude,
+      {
+        env: { waqiTokens: ['tok-1'] },
+        fetchImpl: mockFetch,
+        nowMs: NOW_MS,
+        isServer: true,
+      },
+      chengdu
+    );
+
+    expect(res.source).toBe('WAQI 官方站点扩散模型');
+    expect(res.list.length).toBe(4);
+    expect(res.list[0].day).toBe('2026-11-27');
   });
 });

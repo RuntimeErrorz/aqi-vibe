@@ -154,31 +154,42 @@ export async function fetch24HourHourlyTrend(
 
 /**
  * 获取未来 5 天大气质量预报（能力解耦独立链）：
- * 1. 优先请求同源 Worker `/api/forecast`（Open-Meteo ECMWF/CAMS 主源，和风天气兜底）
- * 2. 本地 dev 无 Worker 时自动直连 Open-Meteo ECMWF/CAMS（免 Key 永久可用）
+ * 1. 优先请求同源 Worker `/api/forecast`（首选 WAQI 官方站点扩散模型，缺失时自动回落 Open-Meteo ECMWF/CAMS）
+ * 2. 本地 dev 无 Worker 时自动直连多源链（WAQI -> Open-Meteo）
  */
-export async function fetch5DayForecast(lat: number, lng: number): Promise<ForecastDay[]> {
+export async function fetch5DayForecast(
+  lat: number,
+  lng: number,
+  cityId?: string
+): Promise<{ list: ForecastDay[]; source: string }> {
+  const city = cityId ? findCity(cityId) : undefined;
   if (typeof window !== 'undefined' && window.location.origin) {
     try {
-      const res = await fetch(
-        `${window.location.origin}/api/forecast?lat=${lat.toFixed(4)}&lon=${lng.toFixed(4)}`,
-        { signal: AbortSignal.timeout(4500) }
-      );
+      const params = new URLSearchParams({
+        lat: lat.toFixed(4),
+        lon: lng.toFixed(4),
+      });
+      if (city?.id || cityId) params.set('city', city?.id || cityId!);
+      const res = await fetch(`${window.location.origin}/api/forecast?${params.toString()}`, {
+        signal: AbortSignal.timeout(5000),
+      });
       if (res.ok) {
-        const json = (await res.json()) as { list?: ForecastDay[] };
+        const json = (await res.json()) as { list?: ForecastDay[]; source?: string };
         if (Array.isArray(json?.list) && json.list.length > 0) {
-          return json.list;
+          return {
+            list: json.list,
+            source: json.source || 'WAQI 官方站点扩散模型',
+          };
         }
       }
     } catch {
-      // Fall back to direct Open-Meteo
+      // Fall back to direct multi-source chain
     }
   }
 
   try {
-    const res = await fetch5DayForecastMultiSource(lat, lng);
-    return res.list;
+    return await fetch5DayForecastMultiSource(lat, lng, undefined, city);
   } catch {
-    return [];
+    return { list: [], source: '官方预报暂未发布' };
   }
 }
