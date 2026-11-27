@@ -11,6 +11,8 @@ import {
 } from '../../services/waqi-decoder';
 import {
   computeFreshness,
+  extractUtcOffsetLabel,
+  formatLocalTimeForCityWithTz,
   parseObservedTimeMs,
 } from '../freshness';
 import { filterAndRankStationsForCity } from '../orchestrator';
@@ -201,7 +203,14 @@ function feedDataToNormalized(
   const geo = Array.isArray(data.city?.geo) ? data.city.geo : [fallbackLat, fallbackLon];
   const metrics = extractStationMetricsFromIaqi(data.iaqi);
   const obsMs = parseObservedTimeMs(data.time?.iso || data.time?.s, data.time?.tz);
-  const freshness = computeFreshness(obsMs, nowMs, undefined, data.time?.s || undefined);
+  const tzLabel = extractUtcOffsetLabel(data.time?.tz || data.time?.iso);
+  const freshness = computeFreshness(
+    obsMs,
+    nowMs,
+    undefined,
+    data.time?.iso || data.time?.s || undefined,
+    tzLabel
+  );
   const isOffline = data.aqi === '-' || data.aqi === null || data.aqi === undefined;
   const rawUsAqi = typeof data.aqi === 'number' && !isNaN(data.aqi) && data.aqi > 0 ? data.aqi : undefined;
 
@@ -466,9 +475,18 @@ export const waqiProvider: AirQualityProvider = {
 
       try {
         const points = await Promise.any(racers);
+        const cityTz = formatLocalTimeForCityWithTz(
+          ctx.nowMs,
+          query.city.country,
+          query.city.longitude,
+          query.city.latitude
+        ).timezoneOffset;
         return {
           points,
           isReal: true,
+          providerId: 'waqi',
+          providerName: 'WAQI',
+          timezoneOffset: cityTz,
           source: 'WAQI 官方测站 72h 逐小时实测',
         };
       } catch {

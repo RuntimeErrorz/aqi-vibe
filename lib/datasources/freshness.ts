@@ -71,17 +71,20 @@ export function computeFreshness(
   observedAtMs: number | null | undefined,
   nowMs = Date.now(),
   staleThresholdMin = DEFAULT_STALE_THRESHOLD_MIN,
-  observedAtLocal?: string
+  observedAtLocal?: string,
+  timezoneOffset?: string
 ): FreshnessMeta | undefined {
   if (!observedAtMs || !Number.isFinite(observedAtMs)) return undefined;
   // Clamp tiny negative clock skews (<= 15 min) to 0
   const rawDiffMin = Math.round((nowMs - observedAtMs) / 60_000);
   const delayMinutes = rawDiffMin < 0 && rawDiffMin >= -15 ? 0 : Math.max(0, rawDiffMin);
+  const derivedTz = timezoneOffset || extractUtcOffsetLabel(observedAtLocal);
 
   return {
     observedAtMs,
     observedAtIso: new Date(observedAtMs).toISOString(),
     ...(observedAtLocal ? { observedAtLocal } : {}),
+    ...(derivedTz ? { timezoneOffset: derivedTz } : {}),
     delayMinutes,
     isStale: delayMinutes > staleThresholdMin,
     fetchedAtMs: nowMs,
@@ -89,64 +92,292 @@ export function computeFreshness(
 }
 
 /**
- * Format UTC epoch milliseconds into city local wall-clock time "YYYY-MM-DD HH:mm:ss".
- * Uses authoritative country offsets for fixed-offset Asian/major zones, and longitude solar-zone
- * approximation for multi-zone countries when upstream did not provide a local wall-clock string.
+ * Normalize an explicit ISO-8601 offset or tz string (e.g. "+08:00", "-05:00", "Z", "GMT+11", "2026-11-27T04:00:00-05:00")
+ * into a concise human-readable label like "UTC+8", "UTC-5", "UTC+5:30", "UTC+0".
  */
-const FIXED_COUNTRY_UTC_OFFSET_HOURS: Record<string, number> = {
-  CN: 8,
-  HK: 8,
-  MO: 8,
-  TW: 8,
-  SG: 8,
-  MY: 8,
-  PH: 8,
-  JP: 9,
-  KR: 9,
-  TH: 7,
-  VN: 7,
-  IN: 5.5,
-  GB: 0,
-  IE: 0,
-  PT: 0,
-  FR: 1,
-  DE: 1,
-  IT: 1,
-  ES: 1,
-  NL: 1,
-  BE: 1,
-  CH: 1,
-  AT: 1,
-  PL: 1,
-  SE: 1,
-  NO: 1,
-  AE: 4,
-  SA: 3,
-  TR: 3,
+export function extractUtcOffsetLabel(raw?: string | null): string | undefined {
+  if (!raw) return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  if (/^(?:Z|UTC|GMT)$/i.test(trimmed) || trimmed.endsWith('Z')) return 'UTC+0';
+
+  const gmtMatch = trimmed.match(/(?:GMT|UTC)([+-])(\d{1,2})(?::?(\d{2}))?$/i);
+  if (gmtMatch) {
+    const sign = gmtMatch[1];
+    const hours = parseInt(gmtMatch[2], 10);
+    const mins = gmtMatch[3] ? parseInt(gmtMatch[3], 10) : 0;
+    if (hours === 0 && mins === 0) return 'UTC+0';
+    return mins > 0 ? `UTC${sign}${hours}:${String(mins).padStart(2, '0')}` : `UTC${sign}${hours}`;
+  }
+
+  const isoMatch = trimmed.match(/([+-])(\d{2}):?(\d{2})$/);
+  if (isoMatch) {
+    const sign = isoMatch[1];
+    const hours = parseInt(isoMatch[2], 10);
+    const mins = parseInt(isoMatch[3], 10);
+    if (hours === 0 && mins === 0) return 'UTC+0';
+    return mins > 0 ? `UTC${sign}${hours}:${String(mins).padStart(2, '0')}` : `UTC${sign}${hours}`;
+  }
+
+  return undefined;
+}
+
+/**
+ * Parse a "UTC+8" / "UTC-5" / "UTC+5:30" label into signed offset minutes.
+ */
+export function parseUtcOffsetLabelMinutes(label?: string | null): number | null {
+  if (!label) return null;
+  const m = label.trim().match(/^UTC([+-])(\d{1,2})(?::(\d{2}))?$/i);
+  if (!m) return null;
+  const sign = m[1] === '-' ? -1 : 1;
+  const h = parseInt(m[2], 10);
+  const min = m[3] ? parseInt(m[3], 10) : 0;
+  return sign * (h * 60 + min);
+}
+
+/**
+ * Authoritative IANA timezones for single-zone countries (handles DST automatically via Intl.DateTimeFormat).
+ */
+const SINGLE_ZONE_COUNTRY_IANA: Record<string, string> = {
+  CN: 'Asia/Shanghai',
+  HK: 'Asia/Hong_Kong',
+  MO: 'Asia/Macau',
+  TW: 'Asia/Taipei',
+  SG: 'Asia/Singapore',
+  MY: 'Asia/Kuala_Lumpur',
+  PH: 'Asia/Manila',
+  JP: 'Asia/Tokyo',
+  KR: 'Asia/Seoul',
+  TH: 'Asia/Bangkok',
+  VN: 'Asia/Ho_Chi_Minh',
+  KH: 'Asia/Phnom_Penh',
+  LA: 'Asia/Vientiane',
+  MM: 'Asia/Yangon',
+  BD: 'Asia/Dhaka',
+  NP: 'Asia/Kathmandu',
+  IN: 'Asia/Kolkata',
+  LK: 'Asia/Colombo',
+  PK: 'Asia/Karachi',
+  IR: 'Asia/Tehran',
+  AE: 'Asia/Dubai',
+  SA: 'Asia/Riyadh',
+  QA: 'Asia/Qatar',
+  KW: 'Asia/Kuwait',
+  IL: 'Asia/Jerusalem',
+  TR: 'Europe/Istanbul',
+  GB: 'Europe/London',
+  IE: 'Europe/Dublin',
+  PT: 'Europe/Lisbon',
+  FR: 'Europe/Paris',
+  DE: 'Europe/Berlin',
+  IT: 'Europe/Rome',
+  ES: 'Europe/Madrid',
+  NL: 'Europe/Amsterdam',
+  BE: 'Europe/Brussels',
+  CH: 'Europe/Zurich',
+  AT: 'Europe/Vienna',
+  PL: 'Europe/Warsaw',
+  CZ: 'Europe/Prague',
+  HU: 'Europe/Budapest',
+  SE: 'Europe/Stockholm',
+  NO: 'Europe/Oslo',
+  DK: 'Europe/Copenhagen',
+  FI: 'Europe/Helsinki',
+  GR: 'Europe/Athens',
+  RO: 'Europe/Bucharest',
+  UA: 'Europe/Kyiv',
+  EG: 'Africa/Cairo',
+  ZA: 'Africa/Johannesburg',
+  NG: 'Africa/Lagos',
+  KE: 'Africa/Nairobi',
+  MA: 'Africa/Casablanca',
+  NZ: 'Pacific/Auckland',
+  AR: 'America/Argentina/Buenos_Aires',
+  CL: 'America/Santiago',
+  CO: 'America/Bogota',
+  PE: 'America/Lima',
 };
+
+/**
+ * Resolve an IANA timezone for a city using country code + coordinates.
+ * Automatically captures DST rules (US EDT/EST, EU CEST/CET, UK BST/GMT, AU AEDT/AEST, NZ NZDT/NZST).
+ */
+export function resolveCityIanaTimezone(
+  country?: string,
+  longitude?: number,
+  latitude?: number
+): string | null {
+  const code = (country || '').toUpperCase();
+  if (code in SINGLE_ZONE_COUNTRY_IANA) {
+    return SINGLE_ZONE_COUNTRY_IANA[code];
+  }
+
+  const lon = typeof longitude === 'number' && Number.isFinite(longitude) ? longitude : undefined;
+  const lat = typeof latitude === 'number' && Number.isFinite(latitude) ? latitude : undefined;
+
+  if (code === 'US' && lon !== undefined) {
+    if (lon < -150) return 'Pacific/Honolulu';
+    if (lon < -130) return 'America/Anchorage';
+    if (lon < -114.5) return 'America/Los_Angeles';
+    if (lon < -102) return 'America/Denver';
+    if (lon < -85.5) return 'America/Chicago';
+    return 'America/New_York';
+  }
+  if (code === 'CA' && lon !== undefined) {
+    if (lon < -119) return 'America/Vancouver';
+    if (lon < -102) return 'America/Edmonton';
+    if (lon < -90) return 'America/Winnipeg';
+    if (lon < -66) return 'America/Toronto';
+    return 'America/Halifax';
+  }
+  if (code === 'AU' && lon !== undefined) {
+    if (lon < 129) return 'Australia/Perth';
+    if (lon < 141) return lat !== undefined && lat > -26 ? 'Australia/Darwin' : 'Australia/Adelaide';
+    return lat !== undefined && lat > -28.5 ? 'Australia/Brisbane' : 'Australia/Sydney';
+  }
+  if (code === 'RU' && lon !== undefined) {
+    if (lon < 52) return 'Europe/Moscow';
+    if (lon < 74) return 'Asia/Yekaterinburg';
+    if (lon < 105) return 'Asia/Novosibirsk';
+    if (lon < 126) return 'Asia/Irkutsk';
+    return 'Asia/Vladivostok';
+  }
+  if (code === 'BR' && lon !== undefined) {
+    if (lon < -53) return 'America/Manaus';
+    return 'America/Sao_Paulo';
+  }
+  if (code === 'MX' && lon !== undefined) {
+    if (lon < -112) return 'America/Tijuana';
+    if (lon < -105) return 'America/Hermosillo';
+    return 'America/Mexico_City';
+  }
+  if (code === 'ID' && lon !== undefined) {
+    if (lon < 115) return 'Asia/Jakarta';
+    if (lon < 128) return 'Asia/Makassar';
+    return 'Asia/Jayapura';
+  }
+
+  return null;
+}
+
+/**
+ * Format UTC epoch milliseconds into city local wall-clock time "YYYY-MM-DD HH:mm:ss"
+ * AND dynamic UTC offset label (e.g. "UTC+11" for Sydney in summer, "UTC-5" for NYC in winter).
+ */
+export function formatLocalTimeForCityWithTz(
+  observedAtMs: number,
+  country?: string,
+  longitude?: number,
+  latitude?: number
+): { localTime: string; timezoneOffset: string } {
+  const iana = resolveCityIanaTimezone(country, longitude, latitude);
+  if (iana) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: iana,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hourCycle: 'h23',
+        timeZoneName: 'shortOffset',
+      }).formatToParts(new Date(observedAtMs));
+
+      const get = (t: string) => parts.find((p) => p.type === t)?.value || '00';
+      const y = get('year');
+      const m = get('month');
+      const d = get('day');
+      const rawH = get('hour');
+      const h = rawH === '24' ? '00' : rawH;
+      const min = get('minute');
+      const s = get('second');
+      const tzPart = parts.find((p) => p.type === 'timeZoneName')?.value;
+      const timezoneOffset = extractUtcOffsetLabel(tzPart) || 'UTC+0';
+
+      return {
+        localTime: `${y}-${m}-${d} ${h}:${min}:${s}`,
+        timezoneOffset,
+      };
+    } catch {
+      // Fallback to longitude offset if runtime ICU lacks a zone
+    }
+  }
+
+  const offsetHours =
+    typeof longitude === 'number' && Number.isFinite(longitude)
+      ? Math.round(longitude / 15)
+      : 8;
+  const shifted = new Date(observedAtMs + offsetHours * 3600 * 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const sign = offsetHours >= 0 ? '+' : '';
+  return {
+    localTime: `${shifted.getUTCFullYear()}-${pad(shifted.getUTCMonth() + 1)}-${pad(
+      shifted.getUTCDate()
+    )} ${pad(shifted.getUTCHours())}:${pad(shifted.getUTCMinutes())}:${pad(
+      shifted.getUTCSeconds()
+    )}`,
+    timezoneOffset: `UTC${sign}${offsetHours}`,
+  };
+}
 
 export function formatLocalTimeForCity(
   observedAtMs: number,
   country?: string,
-  longitude?: number
+  longitude?: number,
+  latitude?: number
 ): string {
-  const code = (country || '').toUpperCase();
-  let offsetHours: number;
-  if (code in FIXED_COUNTRY_UTC_OFFSET_HOURS) {
-    offsetHours = FIXED_COUNTRY_UTC_OFFSET_HOURS[code];
-  } else if (typeof longitude === 'number' && Number.isFinite(longitude)) {
-    offsetHours = Math.round(longitude / 15);
-  } else {
-    offsetHours = 8;
-  }
+  return formatLocalTimeForCityWithTz(observedAtMs, country, longitude, latitude).localTime;
+}
 
-  const shifted = new Date(observedAtMs + offsetHours * 3600 * 1000);
+/**
+ * Validate whether an upstream `observedAtLocal` string's timezone offset is plausible for the city.
+ * Guards against upstream bugs (e.g. OpenAQ returning "+00:00" UTC as `datetime.local` for a UTC+8 or UTC-5 city).
+ */
+export function isPlausibleLocalOffsetForCity(
+  observedAtLocal: string | undefined | null,
+  observedAtMs: number,
+  country?: string,
+  longitude?: number,
+  latitude?: number
+): boolean {
+  if (!observedAtLocal) return false;
+  const upstreamLabel = extractUtcOffsetLabel(observedAtLocal);
+  const upstreamMin = parseUtcOffsetLabelMinutes(upstreamLabel);
+  if (upstreamMin === null) return true; // Naive local string with no offset -> trust upstream wall clock
+
+  const expected = formatLocalTimeForCityWithTz(observedAtMs, country, longitude, latitude);
+  const expectedMin = parseUtcOffsetLabelMinutes(expected.timezoneOffset);
+  if (expectedMin === null) return true;
+
+  // Allow up to 90 min difference for border cities / half-hour zones; reject > 2h discrepancy (e.g. UTC+0 vs UTC-5)
+  return Math.abs(upstreamMin - expectedMin) <= 90;
+}
+
+/**
+ * Format an observed UTC timestamp in the user's own browser local timezone for clear hover tooltips.
+ */
+export function formatInUserLocalTime(observedAtMs: number): { localTime: string; timezoneOffset: string } {
+  const d = new Date(observedAtMs);
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${shifted.getUTCFullYear()}-${pad(shifted.getUTCMonth() + 1)}-${pad(
-    shifted.getUTCDate()
-  )} ${pad(shifted.getUTCHours())}:${pad(shifted.getUTCMinutes())}:${pad(
-    shifted.getUTCSeconds()
-  )}`;
+  const offsetMin = -d.getTimezoneOffset();
+  const sign = offsetMin >= 0 ? '+' : '-';
+  const absMin = Math.abs(offsetMin);
+  const h = Math.floor(absMin / 60);
+  const m = absMin % 60;
+  const timezoneOffset =
+    h === 0 && m === 0
+      ? 'UTC+0'
+      : m > 0
+      ? `UTC${sign}${h}:${pad(m)}`
+      : `UTC${sign}${h}`;
+  return {
+    localTime: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
+      d.getHours()
+    )}:${pad(d.getMinutes())}`,
+    timezoneOffset,
+  };
 }
 
 /**

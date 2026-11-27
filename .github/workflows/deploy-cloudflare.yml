@@ -33,12 +33,23 @@ jobs:
 
       - name: 构建静态资源 (Static HTML Export)
         env:
-          NEXT_PUBLIC_WAQI_TOKEN: ${{ secrets.NEXT_PUBLIC_WAQI_TOKEN || '' }}
-          NEXT_PUBLIC_CARTO_KEY: ${{ secrets.NEXT_PUBLIC_CARTO_KEY || '' }}
+          NEXT_PUBLIC_WAQI_TOKEN: ${{ secrets.NEXT_PUBLIC_WAQI_TOKEN }}
+          NEXT_PUBLIC_CARTO_KEY: ${{ secrets.NEXT_PUBLIC_CARTO_KEY }}
         run: npm run build
 
+      - name: 检查 Cloudflare 部署密钥
+        id: cf-check
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$CF_API_TOKEN" ]; then
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: 发布至 Cloudflare Workers (Assets + KV + Cron)
-        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+        if: steps.cf-check.outputs.has_token == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -46,6 +57,6 @@ jobs:
           command: deploy
 
       - name: 提示 Cloudflare 托管状态
-        if: ${{ secrets.CLOUDFLARE_API_TOKEN == '' }}
+        if: steps.cf-check.outputs.has_token != 'true'
         run: |
           echo "::notice::未检测到 CLOUDFLARE_API_TOKEN，测试与静态构建已通过！若已启用 Cloudflare Workers Git 直连构建，Cloudflare 控制台将自动执行构建并发布 Worker + KV + Cron。"

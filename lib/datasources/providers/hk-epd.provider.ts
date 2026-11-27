@@ -169,7 +169,7 @@ export const hkEpdProvider: AirQualityProvider = {
           latitude: meta.lat,
           longitude: meta.lon,
           isOfficial: true,
-          freshness: computeFreshness(row.obsMs, ctx.nowMs),
+          freshness: computeFreshness(row.obsMs, ctx.nowMs, undefined, undefined, 'UTC+8'),
           pollutants: row.pollutants,
           rawUsAqi: evaluateAQI(row.pollutants, 'US').aqi,
           pm25IaqiUS: calculateUSIAQI(row.pollutants).pm25,
@@ -245,6 +245,9 @@ export const hkEpdProvider: AirQualityProvider = {
       return {
         points,
         isReal: true,
+        providerId: 'hk-epd',
+        providerName: '香港环保署',
+        timezoneOffset: 'UTC+8',
         source: `香港环保署 (${HK_EPD_STATION_META[targetName]?.nameZh || targetName}) 逐小时实测`,
       };
     },

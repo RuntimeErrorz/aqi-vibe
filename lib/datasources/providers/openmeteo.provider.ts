@@ -32,10 +32,15 @@ export const openMeteoProvider: AirQualityProvider = {
       const times: string[] = data?.hourly?.time || [];
       const pm25Arr: (number | null)[] = data?.hourly?.pm2_5 || [];
 
-      const now = new Date(ctx.nowMs);
-      const y = now.getFullYear();
-      const m = String(now.getMonth() + 1).padStart(2, '0');
-      const d = String(now.getDate()).padStart(2, '0');
+      // Use city local date via Open-Meteo's returned utc_offset_seconds (not Worker's UTC clock!)
+      const utcOffsetSec =
+        typeof data?.utc_offset_seconds === 'number' && Number.isFinite(data.utc_offset_seconds)
+          ? data.utc_offset_seconds
+          : Math.round(lon / 15) * 3600;
+      const cityNow = new Date(ctx.nowMs + utcOffsetSec * 1000);
+      const y = cityNow.getUTCFullYear();
+      const m = String(cityNow.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(cityNow.getUTCDate()).padStart(2, '0');
       const todayStr = `${y}-${m}-${d}`;
 
       const forecastMap: Record<string, number[]> = {};

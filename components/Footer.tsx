@@ -17,8 +17,18 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* 右侧：紧凑数据源外链 */}
-        <div className="flex items-center flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
+        <div className="flex items-center flex-wrap justify-center gap-x-2.5 gap-y-1 text-[11px] text-slate-400">
           <span className="text-slate-400">数据源:</span>
+          <a
+            href="https://www.qweather.com/"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
+          >
+            <span>和风天气</span>
+            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+          </a>
+          <span className="text-slate-200">/</span>
           <a
             href="https://waqi.info/"
             target="_blank"
@@ -26,6 +36,36 @@ export const Footer: React.FC = () => {
             className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
           >
             <span>WAQI</span>
+            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+          </a>
+          <span className="text-slate-200">/</span>
+          <a
+            href="https://openaq.org/"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
+          >
+            <span>OpenAQ</span>
+            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+          </a>
+          <span className="text-slate-200">/</span>
+          <a
+            href="https://www.aqhi.gov.hk/"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
+          >
+            <span>香港环保署</span>
+            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+          </a>
+          <span className="text-slate-200">/</span>
+          <a
+            href="https://open-meteo.com/"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
+          >
+            <span>Open-Meteo</span>
             <ExternalLink className="w-2.5 h-2.5 opacity-60" />
           </a>
           <span className="text-slate-200">/</span>
@@ -46,16 +86,6 @@ export const Footer: React.FC = () => {
             className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
           >
             <span>CNEMC</span>
-            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
-          </a>
-          <span className="text-slate-200">/</span>
-          <a
-            href="https://openaq.org/"
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
-          >
-            <span>OpenAQ</span>
             <ExternalLink className="w-2.5 h-2.5 opacity-60" />
           </a>
         </div>

@@ -12,6 +12,7 @@ interface TrendChartProps {
   city: string;
   isReal?: boolean;
   loading?: boolean;
+  timezoneOffset?: string;
 }
 
 const DEFAULT_SELECTED_MAP: Record<string, boolean> = {
@@ -24,7 +25,13 @@ const DEFAULT_SELECTED_MAP: Record<string, boolean> = {
   '一氧化碳 CO (mg/m³)': false,
 };
 
-export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = true, loading = false }) => {
+export const TrendChart: React.FC<TrendChartProps> = ({
+  data,
+  city,
+  isReal = true,
+  loading = false,
+  timezoneOffset,
+}) => {
   const { standard, onlyPm25 } = useStandard();
   const [mounted, setMounted] = useState(false);
   const [selectedHours, setSelectedHours] = useState<number>(24);
@@ -124,12 +131,14 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = tru
   const so2Vals = activePoints.map((d) => d.so2 ?? null);
   const coVals = activePoints.map((d) => d.co ?? null);
 
+  const hasO3 = activePoints.some((d) => d.o3 !== undefined && d.o3 > 0);
   const hasPm10 = activePoints.some((d) => d.pm10 !== undefined && d.pm10 > 0);
   const hasNo2 = activePoints.some((d) => d.no2 !== undefined && d.no2 > 0);
   const hasSo2 = activePoints.some((d) => d.so2 !== undefined && d.so2 > 0);
   const hasCo = activePoints.some((d) => d.co !== undefined && d.co > 0);
 
-  const legendData = [aqiSeriesName, 'PM2.5 (μg/m³)', '臭氧 O₃ (μg/m³)'];
+  const legendData = [aqiSeriesName, 'PM2.5 (μg/m³)'];
+  if (hasO3) legendData.push('臭氧 O₃ (μg/m³)');
   if (hasPm10) legendData.push('PM10 (μg/m³)');
   if (hasNo2) legendData.push('二氧化氮 NO₂ (μg/m³)');
   if (hasSo2) legendData.push('二氧化硫 SO₂ (μg/m³)');
@@ -218,7 +227,8 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, city, isReal = tru
         const idx = params[0].dataIndex;
         const isLatest = idx === hours.length - 1;
         const item = activePoints[idx];
-        const timeDisplay = item?.fullTime || params[0].name;
+        const rawTimeDisplay = item?.fullTime || params[0].name;
+        const timeDisplay = timezoneOffset ? `${rawTimeDisplay} (${timezoneOffset})` : rawTimeDisplay;
 
         let html = `<div style="font-weight: bold; margin-bottom: 6px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
           <span>${timeDisplay}</span>

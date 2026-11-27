@@ -16,7 +16,20 @@ export interface WaqiObsSeries {
 export function decodeWaqiObsSeries(obsItem?: WaqiObsSeries): { timestamp: number; value: number }[] {
   if (!obsItem || !obsItem.s || !Array.isArray(obsItem.v)) return [];
   const o = 1000 * (obsItem.d || 3600);
-  const startTime = new Date(obsItem.s.replace(/\//g, '-').replace(' ', 'T')).getTime();
+  // Parse wall-clock string strictly in UTC calendar space so Worker (TZ=UTC) and browsers in any
+  // timezone/DST spring-forward hour never shift or corrupt WAQI's city-local hourly timestamps.
+  const m = obsItem.s.trim().match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  const startTime = m
+    ? Date.UTC(
+        Number(m[1]),
+        Number(m[2]) - 1,
+        Number(m[3]),
+        Number(m[4]),
+        Number(m[5]),
+        Number(m[6] || 0)
+      )
+    : new Date(obsItem.s.replace(/\//g, '-').replace(' ', 'T')).getTime();
+  if (!Number.isFinite(startTime)) return [];
   const u = obsItem.m || 1;
 
   let l = startTime;
@@ -81,8 +94,8 @@ export function build24HourPointsFromWaqiObs(
 
   return seriesToProcess.map((pt) => {
     const d = new Date(pt.timestamp);
-    const hourLabel = String(d.getHours()).padStart(2, '0') + ':00';
-    const dayLabel = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const hourLabel = String(d.getUTCHours()).padStart(2, '0') + ':00';
+    const dayLabel = `${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
     const fullTimeLabel = `${dayLabel} ${hourLabel}`;
     
     // WAQI 解码出来的数值是原生美标 IAQI 分指数

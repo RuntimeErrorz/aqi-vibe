@@ -3,8 +3,11 @@ import { calculateCNIAQI, calculateUSIAQI, evaluateAQI } from '../../aqi-calcula
 import type { HourlyTrendPoint } from '../../services/realtime-trend';
 import {
   computeFreshness,
+  extractUtcOffsetLabel,
+  formatLocalTimeForCityWithTz,
   hasValidPollutants,
   hashStationIdToUid,
+  isPlausibleLocalOffsetForCity,
   parseObservedTimeMs,
 } from '../freshness';
 import { createTimeoutSignal, normalizePollutantUnit } from '../units';
@@ -142,18 +145,30 @@ export const openaqProvider: AirQualityProvider = {
               if (normalizedVal === undefined || normalizedVal <= 0) continue;
 
               const obsMs = parseObservedTimeMs(m?.datetime?.utc || m?.datetime?.local);
-              if (obsMs && obsMs > latestMs) {
+              // Only accept measurements within 24h (and not >15m in the future) to prevent legacy/bogus sensor contamination
+              if (!obsMs || ctx.nowMs - obsMs > 24 * 3600 * 1000 || obsMs - ctx.nowMs > 15 * 60 * 1000) {
+                continue;
+              }
+              pollutants[key] = normalizedVal;
+              if (obsMs > latestMs) {
                 latestMs = obsMs;
                 latestLocal = typeof m?.datetime?.local === 'string' ? m.datetime.local : undefined;
-              }
-
-              // Only accept measurements within 24h to prevent legacy sensor contamination
-              if (obsMs && ctx.nowMs - obsMs <= 24 * 3600 * 1000) {
-                pollutants[key] = normalizedVal;
               }
             }
 
             if (!hasValidPollutants(pollutants)) return;
+
+            const lat = Number(loc?.coordinates?.latitude ?? city.latitude);
+            const lon = Number(loc?.coordinates?.longitude ?? city.longitude);
+            const useUpstreamLocal =
+              latestMs > 0 &&
+              isPlausibleLocalOffsetForCity(latestLocal, latestMs, city.country, lon, lat);
+            const fallbackLocal =
+              latestMs > 0 ? formatLocalTimeForCityWithTz(latestMs, city.country, lon, lat) : null;
+            const resolvedLocal = useUpstreamLocal ? latestLocal : fallbackLocal?.localTime;
+            const resolvedTz = useUpstreamLocal
+              ? extractUtcOffsetLabel(latestLocal) || fallbackLocal?.timezoneOffset
+              : fallbackLocal?.timezoneOffset;
 
             const canonicalId = `openaq:${locId}` as const;
             stations.push({
@@ -162,10 +177,10 @@ export const openaqProvider: AirQualityProvider = {
               rawId: String(locId),
               numericUid: hashStationIdToUid(canonicalId),
               name: loc.name || loc.locality || `OpenAQ #${locId}`,
-              latitude: Number(loc?.coordinates?.latitude ?? city.latitude),
-              longitude: Number(loc?.coordinates?.longitude ?? city.longitude),
+              latitude: lat,
+              longitude: lon,
               isOfficial: Boolean(loc.isMonitor ?? true),
-              freshness: computeFreshness(latestMs || null, ctx.nowMs, undefined, latestLocal),
+              freshness: computeFreshness(latestMs || null, ctx.nowMs, undefined, resolvedLocal, resolvedTz),
               pollutants,
               rawUsAqi: evaluateAQI(pollutants, 'US').aqi,
               pm25IaqiUS: calculateUSIAQI(pollutants).pm25,
@@ -198,36 +213,82 @@ export const openaqProvider: AirQualityProvider = {
       const headers = { 'X-API-Key': apiKey, Accept: 'application/json' };
       const timeoutMs = ctx.timeoutMs ?? 5000;
 
-      // Find nearest location with a pm25 sensor
-      const locUrl = `${OPENAQ_BASE}/locations?coordinates=${query.city.latitude.toFixed(4)},${query.city.longitude.toFixed(4)}&radius=25000&limit=5`;
-      const locRes = await ctx.fetchImpl(locUrl, {
-        headers,
-        signal: createTimeoutSignal(timeoutMs, ctx.signal),
-      });
-      if (!locRes.ok) return null;
-
-      const locJson = (await locRes.json()) as any;
-      const locations: any[] = Array.isArray(locJson?.results) ? locJson.results : [];
       let pm25SensorId: number | null = null;
       let stationLabel = query.city.nameZh;
+      let stationLat = query.city.latitude;
+      let stationLon = query.city.longitude;
 
-      for (const loc of locations) {
-        if (!Array.isArray(loc?.sensors)) continue;
-        const pm25Sensor = loc.sensors.find(
-          (s: any) => mapOpenAqParam(String(s?.parameter?.name || '')) === 'pm25'
-        );
-        if (pm25Sensor?.id) {
-          pm25SensorId = pm25Sensor.id;
-          stationLabel = loc.name || stationLabel;
-          break;
+      // 1. If a specific OpenAQ location ID was requested, inspect its sensors directly first
+      if (query.stationRawId && /^\d+$/.test(query.stationRawId)) {
+        try {
+          const singleRes = await ctx.fetchImpl(`${OPENAQ_BASE}/locations/${query.stationRawId}`, {
+            headers,
+            signal: createTimeoutSignal(timeoutMs, ctx.signal),
+          });
+          if (singleRes.ok) {
+            const singleJson = (await singleRes.json()) as any;
+            const loc = Array.isArray(singleJson?.results) ? singleJson.results[0] : null;
+            const pm25Sensor = Array.isArray(loc?.sensors)
+              ? loc.sensors.find((s: any) => mapOpenAqParam(String(s?.parameter?.name || '')) === 'pm25')
+              : null;
+            if (pm25Sensor?.id) {
+              pm25SensorId = pm25Sensor.id;
+              stationLabel = loc.name || stationLabel;
+              stationLat = Number(loc?.coordinates?.latitude ?? stationLat);
+              stationLon = Number(loc?.coordinates?.longitude ?? stationLon);
+            }
+          }
+        } catch {
+          // Fall through to coordinate search
+        }
+      }
+
+      // 2. Otherwise find the freshest reference-grade location within 25km with an active pm25 sensor
+      if (!pm25SensorId) {
+        const locUrl = `${OPENAQ_BASE}/locations?coordinates=${query.city.latitude.toFixed(4)},${query.city.longitude.toFixed(4)}&radius=25000&limit=12`;
+        const locRes = await ctx.fetchImpl(locUrl, {
+          headers,
+          signal: createTimeoutSignal(timeoutMs, ctx.signal),
+        });
+        if (!locRes.ok) return null;
+
+        const locJson = (await locRes.json()) as any;
+        const locations: any[] = Array.isArray(locJson?.results) ? locJson.results : [];
+        const freshSorted = locations
+          .filter((loc) => {
+            const lastMs = parseObservedTimeMs(loc?.datetimeLast?.utc);
+            return !lastMs || ctx.nowMs - lastMs <= 24 * 3600 * 1000;
+          })
+          .sort((a, b) => {
+            const aMon = a?.isMonitor ? 1 : 0;
+            const bMon = b?.isMonitor ? 1 : 0;
+            if (aMon !== bMon) return bMon - aMon;
+            const aMs = parseObservedTimeMs(a?.datetimeLast?.utc) ?? 0;
+            const bMs = parseObservedTimeMs(b?.datetimeLast?.utc) ?? 0;
+            return bMs - aMs;
+          });
+
+        for (const loc of freshSorted) {
+          if (!Array.isArray(loc?.sensors)) continue;
+          const pm25Sensor = loc.sensors.find(
+            (s: any) => mapOpenAqParam(String(s?.parameter?.name || '')) === 'pm25'
+          );
+          if (pm25Sensor?.id) {
+            pm25SensorId = pm25Sensor.id;
+            stationLabel = loc.name || stationLabel;
+            stationLat = Number(loc?.coordinates?.latitude ?? stationLat);
+            stationLon = Number(loc?.coordinates?.longitude ?? stationLon);
+            break;
+          }
         }
       }
 
       if (!pm25SensorId) return null;
 
-      const dateFrom = new Date(ctx.nowMs - 36 * 3600 * 1000).toISOString();
+      // Request up to 78 hours so 24h / 48h / 72h UI toggles all have full real observations
+      const dateFrom = new Date(ctx.nowMs - 78 * 3600 * 1000).toISOString();
       const hoursRes = await ctx.fetchImpl(
-        `${OPENAQ_BASE}/sensors/${pm25SensorId}/hours?datetime_from=${encodeURIComponent(dateFrom)}&limit=48`,
+        `${OPENAQ_BASE}/sensors/${pm25SensorId}/hours?datetime_from=${encodeURIComponent(dateFrom)}&limit=80`,
         {
           headers,
           signal: createTimeoutSignal(timeoutMs, ctx.signal),
@@ -240,13 +301,53 @@ export const openaqProvider: AirQualityProvider = {
       if (results.length < 3) return null;
 
       const points: HourlyTrendPoint[] = [];
+      let timezoneOffset: string | undefined;
+
       for (const r of results) {
         const pm25 = normalizePollutantUnit('pm25', Number(r?.value), r?.parameter?.units);
         if (pm25 === undefined || pm25 <= 0) continue;
-        const localStr = String(r?.period?.datetimeTo?.local || r?.period?.datetimeFrom?.local || '');
-        const match = localStr.match(/(\d{2}-\d{2})T(\d{2}:\d{2})/);
-        const hour = match ? match[2] : localStr.slice(11, 16);
-        const fullTime = match ? `${match[1]} ${match[2]}` : localStr;
+
+        const rawLocal = String(r?.period?.datetimeTo?.local || r?.period?.datetimeFrom?.local || '');
+        const rawUtc = r?.period?.datetimeTo?.utc || r?.period?.datetimeFrom?.utc;
+        const obsMs = parseObservedTimeMs(rawUtc || rawLocal);
+
+        let hour = '';
+        let fullTime = '';
+
+        if (
+          obsMs &&
+          !isPlausibleLocalOffsetForCity(rawLocal, obsMs, query.city.country, stationLon, stationLat)
+        ) {
+          // Guard against OpenAQ feeds returning UTC "+00:00" as local time for non-UTC cities
+          const formatted = formatLocalTimeForCityWithTz(
+            obsMs,
+            query.city.country,
+            stationLon,
+            stationLat
+          );
+          timezoneOffset = formatted.timezoneOffset;
+          hour = formatted.localTime.slice(11, 16);
+          fullTime = formatted.localTime.slice(5, 16);
+        } else {
+          const match = rawLocal.match(/(\d{2}-\d{2})T(\d{2}:\d{2})/);
+          if (match) {
+            hour = match[2];
+            fullTime = `${match[1]} ${match[2]}`;
+            timezoneOffset = extractUtcOffsetLabel(rawLocal) || timezoneOffset;
+          } else if (obsMs) {
+            const formatted = formatLocalTimeForCityWithTz(
+              obsMs,
+              query.city.country,
+              stationLon,
+              stationLat
+            );
+            timezoneOffset = formatted.timezoneOffset;
+            hour = formatted.localTime.slice(11, 16);
+            fullTime = formatted.localTime.slice(5, 16);
+          } else {
+            continue;
+          }
+        }
 
         const ev = evaluateAQI({ pm25 }, query.standard, true);
         const iaqi =
@@ -265,8 +366,14 @@ export const openaqProvider: AirQualityProvider = {
 
       if (points.length < 3) return null;
       return {
-        points: points.slice(-24),
+        points: points.slice(-72),
         isReal: true,
+        providerId: 'openaq',
+        providerName: 'OpenAQ',
+        timezoneOffset:
+          timezoneOffset ||
+          formatLocalTimeForCityWithTz(ctx.nowMs, query.city.country, stationLon, stationLat)
+            .timezoneOffset,
         source: `OpenAQ (${stationLabel}) 逐小时实测`,
       };
     },

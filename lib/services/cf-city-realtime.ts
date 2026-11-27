@@ -21,6 +21,7 @@ import {
 import { DEFAULT_WAQI_TOKENS } from './cf-ranking-engine';
 import {
   computeFreshness,
+  extractUtcOffsetLabel,
   fetchCityRealtimeMultiSource,
   isSameSovereignCountry,
   parseObservedTimeMs,
@@ -106,7 +107,14 @@ export function parseWaqiStationResponse(
   const geo = data.city?.geo || [cityMeta.latitude, cityMeta.longitude];
   const isNoLiveData = data.aqi === '-' || data.aqi === null || data.aqi === undefined;
   const obsMs = parseObservedTimeMs(data.time?.iso || data.time?.s, data.time?.tz);
-  const freshness = computeFreshness(obsMs, nowMs);
+  const tzLabel = extractUtcOffsetLabel(data.time?.tz || data.time?.iso);
+  const freshness = computeFreshness(
+    obsMs,
+    nowMs,
+    undefined,
+    data.time?.iso || data.time?.s || undefined,
+    tzLabel
+  );
   const provenance: DataProvenance = {
     providerId: 'waqi',
     providerName: 'WAQI',

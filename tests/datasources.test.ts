@@ -5,6 +5,8 @@ import type { WaqiBoundStation } from '@/lib/services/waqi';
 import {
   computeFreshness,
   formatDelayBadge,
+  formatLocalTimeForCityWithTz,
+  isPlausibleLocalOffsetForCity,
   isSameSovereignCountry,
   parseObservedTimeMs,
   pruneStaleStations,
@@ -675,5 +677,171 @@ describe('Individual Data Source Provider Adapters', () => {
     expect(res.status).toBe(200);
     expect(observedThis).toBeUndefined();
     expect(observedInit).toEqual({ method: 'GET' });
+  });
+
+  it('resolves DST-accurate IANA local time and UTC offset (Sydney AEDT/AEST, NYC EST/EDT, London GMT/BST, India +5:30)', () => {
+    const novUtc = Date.parse('2026-11-27T10:00:00Z');
+    const julUtc = Date.parse('2026-07-15T10:00:00Z');
+
+    // Sydney: AEDT (UTC+11) in Nov -> 21:00; AEST (UTC+10) in Jul -> 20:00
+    expect(formatLocalTimeForCityWithTz(novUtc, 'AU', 151.2093, -33.8688)).toEqual({
+      localTime: '2026-11-27 21:00:00',
+      timezoneOffset: 'UTC+11',
+    });
+    expect(formatLocalTimeForCityWithTz(julUtc, 'AU', 151.2093, -33.8688)).toEqual({
+      localTime: '2026-07-15 20:00:00',
+      timezoneOffset: 'UTC+10',
+    });
+
+    // New York: EST (UTC-5) in Nov -> 05:00; EDT (UTC-4) in Jul -> 06:00
+    expect(formatLocalTimeForCityWithTz(novUtc, 'US', -74.006, 40.7128)).toEqual({
+      localTime: '2026-11-27 05:00:00',
+      timezoneOffset: 'UTC-5',
+    });
+    expect(formatLocalTimeForCityWithTz(julUtc, 'US', -74.006, 40.7128)).toEqual({
+      localTime: '2026-07-15 06:00:00',
+      timezoneOffset: 'UTC-4',
+    });
+
+    // London: GMT (UTC+0) in Nov -> 10:00; BST (UTC+1) in Jul -> 11:00
+    expect(formatLocalTimeForCityWithTz(novUtc, 'GB', -0.1276, 51.5072)).toEqual({
+      localTime: '2026-11-27 10:00:00',
+      timezoneOffset: 'UTC+0',
+    });
+    expect(formatLocalTimeForCityWithTz(julUtc, 'GB', -0.1276, 51.5072)).toEqual({
+      localTime: '2026-07-15 11:00:00',
+      timezoneOffset: 'UTC+1',
+    });
+
+    // India half-hour offset: UTC+5:30
+    expect(formatLocalTimeForCityWithTz(novUtc, 'IN', 77.209, 28.6139)).toEqual({
+      localTime: '2026-11-27 15:30:00',
+      timezoneOffset: 'UTC+5:30',
+    });
+  });
+
+  it('guards OpenAQ realtime & hourly trend against bogus +00:00 UTC local strings in non-UTC cities', async () => {
+    const nyc = findCity('gl-newyork')!;
+    const novUtc = Date.parse('2026-11-27T09:00:00Z');
+    // Bogus UTC "+00:00" for New York must be flagged implausible, while "-05:00" is plausible
+    expect(isPlausibleLocalOffsetForCity('2026-11-27T09:00:00+00:00', novUtc, 'US', -74.006, 40.7128)).toBe(false);
+    expect(isPlausibleLocalOffsetForCity('2026-11-27T04:00:00-05:00', novUtc, 'US', -74.006, 40.7128)).toBe(true);
+
+    const mockFetch: typeof fetch = async (input) => {
+      const url = String(input);
+      if (url.includes('/locations?')) {
+        return new Response(
+          JSON.stringify({
+            results: [
+              {
+                id: 999,
+                name: 'NY Midtown Monitor',
+                isMonitor: true,
+                coordinates: { latitude: 40.75, longitude: -73.98 },
+                datetimeLast: { utc: '2026-11-27T09:00:00Z' },
+                sensors: [{ id: 5555, parameter: { name: 'pm25', units: 'µg/m³' } }],
+              },
+            ],
+          }),
+          { status: 200 }
+        );
+      }
+      if (url.includes('/locations/999/latest')) {
+        return new Response(
+          JSON.stringify({
+            results: [
+              {
+                sensorsId: 5555,
+                value: 11.2,
+                datetime: { utc: '2026-11-27T09:00:00Z', local: '2026-11-27T09:00:00+00:00' },
+              },
+            ],
+          }),
+          { status: 200 }
+        );
+      }
+      if (url.includes('/sensors/5555/hours')) {
+        return new Response(
+          JSON.stringify({
+            results: [
+              {
+                value: 10.1,
+                parameter: { units: 'µg/m³' },
+                period: {
+                  datetimeTo: { utc: '2026-11-27T07:00:00Z', local: '2026-11-27T07:00:00+00:00' },
+                },
+              },
+              {
+                value: 10.8,
+                parameter: { units: 'µg/m³' },
+                period: {
+                  datetimeTo: { utc: '2026-11-27T08:00:00Z', local: '2026-11-27T08:00:00+00:00' },
+                },
+              },
+              {
+                value: 11.2,
+                parameter: { units: 'µg/m³' },
+                period: {
+                  datetimeTo: { utc: '2026-11-27T09:00:00Z', local: '2026-11-27T09:00:00+00:00' },
+                },
+              },
+            ],
+          }),
+          { status: 200 }
+        );
+      }
+      return new Response('Not Found', { status: 404 });
+    };
+
+    const ctx: ProviderRuntimeContext = {
+      env: { openaqApiKey: 'test-key' },
+      fetchImpl: mockFetch,
+      nowMs: Date.parse('2026-11-27T09:40:00Z'),
+      isServer: true,
+    };
+
+    const snap = await openaqProvider.realtime!.fetchCitySnapshot(nyc, ctx);
+    expect(snap?.stations[0].freshness?.observedAtLocal).toBe('2026-11-27 04:00:00');
+    expect(snap?.stations[0].freshness?.timezoneOffset).toBe('UTC-5');
+
+    const trend = await openaqProvider.hourlyTrend!.fetchHourlyTrend({ city: nyc, standard: 'US' }, ctx);
+    expect(trend?.isReal).toBe(true);
+    expect(trend?.providerId).toBe('openaq');
+    expect(trend?.timezoneOffset).toBe('UTC-5');
+    expect(trend?.points.map((p) => p.fullTime)).toEqual([
+      '11-27 02:00',
+      '11-27 03:00',
+      '11-27 04:00',
+    ]);
+  });
+
+  it('computes Open-Meteo 5-day forecast today boundary using city utc_offset_seconds rather than Worker UTC clock', async () => {
+    // Worker UTC clock is 2026-11-27 02:00Z, which is STILL 2026-11-26 21:00 EST in New York!
+    const mockFetch: typeof fetch = async () =>
+      new Response(
+        JSON.stringify({
+          utc_offset_seconds: -18000, // UTC-5
+          hourly: {
+            time: [
+              '2026-11-26T20:00',
+              '2026-11-26T21:00',
+              '2026-11-27T12:00',
+              '2026-11-28T12:00',
+            ],
+            pm2_5: [12, 14, 18, 20],
+          },
+        }),
+        { status: 200 }
+      );
+
+    const res = await openMeteoProvider.forecast!.fetch5DayForecast(40.7128, -74.006, {
+      env: {},
+      fetchImpl: mockFetch,
+      nowMs: Date.parse('2026-11-27T02:00:00Z'),
+      isServer: true,
+    });
+
+    expect(res?.list[0].day).toBe('2026-11-26');
+    expect(res?.list.length).toBe(3);
   });
 });

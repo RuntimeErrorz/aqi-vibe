@@ -25,9 +25,11 @@ import type { HourlyTrendResult } from '../services/realtime-trend';
 import {
   computeFreshness,
   DEFAULT_STALE_THRESHOLD_MIN,
+  extractUtcOffsetLabel,
   formatDisplayTimeFromIso,
-  formatLocalTimeForCity,
+  formatLocalTimeForCityWithTz,
   hasValidPollutants,
+  isPlausibleLocalOffsetForCity,
   isSameSovereignCountry,
   pruneStaleStations,
   sortStationsByFreshnessAndDistance,
@@ -224,11 +226,38 @@ function buildRecordFromSample(
     evaluationCN = evaluateAQI({ pm25: estPm25 }, 'CN');
   }
 
-  const updateTime = sample.freshness?.observedAtLocal
-    ? formatDisplayTimeFromIso(sample.freshness.observedAtLocal)
-    : sample.freshness?.observedAtMs
-    ? formatLocalTimeForCity(sample.freshness.observedAtMs, city.country, city.longitude)
-    : formatLocalTimeForCity(Date.now(), city.country, city.longitude);
+  const obsMs = sample.freshness?.observedAtMs;
+  const fallbackCityTime = formatLocalTimeForCityWithTz(
+    obsMs || Date.now(),
+    city.country,
+    city.longitude,
+    city.latitude
+  );
+  const canUseUpstreamLocal = Boolean(
+    sample.freshness?.observedAtLocal &&
+      (!obsMs ||
+        isPlausibleLocalOffsetForCity(
+          sample.freshness.observedAtLocal,
+          obsMs,
+          city.country,
+          city.longitude,
+          city.latitude
+        ))
+  );
+  const updateTime = canUseUpstreamLocal
+    ? formatDisplayTimeFromIso(sample.freshness!.observedAtLocal!)
+    : fallbackCityTime.localTime;
+  const timezoneOffset = canUseUpstreamLocal
+    ? sample.freshness?.timezoneOffset ||
+      extractUtcOffsetLabel(sample.freshness?.observedAtLocal) ||
+      fallbackCityTime.timezoneOffset
+    : fallbackCityTime.timezoneOffset;
+  const resolvedFreshness: FreshnessMeta | undefined = sample.freshness
+    ? {
+        ...sample.freshness,
+        timezoneOffset,
+      }
+    : undefined;
 
   return {
     id: city.id,
@@ -250,7 +279,7 @@ function buildRecordFromSample(
     weather: sample.weather,
     forecast: snapshot.forecast,
     sourceAttribution: snapshot.attributions,
-    freshness: sample.freshness,
+    freshness: resolvedFreshness,
     provenance,
   };
 }
@@ -578,20 +607,21 @@ export class DataSourceOrchestrator {
       provenance,
       best.snapshot
     );
+    const resolvedFreshness = baseRecord.freshness ?? best.freshness;
 
     const compositeStations = best.stations.map(toStationCompositeSample);
     let compositeRecord =
       compositeStations.length > 0
         ? {
             ...aggregateCompositeRecord(baseRecord, compositeStations, city, 'CN', false),
-            freshness: best.freshness,
+            freshness: resolvedFreshness,
             provenance,
           }
         : {
             ...baseRecord,
             id: `${city.id}-composite`,
             compositeStationCount: 1,
-            freshness: best.freshness,
+            freshness: resolvedFreshness,
             provenance,
           };
 
@@ -660,7 +690,7 @@ export class DataSourceOrchestrator {
         compositeRecord.compositeStationCount || Math.max(1, finalStations.length),
       updatedAt: new Date(ctx.nowMs).toISOString(),
       provenance,
-      freshness: best.freshness,
+      freshness: resolvedFreshness,
     };
   }
 
@@ -709,7 +739,18 @@ export class DataSourceOrchestrator {
         );
         if (res && res.points.length >= 3) {
           this.registry.breaker.recordSuccess(provider.id);
-          return res;
+          const fallbackTz = formatLocalTimeForCityWithTz(
+            ctx.nowMs,
+            query.city.country,
+            query.city.longitude,
+            query.city.latitude
+          ).timezoneOffset;
+          return {
+            ...res,
+            providerId: res.providerId ?? provider.id,
+            providerName: res.providerName ?? provider.shortName,
+            timezoneOffset: res.timezoneOffset ?? fallbackTz,
+          };
         }
       } catch (err: any) {
         this.registry.breaker.recordFailure(provider.id, {

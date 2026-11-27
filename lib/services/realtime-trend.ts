@@ -27,6 +27,9 @@ export interface HourlyTrendResult {
   points: HourlyTrendPoint[];
   isReal: boolean;
   source: string;
+  providerId?: ProviderId;
+  providerName?: string;
+  timezoneOffset?: string;
   forecast?: ForecastDay[];
 }
 
@@ -101,7 +104,9 @@ export async function fetch24HourHourlyTrend(
           return {
             points: edgePoints,
             isReal: true,
-            source: '官方测站逐小时实测',
+            providerId: 'waqi',
+            providerName: 'WAQI',
+            source: 'WAQI 官方测站逐小时实测',
           };
         })()
       );
@@ -117,7 +122,9 @@ export async function fetch24HourHourlyTrend(
         return {
           points: directPoints,
           isReal: true,
-          source: '官方测站逐小时实测',
+          providerId: 'waqi',
+          providerName: 'WAQI',
+          source: 'WAQI 官方测站逐小时实测',
         };
       })()
     );

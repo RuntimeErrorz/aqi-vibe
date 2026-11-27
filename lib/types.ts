@@ -21,6 +21,7 @@ export interface FreshnessMeta {
   observedAtMs: number;
   observedAtIso: string;
   observedAtLocal?: string;
+  timezoneOffset?: string; // e.g. "UTC+8", "UTC-5", "UTC+11", "UTC+5:30"
   delayMinutes: number;
   isStale: boolean;
   fetchedAtMs: number;

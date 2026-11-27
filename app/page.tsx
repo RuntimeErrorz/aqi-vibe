@@ -27,7 +27,10 @@ import {
   HourlyTrendResult,
 } from '@/lib/services/realtime-trend';
 import {
+  computeFreshness,
   formatDelayBadge,
+  formatInUserLocalTime,
+  formatLocalTimeForCityWithTz,
   PROVIDER_SHORT_LABELS,
 } from '@/lib/datasources';
 import {
@@ -215,12 +218,9 @@ function DashboardPageContent() {
       setRecord(compRecord);
       reportCityCompositeRecord(targetCity.id, compRecord);
 
-      // 逐小时曲线严格呈现市中心官方基准站真实逐小时实测，绝不对实测曲线做比例缩放伪造
+      // 逐小时曲线严格呈现市中心官方基准站真实逐小时实测，绝不对实测曲线做比例缩放伪造，同时完整保留真实数据源名称
       if (baseTrendResult && baseTrendResult.points.length > 0) {
-        setTrendResult({
-          ...baseTrendResult,
-          source: '市中心基准站逐小时实测',
-        });
+        setTrendResult(baseTrendResult);
       } else {
         const baseTrend = await fetch24HourHourlyTrend(
           targetCity.latitude,
@@ -235,10 +235,7 @@ function DashboardPageContent() {
         );
         if (requestIdRef.current !== activeReqId) return;
         setBaseTrendResult(baseTrend);
-        setTrendResult({
-          ...baseTrend,
-          source: baseTrend.isReal ? '市中心基准站逐小时实测' : baseTrend.source,
-        });
+        setTrendResult(baseTrend);
       }
       return;
     }
@@ -259,13 +256,34 @@ function DashboardPageContent() {
         if (stationProviderId && stationProviderId !== 'waqi' && found?.pollutants) {
           // 非 WAQI 源（如香港环保署/OpenAQ/台湾环境部）测站已自带完整物理浓度，直接无额外网络开销构建单站记录
           const stPollutants = found.pollutants;
+          const stObsMs =
+            typeof (found as any)?.observedAtMs === 'number'
+              ? ((found as any).observedAtMs as number)
+              : targetRecord.freshness?.observedAtMs;
+          const stLat = found.lat || targetCity.latitude;
+          const stLon = found.lon || targetCity.longitude;
+          const stTimeInfo = stObsMs
+            ? formatLocalTimeForCityWithTz(stObsMs, targetCity.country, stLon, stLat)
+            : null;
+          const stFreshness = stObsMs
+            ? computeFreshness(
+                stObsMs,
+                Date.now(),
+                undefined,
+                stTimeInfo?.localTime,
+                stTimeInfo?.timezoneOffset
+              )
+            : targetRecord.freshness;
+
           stationData = {
             ...targetRecord,
             id: `${targetCity.id}-${uidNum}`,
             name: targetCity.nameZh,
             stationIdx: undefined,
-            latitude: found.lat || targetCity.latitude,
-            longitude: found.lon || targetCity.longitude,
+            latitude: stLat,
+            longitude: stLon,
+            updateTime: stTimeInfo?.localTime || targetRecord.updateTime,
+            freshness: stFreshness,
             pollutants: stPollutants,
             iaqi: standard === 'CN' ? calculateCNIAQI(stPollutants) : calculateUSIAQI(stPollutants),
             iaqiCN: calculateCNIAQI(stPollutants),
@@ -306,7 +324,7 @@ function DashboardPageContent() {
           if (baseTrendResult && baseTrendResult.points.length > 0) {
             trend = {
               ...baseTrendResult,
-              source: `${cleanName || '该子站'}无独立小时流 · 展示本市基准站逐小时实测`,
+              source: `${cleanName || '该子站'}无独立小时流 · 展示${baseTrendResult.source}`,
             };
           } else if (targetRecord.stationIdx) {
             const fallbackTrend = await fetch24HourHourlyTrend(
@@ -317,14 +335,15 @@ function DashboardPageContent() {
               0,
               0,
               stationData.updateTime,
-              targetRecord.stationIdx
+              targetRecord.stationIdx,
+              { cityId: targetCity.id, providerId: targetRecord.provenance?.providerId }
             );
             if (requestIdRef.current !== activeReqId) return;
             if (fallbackTrend.points.length > 0) {
               setBaseTrendResult(fallbackTrend);
               trend = {
                 ...fallbackTrend,
-                source: `${cleanName || '该子站'}无独立小时流 · 展示本市基准站逐小时实测`,
+                source: `${cleanName || '该子站'}无独立小时流 · 展示${fallbackTrend.source}`,
               };
             }
           }
@@ -544,14 +563,7 @@ function DashboardPageContent() {
         trendTask.then((trend) => {
           if (requestIdRef.current !== reqId) return;
           setBaseTrendResult(trend);
-          setTrendResult(
-            targetMode === 'composite'
-              ? {
-                  ...trend,
-                  source: trend.isReal ? '市中心基准站逐小时实测' : trend.source,
-                }
-              : trend
-          );
+          setTrendResult(trend);
           setTrendLoading(false);
         });
       } else {
@@ -561,7 +573,7 @@ function DashboardPageContent() {
       if (requestIdRef.current !== reqId) return;
       console.warn('Failed to load city data', err);
       setRecord(null);
-      setLoadError(err?.message || '该站点当前暂无 WAQI 实时监测数据发布');
+      setLoadError(err?.message || '该城市当前暂无官方实时监测数据发布');
       setLoading(false);
       setTrendLoading(false);
       setForecastLoading(false);
@@ -712,6 +724,22 @@ function DashboardPageContent() {
     () => cityStations.filter((s) => s.pm25 !== undefined && s.pm25 > 0).length,
     [cityStations]
   );
+
+  // 判断当前城市主实况是否为 1x1km 融合网格源（如和风天气），此时下拉列表中的 WAQI 微站仅供单站钻取，绝非均值分母
+  const isFusionCityMode = useMemo(() => {
+    const prov = baseCityRecord?.provenance;
+    if (!prov) return false;
+    const sameSourceCount = cityStations.filter(
+      (s) => !(s as any).providerId || (s as any).providerId === prov.providerId
+    ).length;
+    return prov.tier === 'station-grid-fusion' && sameSourceCount === 0;
+  }, [baseCityRecord, cityStations]);
+
+  const auxStationsProviderLabel = useMemo(() => {
+    const firstProv = (cityStations[0] as any)?.providerId as import('@/lib/types').ProviderId | undefined;
+    if (!firstProv || firstProv === baseCityRecord?.provenance?.providerId) return null;
+    return PROVIDER_SHORT_LABELS[firstProv] || firstProv;
+  }, [cityStations, baseCityRecord]);
 
   // 根据当前标准动态呈现一级优限值参考（紧凑文案杜绝 375px 折行截断）
   const pollutantCards = useMemo(() => {
@@ -895,7 +923,9 @@ function DashboardPageContent() {
 
                       <span className="truncate max-w-[140px] xs:max-w-[170px] sm:max-w-[200px]">
                         {selectedStationMode === 'composite'
-                          ? enrichedPm25Count > 0 && enrichedPm25Count < cityStations.length
+                          ? isFusionCityMode
+                            ? '城区融合观测'
+                            : enrichedPm25Count > 0 && enrichedPm25Count < cityStations.length
                             ? `核心城区均值 (${enrichedPm25Count}/${cityStations.length}站)`
                             : `全城均值 (${enrichedPm25Count || cityStations.length || 1}站)`
                           : (() => {
@@ -943,12 +973,16 @@ function DashboardPageContent() {
                               <div className="min-w-0">
                                 <div className="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
                                   <span>
-                                    {enrichedPm25Count > 0 && enrichedPm25Count < cityStations.length
+                                    {isFusionCityMode
+                                      ? '城区融合实况'
+                                      : enrichedPm25Count > 0 && enrichedPm25Count < cityStations.length
                                       ? '核心城区多站均值'
                                       : '全城多站均值'}
                                   </span>
                                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
-                                    {enrichedPm25Count > 0 && enrichedPm25Count < cityStations.length
+                                    {isFusionCityMode
+                                      ? '1×1km 融合'
+                                      : enrichedPm25Count > 0 && enrichedPm25Count < cityStations.length
                                       ? `${enrichedPm25Count}/${cityStations.length}站`
                                       : `${enrichedPm25Count || cityStations.length || 1}站`}
                                   </span>
@@ -980,8 +1014,16 @@ function DashboardPageContent() {
                               return (
                                 <div className="mt-2 pt-2 border-t border-slate-100">
                                   <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-slate-400">
-                                    <span>本地国控微站明细 ({stationsWithDist.length})</span>
-                                    <span className="text-[10px] text-slate-400 font-normal">单站独立实测</span>
+                                    <span>
+                                      {selectedCity.country === 'CN'
+                                        ? `本地国控微站明细 (${stationsWithDist.length})`
+                                        : `本地官方监测站明细 (${stationsWithDist.length})`}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-normal">
+                                      {auxStationsProviderLabel
+                                        ? `单站实测 · ${auxStationsProviderLabel}`
+                                        : '单站独立实测'}
+                                    </span>
                                   </div>
                                   <div className="max-h-52 overflow-y-auto space-y-0.5 pr-1 mt-1 custom-scrollbar">
                                     {stationsWithDist.map((st, idx) => {
@@ -1042,7 +1084,36 @@ function DashboardPageContent() {
                 <div className="text-xs text-slate-500 mt-1.5 flex items-center space-x-1.5 flex-wrap gap-y-1">
                   <span>{selectedCity.nameEn}</span>
                   <span>·</span>
-                  <span>更新时间: {record.updateTime}</span>
+                  {(() => {
+                    const tzLabel =
+                      record.freshness?.timezoneOffset ||
+                      formatLocalTimeForCityWithTz(
+                        record.freshness?.observedAtMs || Date.now(),
+                        selectedCity.country,
+                        selectedCity.longitude,
+                        selectedCity.latitude
+                      ).timezoneOffset;
+                    const userLocal = record.freshness?.observedAtMs
+                      ? formatInUserLocalTime(record.freshness.observedAtMs)
+                      : null;
+                    const timeTooltip = userLocal
+                      ? `当地观测时间：${record.updateTime} (${tzLabel})${
+                          userLocal.timezoneOffset !== tzLabel
+                            ? ` ｜ 您的本地时间：${userLocal.localTime} (${userLocal.timezoneOffset})`
+                            : ''
+                        }${
+                          record.freshness
+                            ? ` ｜ 距今约 ${record.freshness.delayMinutes} 分钟`
+                            : ''
+                        }`
+                      : `当地观测时间：${record.updateTime} (${tzLabel})`;
+                    return (
+                      <span title={timeTooltip}>
+                        更新时间: {record.updateTime}
+                        <span className="text-slate-400 ml-1">({tzLabel})</span>
+                      </span>
+                    );
+                  })()}
                   {(() => {
                     const delayBadge = formatDelayBadge(record.freshness);
                     if (!delayBadge || record.isOffline || evaluation.isOffline) return null;
@@ -1339,20 +1410,42 @@ function DashboardPageContent() {
 
       {/* 24 小时逐小时走势分析图 */}
       <section className="glass-panel rounded-2xl p-4 sm:p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
-          <div className="flex items-center space-x-2">
-            <Activity className="w-4 h-4 text-sky-600" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+          <div className="flex items-center flex-wrap gap-2">
+            <Activity className="w-4 h-4 text-sky-600 shrink-0" />
             <h3 className="text-sm sm:text-base font-bold text-slate-900">逐小时空气质量变化轨迹</h3>
+            {trendResult && trendResult.source && (
+              <span
+                className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md font-semibold border inline-flex items-center space-x-1 ${
+                  trendResult.isReal
+                    ? 'bg-sky-50 text-sky-700 border-sky-200/80'
+                    : 'bg-slate-100 text-slate-500 border-slate-200'
+                }`}
+                title={
+                  trendResult.timezoneOffset
+                    ? `时间轴采用城市当地时间 (${trendResult.timezoneOffset})`
+                    : undefined
+                }
+              >
+                {trendResult.isReal && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block shrink-0" />
+                )}
+                <span>
+                  {trendResult.isReal ? `来源: ${trendResult.source}` : trendResult.source}
+                  {trendResult.isReal && trendResult.timezoneOffset
+                    ? ` · ${trendResult.timezoneOffset}`
+                    : ''}
+                </span>
+              </span>
+            )}
           </div>
-          {trendResult?.source && (
-            <span className="text-[11px] text-slate-400 font-medium">{trendResult.source}</span>
-          )}
         </div>
         <TrendChart
           data={trendResult?.points || []}
           city={selectedCity.nameZh}
           isReal={trendResult?.isReal}
           loading={loading || stationLoading || trendLoading}
+          timezoneOffset={trendResult?.timezoneOffset || record?.freshness?.timezoneOffset}
         />
       </section>
 
@@ -1404,7 +1497,11 @@ function DashboardPageContent() {
               const dateObj = new Date(f.day + 'T00:00:00');
               const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
               const weekName = !isNaN(dateObj.getTime()) ? weekDays[dateObj.getDay()] : '';
-              const isToday = idx === 0;
+              const cityTodayStr =
+                record?.updateTime && /^\d{4}-\d{2}-\d{2}/.test(record.updateTime)
+                  ? record.updateTime.slice(0, 10)
+                  : getTodayDateStr();
+              const isToday = f.day === cityTodayStr || (idx === 0 && f.day === getTodayDateStr());
 
               return (
                 <div
