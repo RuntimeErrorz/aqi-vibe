@@ -68,15 +68,28 @@ export function createRuntimeContext(options?: {
   origin?: string;
 }): ProviderRuntimeContext {
   const isServer = options?.isServer ?? typeof window === 'undefined';
+  const rawFetch = options?.fetchImpl ?? fetch;
+  // IMPORTANT: Wrap fetch in an arrow function so calling `ctx.fetchImpl(...)` never passes `this = ctx`,
+  // which throws `TypeError: Illegal invocation` in Cloudflare Workers (workerd)!
+  const boundFetch: typeof fetch = (input, init) => {
+    if (isServer && init && 'cache' in init) {
+      // Cloudflare Workers workerd throws on `cache: 'no-store'` in RequestInit
+      const { cache: _ignoredCache, ...rest } = init;
+      return rawFetch(input, rest);
+    }
+    return rawFetch(input, init);
+  };
+
   return {
     env: options?.secrets ?? resolveProviderSecrets(options?.rawEnv),
-    fetchImpl: options?.fetchImpl ?? fetch,
+    fetchImpl: boundFetch,
     nowMs: options?.nowMs ?? Date.now(),
     signal: options?.signal,
     timeoutMs: options?.timeoutMs,
     maxStations: options?.maxStations,
     concurrency: options?.concurrency,
     isServer,
+    enrichWeather: !options?.fetchImpl || options.fetchImpl === fetch,
     origin:
       options?.origin ??
       (typeof window !== 'undefined' && window.location?.origin ? window.location.origin : undefined),

@@ -12,6 +12,7 @@ import {
 } from '@/lib/datasources/freshness';
 import { normalizePollutantUnit } from '@/lib/datasources/units';
 import { ProviderRegistry, resolveProviderSecrets } from '@/lib/datasources/registry';
+import { createRuntimeContext } from '@/lib/datasources';
 import { DataSourceOrchestrator } from '@/lib/datasources/orchestrator';
 import type { AirQualityProvider, ProviderRuntimeContext } from '@/lib/datasources/types';
 import {
@@ -652,5 +653,27 @@ describe('Individual Data Source Provider Adapters', () => {
     expect(secrets.qweatherCredentialId).toBe('CRED789');
     expect(secrets.qweatherPrivateKey).toContain('\nABC\n');
     expect(secrets.openaqApiKey).toBe('openaq-secret');
+  });
+
+  it('wraps fetchImpl safely for Cloudflare workerd (no Illegal invocation & strips cache:no-store)', async () => {
+    let observedThis: unknown = 'sentinel';
+    let observedInit: RequestInit | undefined;
+    const strictWorkerdFetch = function (this: unknown, _input: RequestInfo | URL, init?: RequestInit) {
+      observedThis = this;
+      observedInit = init;
+      if (this !== undefined && this !== globalThis) {
+        throw new TypeError('Illegal invocation');
+      }
+      if (init && 'cache' in init) {
+        throw new TypeError("The 'cache' field on 'RequestInitializerDict' is not implemented.");
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    } as typeof fetch;
+
+    const ctx = createRuntimeContext({ fetchImpl: strictWorkerdFetch, isServer: true });
+    const res = await ctx.fetchImpl('https://example.com/test', { cache: 'no-store', method: 'GET' });
+    expect(res.status).toBe(200);
+    expect(observedThis).toBeUndefined();
+    expect(observedInit).toEqual({ method: 'GET' });
   });
 });

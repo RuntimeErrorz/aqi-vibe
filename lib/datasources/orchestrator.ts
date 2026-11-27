@@ -436,6 +436,7 @@ export class DataSourceOrchestrator {
       return { evaluated };
     } catch (err: any) {
       const status = typeof err?.status === 'number' ? err.status : undefined;
+      console.warn(`[Orchestrator] ${provider.id} failed for ${city.id}:`, err?.message || err);
       this.registry.breaker.recordFailure(provider.id, {
         status,
         message: err?.message,
@@ -498,7 +499,7 @@ export class DataSourceOrchestrator {
     const primary = candidates[0];
     const primaryCtx: ProviderRuntimeContext =
       candidates.length > 1 ? { ...ctx, hasBackupCandidate: true } : ctx;
-    const allowWeatherEnrich = ctx.enrichWeather ?? ctx.fetchImpl === fetch;
+    const allowWeatherEnrich = ctx.enrichWeather ?? !ctx.isServer;
     const weatherPromise: Promise<WeatherInfo | undefined> | null =
       allowWeatherEnrich && primary.id !== 'waqi' && primary.id !== 'caiyun'
         ? fetchOpenMeteoCurrentWeather(city.latitude, city.longitude, ctx)
