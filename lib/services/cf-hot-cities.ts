@@ -19,6 +19,13 @@ import {
   filterStationsEdge,
   parseWaqiStationResponse,
 } from './cf-city-realtime';
+import {
+  defaultProviderRegistry,
+  fetchCityRealtimeMultiSource,
+  getRealtimeChainForCountry,
+  RawEnvBag,
+  resolveProviderSecrets,
+} from '../datasources';
 
 /**
  * 40 座全球核心大都市（国内 20 城 + 海外 20 城），按站群规模均衡混编为 10 个分包：
@@ -153,13 +160,16 @@ export async function readHotCityFromKV(
 
 /**
  * 执行单批（4 座大都市）高密度官方站预热并写入独立 KV 分包 `hot:{packIndex}`
+ * 支持策略 A 多源路由：当该城具备更低延迟的区域优先源（如和风天气/香港环保署/台湾环境部）且已配置时，
+ * 直接通过多源编排器抓取（通常仅消耗 1~7 subrequests）；否则无缝复用 ranking:draft 执行 WAQI 零 bounds 预热。
  */
 export async function runHotCitiesCronPack(
   kv: KVNamespaceLike,
   tokens: string[],
   packIndex: number,
   nowMs = Date.now(),
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch = fetch,
+  rawEnv?: RawEnvBag
 ): Promise<HotPackRunSummary> {
   const cityIds = HOT_CITY_PACKS[packIndex];
   if (!cityIds || cityIds.length === 0) {
@@ -176,22 +186,107 @@ export async function runHotCitiesCronPack(
   let tokenIdx = packIndex * 11;
   const nextToken = () => activeTokens[tokenIdx++ % activeTokens.length];
 
-  // 1. 读取 ranking:draft（1 次 KV 读），直接复用已采集的全网官方站 UID，免去大部分 map/bounds 请求
-  let draftCities: RankingDraftState['cities'] = {};
+  const mergedEnv: RawEnvBag = {
+    ...(rawEnv || {}),
+    WAQI_TOKENS: activeTokens.join(','),
+  };
+  const secrets = resolveProviderSecrets(mergedEnv);
+
+  // 预检：读取上一轮热城分包缓存（1 次 KV 读），用于和风免费月配额保护：
+  // 和风月免费 50,000 次，若同城上一轮由和风更新且距今 < 50 分钟（同整点），直接复用不重复扣额度
+  // （20 城 × 24 次/天 × 30 天 = 14,400 次/月，稳稳控制在免费额度的 30% 以内！）
+  const QWEATHER_REUSE_WINDOW_MS = 50 * 60 * 1000;
+  let prevPackCities: Record<string, EdgeCityRealtimeResult> = {};
   try {
-    const draftRaw = await kv.get(RANKING_DRAFT_KEY);
-    if (draftRaw) {
-      const parsed = JSON.parse(draftRaw) as RankingDraftState;
-      if (parsed && parsed.cities) {
-        draftCities = parsed.cities;
+    const prevRaw = await kv.get(getHotPackKey(packIndex));
+    if (prevRaw) {
+      const prevPack = JSON.parse(prevRaw) as HotCitiesPackPayload;
+      if (prevPack && prevPack.cities) {
+        prevPackCities = prevPack.cities;
       }
     }
   } catch {}
 
+  // 预检：哪些城市已配置了优先于 WAQI 的低延迟区域源（如中国大陆配了和风、香港免费直连 EPD、台湾/北美配了 OpenAQ）
+  const multiSourceResults: Record<string, EdgeCityRealtimeResult> = {};
+  const waqiFallbackCityIds: string[] = [];
   let subrequestsUsed = 0;
-  const cityContexts: Array<{ city: CityMeta; stations: StationCompositeSample[] }> = [];
 
   for (const cityId of cityIds) {
+    const city = findCity(cityId);
+    if (!city) continue;
+
+    // 若该城上轮由和风成功预热且距今 < 50 分钟，直接复用节省月度配额
+    const prevCity = prevPackCities[city.id];
+    const prevUpdatedMs = prevCity?.updatedAt ? Date.parse(prevCity.updatedAt) : 0;
+    if (
+      prevCity &&
+      prevCity.success &&
+      prevCity.provenance?.providerId === 'qweather' &&
+      prevUpdatedMs > 0 &&
+      nowMs - prevUpdatedMs < QWEATHER_REUSE_WINDOW_MS
+    ) {
+      multiSourceResults[city.id] = prevCity;
+      continue;
+    }
+
+    const chain = getRealtimeChainForCountry(city.country);
+    const nonWaqiPreferred = chain[0] !== 'waqi';
+    const checkCtx = { env: secrets, fetchImpl, nowMs, isServer: true };
+    const preferredProvider = nonWaqiPreferred ? defaultProviderRegistry.get(chain[0]) : undefined;
+    const hasPreferredSource = Boolean(
+      preferredProvider &&
+        preferredProvider.realtime &&
+        preferredProvider.isAvailable(checkCtx) &&
+        !defaultProviderRegistry.breaker.isOpen(preferredProvider.id, nowMs)
+    );
+
+    // 仅当存在明确优先的非 WAQI 区域源且余量充足时直接走策略 A 多源编排
+    if (hasPreferredSource && subrequestsUsed + 8 <= MAX_SUBREQUESTS_PER_PACK) {
+      try {
+        const res = await fetchCityRealtimeMultiSource(
+          city,
+          {
+            secrets,
+            fetchImpl,
+            nowMs,
+            isServer: true,
+            maxStations: 8,
+            concurrency: EDGE_CONCURRENCY,
+            timeoutMs: FETCH_TIMEOUT_MS,
+          },
+          { maxFallbackProbes: 1 }
+        );
+        if (res && res.success) {
+          multiSourceResults[city.id] = res;
+          subrequestsUsed += Math.max(1, Math.min(8, res.sampledStations));
+          continue;
+        }
+      } catch {
+        // 失败则回落下方 WAQI 通道
+      }
+    }
+
+    waqiFallbackCityIds.push(cityId);
+  }
+
+  // 1. 读取 ranking:draft（1 次 KV 读），为剩余走 WAQI 的城市复用全网官方站 UID，免去大部分 map/bounds 请求
+  let draftCities: RankingDraftState['cities'] = {};
+  if (waqiFallbackCityIds.length > 0) {
+    try {
+      const draftRaw = await kv.get(RANKING_DRAFT_KEY);
+      if (draftRaw) {
+        const parsed = JSON.parse(draftRaw) as RankingDraftState;
+        if (parsed && parsed.cities) {
+          draftCities = parsed.cities;
+        }
+      }
+    } catch {}
+  }
+
+  const cityContexts: Array<{ city: CityMeta; stations: StationCompositeSample[] }> = [];
+
+  for (const cityId of waqiFallbackCityIds) {
     const city = findCity(cityId);
     if (!city) continue;
 
@@ -321,8 +416,12 @@ export async function runHotCitiesCronPack(
 
   // 4. 聚合每座城市的全 6 项污染物 + 4 项气象多站均值，打包写入独立 KV 分包 hot:{packIndex}
   const updatedIso = new Date(nowMs).toISOString();
-  const citiesMap: Record<string, EdgeCityRealtimeResult> = {};
+  const citiesMap: Record<string, EdgeCityRealtimeResult> = { ...multiSourceResults };
   const perCitySampled: Record<string, number> = {};
+  for (const [cid, res] of Object.entries(multiSourceResults)) {
+    perCitySampled[cid] = res.sampledStations;
+    stationsFetched += res.sampledStations;
+  }
 
   cityContexts.forEach((ctx, cityIdx) => {
     const enriched = enrichedByCity[cityIdx];
@@ -352,7 +451,11 @@ export async function runHotCitiesCronPack(
       };
     }
 
-    const compositeRecord = aggregateCompositeRecord(baseRecord, enriched, ctx.city, 'CN', false);
+    const compositeRecord = {
+      ...aggregateCompositeRecord(baseRecord, enriched, ctx.city, 'CN', false),
+      freshness: baseRecord.freshness,
+      provenance: baseRecord.provenance,
+    };
     const sampledCount = compositeRecord.compositeStationCount || budgets[cityIdx];
     perCitySampled[ctx.city.id] = sampledCount;
 
@@ -365,6 +468,8 @@ export async function runHotCitiesCronPack(
       totalOfficialStations: ctx.stations.length,
       sampledStations: sampledCount,
       updatedAt: updatedIso,
+      provenance: baseRecord.provenance,
+      freshness: baseRecord.freshness,
     };
   });
 

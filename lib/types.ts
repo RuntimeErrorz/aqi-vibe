@@ -1,5 +1,42 @@
 export type StandardType = 'CN' | 'US';
 
+export type ProviderId =
+  | 'waqi'
+  | 'qweather'
+  | 'caiyun'
+  | 'openaq'
+  | 'hk-epd'
+  | 'tw-moenv'
+  | 'airnow'
+  | 'google-aq'
+  | 'openweather'
+  | 'open-meteo';
+
+export type ObservationTier =
+  | 'ground-official'
+  | 'station-grid-fusion'
+  | 'numerical-model';
+
+export interface FreshnessMeta {
+  observedAtMs: number;
+  observedAtIso: string;
+  observedAtLocal?: string;
+  delayMinutes: number;
+  isStale: boolean;
+  fetchedAtMs: number;
+}
+
+export interface DataProvenance {
+  providerId: ProviderId;
+  providerName: string;
+  tier: ObservationTier;
+  fallbackFrom?: {
+    providerId: ProviderId;
+    reason: 'stale' | 'offline' | 'error' | 'rate-limited' | 'unsupported';
+    delayMinutes?: number;
+  };
+}
+
 export interface PollutantValues {
   pm25?: number; // ug/m3
   pm10?: number; // ug/m3
@@ -77,6 +114,8 @@ export interface AirQualityRecord {
   isOffline?: boolean;
   compositeStationCount?: number;
   compositeCentroid?: [number, number];
+  freshness?: FreshnessMeta;
+  provenance?: DataProvenance;
 }
 
 export interface CityMeta {

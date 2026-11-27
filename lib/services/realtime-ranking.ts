@@ -3,6 +3,7 @@ import { CityMeta } from '../types';
 import { convertIAQIToConcentration, evaluateAQI, calculatePM25AQI } from '../aqi-calculator';
 import { extractCleanStationName } from './waqi';
 import { iso1A2Code } from '@rapideditor/country-coder';
+import { isSameSovereignCountry, parseObservedTimeMs } from '../datasources/freshness';
 
 export interface RankedCityItem {
   id: string;
@@ -261,8 +262,8 @@ function findClosestCity(
   for (let i = 0; i < cities.length; i++) {
     const c = cities[i];
 
-    // 纯经纬度主权排他：若测站经纬度所属国家与候选城市不符，纯空间几何排他
-    if (stationCountry && c.country && c.country !== stationCountry) {
+    // 纯经纬度主权排他：若测站经纬度所属国家与候选城市不符，纯空间几何排他（兼容港澳 HK/MO 与 CN）
+    if (!isSameSovereignCountry(stationCountry, c.country)) {
       continue;
     }
 
@@ -459,10 +460,13 @@ function computeRankingSnapshot(stations: any[], isRefreshing = false): RankingA
   }
   const cityCluster = new Map<string, ClusterBucket>();
 
+  const nowMs = Date.now();
   for (const st of stations) {
     const aqiNum = parseInt(st.aqi, 10);
     // 标准 AQI 物理有效定义域严格为 1 ~ 500 (超界与非数字直接过滤，零任何固定阈值与特定探头特判)
     if (isNaN(aqiNum) || aqiNum <= 0 || aqiNum > 500) continue;
+    const obsMs = parseObservedTimeMs(st.station?.time);
+    if (obsMs && nowMs - obsMs > 6 * 60 * 60 * 1000) continue;
 
     const sLat = st.lat;
     const sLon = st.lon;

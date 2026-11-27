@@ -2,6 +2,7 @@ import { iso1A2Code } from '@rapideditor/country-coder';
 import { CITIES_REGISTRY } from '../constants/cities';
 import type { CityMeta } from '../types';
 import type { WaqiBoundStation } from './waqi';
+import { isSameSovereignCountry } from '../datasources/freshness';
 
 /**
  * 计算两个经纬度坐标之间的球面大圆距离（单位：千米）
@@ -39,9 +40,9 @@ export function filterStationsForCity(
   });
 
   return stations.filter((s) => {
-    // 0. 纯经纬度主权国家排他：若测站经纬度所属国家与目标城市不符，直接排除
+    // 0. 纯经纬度主权国家排他：若测站经纬度所属国家与目标城市不符，直接排除（兼容港澳 HK/MO 与 CN 归属）
     const stCountry = iso1A2Code([s.lon, s.lat]);
-    if (stCountry && targetCity.country && targetCity.country !== stCountry) {
+    if (!isSameSovereignCountry(stCountry, targetCity.country)) {
       return false;
     }
 

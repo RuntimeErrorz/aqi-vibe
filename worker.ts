@@ -11,6 +11,12 @@ import {
   readHotCityFromKV,
   runHotCitiesCronPack,
 } from './lib/services/cf-hot-cities';
+import { findCity } from './lib/constants/cities';
+import {
+  fetch5DayForecastMultiSource,
+  fetchHourlyTrendMultiSource,
+} from './lib/datasources';
+import type { ProviderId, StandardType } from './lib/types';
 
 export interface Env {
   ASSETS: {
@@ -18,6 +24,20 @@ export interface Env {
   };
   RANKING_KV?: KVNamespaceLike;
   WAQI_TOKENS?: string;
+  // 多数据源可选密钥（配置哪个即自动激活对应数据源，未配置自动跳过）
+  QWEATHER_API_HOST?: string;
+  QWEATHER_API_KEY?: string;
+  QWEATHER_JWT?: string;
+  QWEATHER_DEVELOPER_ID?: string;
+  QWEATHER_PROJECT_ID?: string;
+  QWEATHER_CREDENTIAL_ID?: string;
+  QWEATHER_PRIVATE_KEY?: string;
+  CAIYUN_API_TOKEN?: string;
+  OPENAQ_API_KEY?: string;
+  AIRNOW_API_KEY?: string;
+  GOOGLE_AQ_API_KEY?: string;
+  MOENV_API_KEY?: string;
+  OPENWEATHER_API_KEY?: string;
 }
 
 interface WorkerExecutionContext {
@@ -159,9 +179,9 @@ export default {
         if (payload) {
           sourceHeader = 'cloudflare-kv-hot';
         } else {
-          // 2. 非热门长尾城市或首轮预热尚未完成时，实时边缘回源（<= 13 subrequests，约 2 秒）
+          // 2. 非热门长尾城市或首轮预热尚未完成时，实时边缘多源编排回源（策略 A：区域优先 + 延迟 >90m 自动切源）
           const tokens = parseWaqiTokens(env.WAQI_TOKENS);
-          payload = await fetchEdgeCityRealtimePayload(cityParam, tokens);
+          payload = await fetchEdgeCityRealtimePayload(cityParam, tokens, fetch, env);
         }
 
         if (!payload) {
@@ -185,6 +205,7 @@ export default {
             'Access-Control-Allow-Origin': '*',
             'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
             'X-City-Source': sourceHeader,
+            'X-Data-Provider': payload.provenance?.providerId || payload.baseRecord?.provenance?.providerId || 'waqi',
           },
         });
 
@@ -203,6 +224,115 @@ export default {
               'Access-Control-Allow-Origin': '*',
               'Cache-Control': 'no-store',
             },
+          }
+        );
+      }
+    }
+
+    // 0.8 多数据源 24~72 小时逐小时实测网关（自动路由和风/香港环保署/WAQI/OpenAQ/Google AQ，10 分钟边缘缓存）
+    if (url.pathname === '/api/hourly-trend') {
+      const cityParam = url.searchParams.get('city')?.trim();
+      const standardParam: StandardType = url.searchParams.get('standard') === 'CN' ? 'CN' : 'US';
+      const providerParam = (url.searchParams.get('provider')?.trim() || undefined) as ProviderId | undefined;
+      const stationParam = url.searchParams.get('station')?.trim() || undefined;
+
+      const city = cityParam ? findCity(cityParam) : undefined;
+      if (!city) {
+        return new Response(JSON.stringify({ points: [], isReal: false, source: '未知城市' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        });
+      }
+
+      const edgeCache = getEdgeDefaultCache();
+      const cacheKey = new Request(
+        `${url.origin}/api/hourly-trend?city=${encodeURIComponent(city.id)}&standard=${standardParam}&provider=${encodeURIComponent(providerParam || '')}&station=${encodeURIComponent(stationParam || '')}`,
+        { method: 'GET' }
+      );
+      if (edgeCache) {
+        const cached = await edgeCache.match(cacheKey);
+        if (cached) return cached;
+      }
+
+      try {
+        const result = await fetchHourlyTrendMultiSource(
+          {
+            city,
+            preferredProviderId: providerParam,
+            stationRawId: stationParam,
+            standard: standardParam,
+          },
+          { rawEnv: env, isServer: true }
+        );
+        const response = new Response(JSON.stringify(result), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': result.isReal
+              ? 'public, max-age=600, stale-while-revalidate=600'
+              : 'public, max-age=60',
+          },
+        });
+        if (edgeCache && ctx && result.isReal) {
+          ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
+        }
+        return response;
+      } catch (err: any) {
+        return new Response(
+          JSON.stringify({ points: [], isReal: false, source: err?.message || 'Fetch failed' }),
+          {
+            status: 502,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          }
+        );
+      }
+    }
+
+    // 0.9 多数据源未来 5 天预报网关（优先彩云 AI 预报，自动回落 Open-Meteo ECMWF/CAMS，30 分钟边缘缓存）
+    if (url.pathname === '/api/forecast') {
+      const lat = Number(url.searchParams.get('lat'));
+      const lon = Number(url.searchParams.get('lon'));
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        return new Response(JSON.stringify({ list: [], source: '参数无效' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        });
+      }
+
+      const edgeCache = getEdgeDefaultCache();
+      const cacheKey = new Request(
+        `${url.origin}/api/forecast?lat=${lat.toFixed(2)}&lon=${lon.toFixed(2)}`,
+        { method: 'GET' }
+      );
+      if (edgeCache) {
+        const cached = await edgeCache.match(cacheKey);
+        if (cached) return cached;
+      }
+
+      try {
+        const result = await fetch5DayForecastMultiSource(lat, lon, {
+          rawEnv: env,
+          isServer: true,
+        });
+        const response = new Response(JSON.stringify(result), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'public, max-age=1800, stale-while-revalidate=1800',
+          },
+        });
+        if (edgeCache && ctx && result.list.length > 0) {
+          ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
+        }
+        return response;
+      } catch (err: any) {
+        return new Response(
+          JSON.stringify({ list: [], source: err?.message || 'Forecast failed' }),
+          {
+            status: 502,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
           }
         );
       }
@@ -347,7 +477,14 @@ export default {
     // 2. 40 座全球核心大都市高密度官方站预热窗口 (:09-:18, :39-:48)
     const hotPackIndex = getHotCitiesPackIndexFromDate(scheduledDate);
     if (hotPackIndex >= 0) {
-      const task = runHotCitiesCronPack(env.RANKING_KV, tokens, hotPackIndex, controller.scheduledTime)
+      const task = runHotCitiesCronPack(
+        env.RANKING_KV,
+        tokens,
+        hotPackIndex,
+        controller.scheduledTime,
+        fetch,
+        env
+      )
         .then((summary) => {
           console.log(
             `[HotCitiesCron] Pack ${summary.packIndex}/9 done: ${summary.citiesProcessed} cities, ` +

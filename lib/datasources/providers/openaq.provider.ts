@@ -1,0 +1,274 @@
+import type { CityMeta, PollutantValues } from '../../types';
+import { calculateCNIAQI, calculateUSIAQI, evaluateAQI } from '../../aqi-calculator';
+import type { HourlyTrendPoint } from '../../services/realtime-trend';
+import {
+  computeFreshness,
+  hasValidPollutants,
+  hashStationIdToUid,
+  parseObservedTimeMs,
+} from '../freshness';
+import { createTimeoutSignal, normalizePollutantUnit } from '../units';
+import type {
+  AirQualityProvider,
+  NormalizedStationSample,
+  ProviderCitySnapshot,
+  ProviderRuntimeContext,
+} from '../types';
+
+const OPENAQ_BASE = 'https://api.openaq.org/v3';
+
+function createHttpError(status: number, message: string): Error & { status: number } {
+  const err = new Error(message) as Error & { status: number };
+  err.status = status;
+  return err;
+}
+
+function mapOpenAqParam(paramName: string): keyof PollutantValues | null {
+  const p = paramName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (p === 'pm25') return 'pm25';
+  if (p === 'pm10') return 'pm10';
+  if (p === 'o3') return 'o3';
+  if (p === 'no2') return 'no2';
+  if (p === 'so2') return 'so2';
+  if (p === 'co') return 'co';
+  return null;
+}
+
+/**
+ * OpenAQ API v3 Provider:
+ * - Aggregates 100% physical ground reference stations globally (US AirNow, EU EEA, UK DEFRA, AU, JP, KR)
+ * - Native physical concentrations & UTC timestamps, plus 24-72h sensor hourly measurements
+ * - Requires free `OPENAQ_API_KEY` (60 req/min free tier)
+ */
+export const openaqProvider: AirQualityProvider = {
+  id: 'openaq',
+  name: 'OpenAQ 开放监测网络',
+  shortName: 'OpenAQ',
+  tier: 'ground-official',
+  supportedCountries: '*',
+  supportsBrowserDirect: false,
+
+  isAvailable(ctx: ProviderRuntimeContext): boolean {
+    return Boolean(ctx.env.openaqApiKey);
+  },
+
+  realtime: {
+    async fetchCitySnapshot(
+      city: CityMeta,
+      ctx: ProviderRuntimeContext
+    ): Promise<ProviderCitySnapshot | null> {
+      const apiKey = ctx.env.openaqApiKey;
+      if (!apiKey) return null;
+
+      const headers = { 'X-API-Key': apiKey, Accept: 'application/json' };
+      const timeoutMs = ctx.timeoutMs ?? 5000;
+      let subrequestsUsed = 0;
+
+      // OpenAQ v3 radius limit is 25,000m (25km), well inside our 35km hard boundary
+      const locUrl = `${OPENAQ_BASE}/locations?coordinates=${city.latitude.toFixed(4)},${city.longitude.toFixed(4)}&radius=25000&limit=12`;
+      subrequestsUsed++;
+      const locRes = await ctx.fetchImpl(locUrl, {
+        headers,
+        signal: createTimeoutSignal(timeoutMs, ctx.signal),
+      });
+      if (locRes.status === 401 || locRes.status === 403 || locRes.status === 429) {
+        throw createHttpError(locRes.status, `OpenAQ locations HTTP ${locRes.status}`);
+      }
+      if (!locRes.ok) return null;
+
+      const locJson = (await locRes.json()) as any;
+      const locations: any[] = Array.isArray(locJson?.results) ? locJson.results : [];
+      if (locations.length === 0) return null;
+
+      // Pre-filter out locations whose last update is already older than 24h (avoids wasted subrequests on stale EEA feeds)
+      const freshLocs = locations.filter((loc) => {
+        const lastMs = parseObservedTimeMs(loc?.datetimeLast?.utc);
+        if (!lastMs) return true;
+        return ctx.nowMs - lastMs <= 24 * 3600 * 1000;
+      });
+      if (freshLocs.length === 0) return null;
+
+      // Prefer reference-grade (isMonitor === true) stations with recent datetimeLast
+      const sortedLocs = [...freshLocs].sort((a, b) => {
+        const aMon = a?.isMonitor ? 1 : 0;
+        const bMon = b?.isMonitor ? 1 : 0;
+        if (aMon !== bMon) return bMon - aMon;
+        const aMs = parseObservedTimeMs(a?.datetimeLast?.utc) ?? 0;
+        const bMs = parseObservedTimeMs(b?.datetimeLast?.utc) ?? 0;
+        return bMs - aMs;
+      });
+
+      const maxFetch = Math.min(sortedLocs.length, ctx.isServer ? 6 : 8);
+      const stations: NormalizedStationSample[] = [];
+
+      await Promise.all(
+        sortedLocs.slice(0, maxFetch).map(async (loc) => {
+          const locId = loc?.id;
+          if (!locId) return;
+
+          // Build sensorId -> { parameter, units } lookup map from location metadata
+          const sensorMeta = new Map<number, { key: keyof PollutantValues; units: string }>();
+          if (Array.isArray(loc.sensors)) {
+            for (const s of loc.sensors) {
+              const key = mapOpenAqParam(String(s?.parameter?.name || ''));
+              if (key && typeof s.id === 'number') {
+                sensorMeta.set(s.id, { key, units: String(s?.parameter?.units || '') });
+              }
+            }
+          }
+
+          subrequestsUsed++;
+          try {
+            const latestRes = await ctx.fetchImpl(`${OPENAQ_BASE}/locations/${locId}/latest`, {
+              headers,
+              signal: createTimeoutSignal(timeoutMs, ctx.signal),
+            });
+            if (!latestRes.ok) return;
+            const latestJson = (await latestRes.json()) as any;
+            const measurements: any[] = Array.isArray(latestJson?.results) ? latestJson.results : [];
+
+            const pollutants: PollutantValues = {};
+            let latestMs = 0;
+            let latestLocal: string | undefined;
+
+            for (const m of measurements) {
+              const paramName = String(m?.parameter?.name || '');
+              const meta = sensorMeta.get(m?.sensorsId);
+              const key = meta?.key || mapOpenAqParam(paramName);
+              const unit = m?.parameter?.units || meta?.units || '';
+              if (!key) continue;
+
+              const normalizedVal = normalizePollutantUnit(key, Number(m?.value), unit);
+              if (normalizedVal === undefined || normalizedVal <= 0) continue;
+
+              const obsMs = parseObservedTimeMs(m?.datetime?.utc || m?.datetime?.local);
+              if (obsMs && obsMs > latestMs) {
+                latestMs = obsMs;
+                latestLocal = typeof m?.datetime?.local === 'string' ? m.datetime.local : undefined;
+              }
+
+              // Only accept measurements within 24h to prevent legacy sensor contamination
+              if (obsMs && ctx.nowMs - obsMs <= 24 * 3600 * 1000) {
+                pollutants[key] = normalizedVal;
+              }
+            }
+
+            if (!hasValidPollutants(pollutants)) return;
+
+            const canonicalId = `openaq:${locId}` as const;
+            stations.push({
+              stationId: canonicalId,
+              providerId: 'openaq',
+              rawId: String(locId),
+              numericUid: hashStationIdToUid(canonicalId),
+              name: loc.name || loc.locality || `OpenAQ #${locId}`,
+              latitude: Number(loc?.coordinates?.latitude ?? city.latitude),
+              longitude: Number(loc?.coordinates?.longitude ?? city.longitude),
+              isOfficial: Boolean(loc.isMonitor ?? true),
+              freshness: computeFreshness(latestMs || null, ctx.nowMs, undefined, latestLocal),
+              pollutants,
+              rawUsAqi: evaluateAQI(pollutants, 'US').aqi,
+              pm25IaqiUS: calculateUSIAQI(pollutants).pm25,
+              pm25IaqiCN: calculateCNIAQI(pollutants).pm25,
+            });
+          } catch {
+            // Skip failed station cleanly
+          }
+        })
+      );
+
+      if (stations.length === 0) return null;
+
+      return {
+        providerId: 'openaq',
+        providerName: 'OpenAQ',
+        tier: 'ground-official',
+        stations,
+        attributions: [{ name: 'OpenAQ Global Air Quality Data', url: 'https://openaq.org/' }],
+        subrequestsUsed,
+      };
+    },
+  },
+
+  hourlyTrend: {
+    async fetchHourlyTrend(query, ctx) {
+      const apiKey = ctx.env.openaqApiKey;
+      if (!apiKey) return null;
+
+      const headers = { 'X-API-Key': apiKey, Accept: 'application/json' };
+      const timeoutMs = ctx.timeoutMs ?? 5000;
+
+      // Find nearest location with a pm25 sensor
+      const locUrl = `${OPENAQ_BASE}/locations?coordinates=${query.city.latitude.toFixed(4)},${query.city.longitude.toFixed(4)}&radius=25000&limit=5`;
+      const locRes = await ctx.fetchImpl(locUrl, {
+        headers,
+        signal: createTimeoutSignal(timeoutMs, ctx.signal),
+      });
+      if (!locRes.ok) return null;
+
+      const locJson = (await locRes.json()) as any;
+      const locations: any[] = Array.isArray(locJson?.results) ? locJson.results : [];
+      let pm25SensorId: number | null = null;
+      let stationLabel = query.city.nameZh;
+
+      for (const loc of locations) {
+        if (!Array.isArray(loc?.sensors)) continue;
+        const pm25Sensor = loc.sensors.find(
+          (s: any) => mapOpenAqParam(String(s?.parameter?.name || '')) === 'pm25'
+        );
+        if (pm25Sensor?.id) {
+          pm25SensorId = pm25Sensor.id;
+          stationLabel = loc.name || stationLabel;
+          break;
+        }
+      }
+
+      if (!pm25SensorId) return null;
+
+      const dateFrom = new Date(ctx.nowMs - 36 * 3600 * 1000).toISOString();
+      const hoursRes = await ctx.fetchImpl(
+        `${OPENAQ_BASE}/sensors/${pm25SensorId}/hours?datetime_from=${encodeURIComponent(dateFrom)}&limit=48`,
+        {
+          headers,
+          signal: createTimeoutSignal(timeoutMs, ctx.signal),
+        }
+      );
+      if (!hoursRes.ok) return null;
+
+      const hoursJson = (await hoursRes.json()) as any;
+      const results: any[] = Array.isArray(hoursJson?.results) ? hoursJson.results : [];
+      if (results.length < 3) return null;
+
+      const points: HourlyTrendPoint[] = [];
+      for (const r of results) {
+        const pm25 = normalizePollutantUnit('pm25', Number(r?.value), r?.parameter?.units);
+        if (pm25 === undefined || pm25 <= 0) continue;
+        const localStr = String(r?.period?.datetimeTo?.local || r?.period?.datetimeFrom?.local || '');
+        const match = localStr.match(/(\d{2}-\d{2})T(\d{2}:\d{2})/);
+        const hour = match ? match[2] : localStr.slice(11, 16);
+        const fullTime = match ? `${match[1]} ${match[2]}` : localStr;
+
+        const ev = evaluateAQI({ pm25 }, query.standard, true);
+        const iaqi =
+          query.standard === 'CN' ? calculateCNIAQI({ pm25 }) : calculateUSIAQI({ pm25 });
+
+        points.push({
+          hour,
+          fullTime,
+          aqi: ev.aqi,
+          pm25,
+          o3: 0,
+          iaqi,
+          isReal: true,
+        });
+      }
+
+      if (points.length < 3) return null;
+      return {
+        points: points.slice(-24),
+        isReal: true,
+        source: `OpenAQ (${stationLabel}) 逐小时实测`,
+      };
+    },
+  },
+};

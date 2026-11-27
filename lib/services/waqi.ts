@@ -1,4 +1,12 @@
-import { AirQualityRecord, PollutantValues, IAQIValues, CityMeta, WeatherInfo } from '../types';
+import {
+  AirQualityRecord,
+  PollutantValues,
+  IAQIValues,
+  CityMeta,
+  WeatherInfo,
+  DataProvenance,
+  FreshnessMeta,
+} from '../types';
 import { evaluateAQI, getCNEvaluation, getUSEvaluation, convertIAQIToConcentration, calculateCNIAQI } from '../aqi-calculator';
 import { findCity } from '../constants/cities';
 import {
@@ -6,6 +14,12 @@ import {
   extractStationMetricsFromIaqi,
   preferOfficialStations,
 } from './composite-aggregator';
+import {
+  computeFreshness,
+  parseObservedTimeMs,
+  pruneStaleStations,
+  sortStationsByFreshnessAndDistance,
+} from '../datasources/freshness';
 
 const WAQI_TOKENS: string[] = [
   process.env.NEXT_PUBLIC_WAQI_TOKEN || '50b0c272a11f35667dd0ef7de354d76e9560ac48',
@@ -153,6 +167,8 @@ export interface EdgeCityRealtimePayload {
   totalOfficialStations: number;
   sampledStations: number;
   updatedAt: string;
+  provenance?: DataProvenance;
+  freshness?: FreshnessMeta;
 }
 
 interface StationDetailEntry {
@@ -394,12 +410,17 @@ export async function fetchWAQICityStations(city: CityMeta): Promise<WaqiBoundSt
 
     const cityOnly = preferOfficialStations(filterStationsForCity(valid, city));
 
-    // 按距市中心距离由近及远排序
-    return cityOnly.sort((a, b) => {
-      const distA = getDistanceKm(a.lat, a.lon, city.latitude, city.longitude);
-      const distB = getDistanceKm(b.lat, b.lon, city.latitude, city.longitude);
-      return distA - distB;
-    });
+    // 剔除 >4 小时僵尸探头，并采用「新鲜度优先（最新整点窗内）+ 距市中心距离次之」排序
+    // 彻底杜绝单座滞后基准站（如北京东城天坛/台北信义站）拖累全城时间戳
+    const nowMs = Date.now();
+    const withMeta = cityOnly.map((s) => ({
+      station: s,
+      distKm: getDistanceKm(s.lat, s.lon, city.latitude, city.longitude),
+      observedAtMs: parseObservedTimeMs(s.station?.time) ?? undefined,
+    }));
+    const alive = pruneStaleStations(withMeta, nowMs);
+    const ranked = sortStationsByFreshnessAndDistance(alive);
+    return ranked.map((item) => item.station);
   })().finally(() => {
     cityStationsInFlight.delete(city.id);
   });
@@ -527,6 +548,14 @@ function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
     evaluationUS = getUSEvaluation(officialAqi, evaluationUS.primaryPollutant);
   }
 
+  const obsMs = parseObservedTimeMs(data.time?.iso || data.time?.s, data.time?.tz);
+  const freshness = computeFreshness(obsMs, Date.now());
+  const provenance: DataProvenance = {
+    providerId: 'waqi',
+    providerName: 'WAQI',
+    tier: 'ground-official',
+  };
+
   return {
     id: cityMeta?.id || `station-${data.idx || 'unknown'}`,
     name: cityMeta?.nameZh || data.city?.name || '未知监测点',
@@ -544,6 +573,8 @@ function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
     iaqiUS,
     evaluationCN,
     evaluationUS,
+    freshness,
+    provenance,
     weather: {
       temp: iaqiRaw.t?.v,
       humidity: iaqiRaw.h?.v,

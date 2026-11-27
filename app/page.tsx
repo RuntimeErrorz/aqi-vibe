@@ -27,6 +27,10 @@ import {
   HourlyTrendResult,
 } from '@/lib/services/realtime-trend';
 import {
+  formatDelayBadge,
+  PROVIDER_SHORT_LABELS,
+} from '@/lib/datasources';
+import {
   calculateCNIAQI,
   calculateUSIAQI,
   evaluateAQI,
@@ -196,7 +200,8 @@ function DashboardPageContent() {
           0,
           0,
           targetRecord.updateTime,
-          targetRecord.stationIdx
+          targetRecord.stationIdx,
+          { cityId: targetCity.id, providerId: targetRecord.provenance?.providerId }
         );
         if (requestIdRef.current !== activeReqId) return;
         setTrendResult(trend);
@@ -225,7 +230,8 @@ function DashboardPageContent() {
           0,
           0,
           targetRecord.updateTime,
-          targetRecord.stationIdx
+          targetRecord.stationIdx,
+          { cityId: targetCity.id, providerId: targetRecord.provenance?.providerId }
         );
         if (requestIdRef.current !== activeReqId) return;
         setBaseTrendResult(baseTrend);
@@ -245,7 +251,30 @@ function DashboardPageContent() {
       try {
         const found = targetStations.find((s) => s.uid === uidNum);
         const cleanName = found ? extractCleanStationName(found.station?.name || '', targetCity.nameZh) : undefined;
-        const stationData = await fetchWAQIStationByUid(uidNum, targetCity, cleanName);
+        const activeProviderId = targetRecord.provenance?.providerId;
+        let stationData: AirQualityRecord;
+
+        if (activeProviderId && activeProviderId !== 'waqi' && found?.pollutants) {
+          // 非 WAQI 源（如香港环保署/和风/OpenAQ/台湾环境部）测站已自带完整物理浓度，直接无额外网络开销构建单站记录
+          const stPollutants = found.pollutants;
+          stationData = {
+            ...targetRecord,
+            id: `${targetCity.id}-${uidNum}`,
+            name: targetCity.nameZh,
+            stationIdx: undefined,
+            latitude: found.lat || targetCity.latitude,
+            longitude: found.lon || targetCity.longitude,
+            pollutants: stPollutants,
+            iaqi: standard === 'CN' ? calculateCNIAQI(stPollutants) : calculateUSIAQI(stPollutants),
+            iaqiCN: calculateCNIAQI(stPollutants),
+            iaqiUS: calculateUSIAQI(stPollutants),
+            evaluationCN: evaluateAQI(stPollutants, 'CN'),
+            evaluationUS: evaluateAQI(stPollutants, 'US'),
+            weather: found.weather || targetRecord.weather,
+          };
+        } else {
+          stationData = await fetchWAQIStationByUid(uidNum, targetCity, cleanName);
+        }
         if (requestIdRef.current !== activeReqId) return;
 
         setRecord({
@@ -261,7 +290,12 @@ function DashboardPageContent() {
           0,
           0,
           stationData.updateTime,
-          stationData.stationIdx || uidNum
+          stationData.stationIdx || (activeProviderId && activeProviderId !== 'waqi' ? undefined : uidNum),
+          {
+            cityId: targetCity.id,
+            providerId: activeProviderId,
+            stationRawId: (found as any)?.stationId?.split(':')[1],
+          }
         );
         if (requestIdRef.current !== activeReqId) return;
 
@@ -501,7 +535,8 @@ function DashboardPageContent() {
             0,
             0,
             data.updateTime,
-            data.stationIdx
+            data.stationIdx,
+            { cityId: city.id, providerId: data.provenance?.providerId }
           ).catch((): HourlyTrendResult => ({ points: [], isReal: false, source: '暂无官方小时流' }));
 
         trendTask.then((trend) => {
@@ -596,7 +631,7 @@ function DashboardPageContent() {
     if (selectedStationMode === 'composite') {
       setRecord(buildCompositeRecord(baseCityRecord, cityStations, selectedCity));
     }
-    if (baseCityRecord.stationIdx) {
+    if (baseCityRecord.stationIdx || baseCityRecord.provenance?.providerId) {
       const activeReqId = requestIdRef.current;
       fetch24HourHourlyTrend(
         selectedCity.latitude,
@@ -608,7 +643,11 @@ function DashboardPageContent() {
         baseCityRecord.updateTime,
         selectedStationMode !== 'composite' && selectedStationMode !== 'default'
           ? Number(selectedStationMode) || baseCityRecord.stationIdx
-          : baseCityRecord.stationIdx
+          : baseCityRecord.stationIdx,
+        {
+          cityId: selectedCity.id,
+          providerId: baseCityRecord.provenance?.providerId,
+        }
       ).then((t) => {
         if (requestIdRef.current !== activeReqId) return;
         if (t.points.length > 0) {
@@ -756,10 +795,10 @@ function DashboardPageContent() {
           </div>
           <div className="space-y-1.5 max-w-md mx-auto">
             <h3 className="text-lg font-bold text-slate-900">
-              【{selectedCity.nameZh} ({selectedCity.nameEn})】当前暂无 WAQI 实时监测数据
+              【{selectedCity.nameZh} ({selectedCity.nameEn})】当前暂无官方实时监测数据
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-              {loadError}。本平台严格遵循纯真实测原则，WAQI 官方测站未收录或离线时，绝不伪造数据兜底。
+              {loadError}。本平台严格遵循纯真实测原则，官方测站未收录或离线时，绝不伪造数据兜底。
             </p>
           </div>
           <div className="pt-2">
@@ -998,10 +1037,45 @@ function DashboardPageContent() {
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-500 mt-1.5 flex items-center space-x-1.5 flex-wrap gap-y-1">
+                <div className="text-xs text-slate-500 mt-1.5 flex items-center space-x-1.5 flex-wrap gap-y-1">
                   <span>{selectedCity.nameEn}</span>
                   <span>·</span>
                   <span>更新时间: {record.updateTime}</span>
+                  {(() => {
+                    const delayBadge = formatDelayBadge(record.freshness);
+                    if (!delayBadge || record.isOffline || evaluation.isOffline) return null;
+                    return (
+                      <span
+                        title={delayBadge.title}
+                        className={`inline-flex items-center px-1.5 py-0.5 rounded-md font-medium text-[11px] border ${
+                          delayBadge.severity === 'severe'
+                            ? 'bg-amber-50 border-amber-200/90 text-amber-800'
+                            : 'bg-slate-100 border-slate-200/80 text-slate-600'
+                        }`}
+                      >
+                        {delayBadge.label}
+                      </span>
+                    );
+                  })()}
+                  {record.provenance && (
+                    <>
+                      <span>·</span>
+                      <span
+                        className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-slate-100/90 border border-slate-200/80 text-slate-600 font-medium text-[11px]"
+                        title={
+                          record.provenance.fallbackFrom
+                            ? `当前自动路由至 ${record.provenance.providerName}（原 ${PROVIDER_SHORT_LABELS[record.provenance.fallbackFrom.providerId] || record.provenance.fallbackFrom.providerId} ${
+                                record.provenance.fallbackFrom.reason === 'stale'
+                                  ? `延迟约 ${record.provenance.fallbackFrom.delayMinutes ?? '--'} 分钟`
+                                  : '不可用'
+                              }）`
+                            : `实时观测数据源：${record.provenance.providerName}`
+                        }
+                      >
+                        来源: {PROVIDER_SHORT_LABELS[record.provenance.providerId] || record.provenance.providerName}
+                      </span>
+                    </>
+                  )}
                   {(record.isOffline || evaluation.isOffline) && (
                     <>
                       <span>·</span>
@@ -1026,7 +1100,7 @@ function DashboardPageContent() {
                       </span>
                     </>
                   )}
-                </p>
+                </div>
               </div>
 
               <button

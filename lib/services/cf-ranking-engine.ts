@@ -4,6 +4,7 @@ import type { CityMeta } from '../types';
 import { convertIAQIToConcentration, evaluateAQI, calculatePM25AQI } from '../aqi-calculator';
 import type { RankedCityItem, RankingApiResponse } from './realtime-ranking';
 import { iso1A2Code } from '@rapideditor/country-coder';
+import { isSameSovereignCountry, parseObservedTimeMs } from '../datasources/freshness';
 
 /**
  * Cloudflare Workers KV 最小兼容接口（免额外安装 @cloudflare/workers-types，
@@ -175,7 +176,7 @@ export function findClosestCityFast(
 
   for (let i = 0; i < candidates.length; i++) {
     const item = candidates[i];
-    if (stationCountry && item.city.country && item.city.country !== stationCountry) {
+    if (!isSameSovereignCountry(stationCountry, item.city.country)) {
       continue;
     }
     if (item.distSq < minDistSq) {
@@ -197,6 +198,7 @@ export interface DraftStationEntry {
   d: number; // 到市中心物理距离 (km)
   n: string; // 清洗后测站名称
   t: number; // 抓取时间戳 (ms)
+  ot?: number; // 测站原始观测时间戳 (ms)，用于淘汰上游已停更超过 6 小时的僵尸站
   la?: number; // 测站纬度 (3位小数，供热门大都市预热直接复用，免二次 map/bounds)
   lo?: number; // 测站经度 (3位小数)
 }
@@ -475,12 +477,18 @@ export async function runRankingCronBatch(
                   st.station?.name || '',
                   matched.city.nameZh
                 );
+                const obsMs = parseObservedTimeMs(st.station?.time);
+                // 若上游明确上报时间且已停更超过 6 小时（如芝加哥僵尸探头），直接过滤不污染排行
+                if (obsMs && nowMs - obsMs > 6 * 60 * 60 * 1000) {
+                  continue;
+                }
                 cityStations.set(String(st.uid), {
                   a: aqiNum,
                   p: pm25Val,
                   d: Number(matched.distKm.toFixed(2)),
                   n: cleanName,
                   t: nowMs,
+                  ...(obsMs ? { ot: obsMs } : {}),
                   la: Number(st.lat.toFixed(3)),
                   lo: Number(st.lon.toFixed(3)),
                 });

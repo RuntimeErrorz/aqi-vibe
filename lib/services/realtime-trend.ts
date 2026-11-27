@@ -1,5 +1,6 @@
-import { StandardType, ForecastDay } from '../types';
+import { StandardType, ForecastDay, ProviderId } from '../types';
 import { build24HourPointsFromWaqiObs, fetchWaqiHourlyDirect } from './waqi-decoder';
+import { fetch5DayForecastMultiSource } from '../datasources';
 
 export interface HourlyTrendPoint {
   hour: string;
@@ -30,8 +31,10 @@ export interface HourlyTrendResult {
 }
 
 /**
- * 过去 24~72 小时逐小时走势分析：
- * 100% 直连 WAQI 官方底层折线图时序流（差分解码），无任何 CAMS 或虚构模拟数据兜底。
+ * 过去 24~72 小时逐小时走势分析（已接入多数据源网关）：
+ * 1. 优先请求同源 Cloudflare Worker `/api/hourly-trend` 多源网关（自动路由和风/香港环保署/WAQI/OpenAQ/Google AQ）
+ * 2. 若本地 dev 无 Worker 或未命中，平滑并行竞速 WAQI 官方逐小时时序流
+ * 绝不注入虚构或 CAMS 数值模拟曲线冒充地面实测。
  */
 export async function fetch24HourHourlyTrend(
   lat: number,
@@ -41,7 +44,8 @@ export async function fetch24HourHourlyTrend(
   currentPM25 = 32,
   currentO3 = 40,
   updateTime?: string,
-  stationIdx?: number
+  stationIdx?: number,
+  options?: { cityId?: string; providerId?: ProviderId; stationRawId?: string }
 ): Promise<HourlyTrendResult> {
   void lat;
   void lng;
@@ -50,10 +54,38 @@ export async function fetch24HourHourlyTrend(
   void currentO3;
   void updateTime;
 
+  // 通道 0：当存在非 WAQI 活跃数据源或已传 cityId 时，优先走 Worker 多源小时流接口 (/api/hourly-trend)
+  if (typeof window !== 'undefined' && window.location.origin && options?.cityId) {
+    try {
+      const params = new URLSearchParams({
+        city: options.cityId,
+        standard,
+      });
+      if (options.providerId) params.set('provider', options.providerId);
+      if (options.stationRawId) {
+        params.set('station', options.stationRawId);
+      } else if (stationIdx) {
+        params.set('station', String(stationIdx));
+      }
+
+      const res = await fetch(`${window.location.origin}/api/hourly-trend?${params.toString()}`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (res.ok) {
+        const json = (await res.json()) as HourlyTrendResult;
+        if (json && json.isReal && Array.isArray(json.points) && json.points.length >= 3) {
+          return json;
+        }
+      }
+    } catch {
+      // 无 Worker 或网络波动时回落 WAQI 双通道
+    }
+  }
+
   if (stationIdx) {
     const racers: Promise<HourlyTrendResult>[] = [];
 
-    // 通道 1：同源 Cloudflare Worker 边缘缓存专线网关 (10分钟缓存，低延迟且绕开前端 CORS/直连慢节点)
+    // 通道 1：同源 Cloudflare Worker 边缘缓存专线网关 (10分钟缓存)
     if (typeof window !== 'undefined' && window.location.origin) {
       racers.push(
         (async () => {
@@ -75,7 +107,7 @@ export async function fetch24HourHourlyTrend(
       );
     }
 
-    // 通道 2：前端直连 WAQI 官方底层双步鉴权与差分解码协议（与通道 1 并行竞速，谁先返回有效实测即采用谁）
+    // 通道 2：前端直连 WAQI 官方底层双步鉴权与差分解码协议
     racers.push(
       (async () => {
         const directPoints = await fetchWaqiHourlyDirect(stationIdx, standard);
@@ -100,43 +132,36 @@ export async function fetch24HourHourlyTrend(
   return {
     points: [],
     isReal: false,
-    source: '该站点暂无 WAQI 逐小时实测发布',
+    source: '该站点暂无逐小时实测发布',
   };
 }
 
 /**
- * 获取未来 5 天基于 ECMWF / CAMS（欧洲中期天气预报中心数值扩散模型）的大气质量预报
+ * 获取未来 5 天大气质量预报（能力解耦独立链）：
+ * 1. 优先请求同源 Worker `/api/forecast`（自动启用彩云 AI 预报 / Open-Meteo ECMWF/CAMS 等）
+ * 2. 本地 dev 无 Worker 时自动直连 Open-Meteo ECMWF/CAMS（免 Key 永久可用）
  */
 export async function fetch5DayForecast(lat: number, lng: number): Promise<ForecastDay[]> {
-  try {
-    const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}&hourly=pm2_5&forecast_days=6&timezone=auto`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(4500) });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const times: string[] = data?.hourly?.time || [];
-    const pm25Arr: (number | null)[] = data?.hourly?.pm2_5 || [];
-
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    const todayStr = `${y}-${m}-${d}`;
-
-    const forecastMap: Record<string, number[]> = {};
-    for (let i = 0; i < times.length; i++) {
-      const dayStr = times[i].slice(0, 10);
-      if (dayStr >= todayStr && pm25Arr[i] != null && !isNaN(pm25Arr[i]!)) {
-        if (!forecastMap[dayStr]) forecastMap[dayStr] = [];
-        forecastMap[dayStr].push(pm25Arr[i]!);
+  if (typeof window !== 'undefined' && window.location.origin) {
+    try {
+      const res = await fetch(
+        `${window.location.origin}/api/forecast?lat=${lat.toFixed(4)}&lon=${lng.toFixed(4)}`,
+        { signal: AbortSignal.timeout(4500) }
+      );
+      if (res.ok) {
+        const json = (await res.json()) as { list?: ForecastDay[] };
+        if (Array.isArray(json?.list) && json.list.length > 0) {
+          return json.list;
+        }
       }
+    } catch {
+      // Fall back to direct Open-Meteo
     }
+  }
 
-    return Object.entries(forecastMap).slice(0, 5).map(([day, vals]) => {
-      const min = Math.round(Math.min(...vals));
-      const max = Math.round(Math.max(...vals));
-      const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-      return { day, min, max, avg };
-    });
+  try {
+    const res = await fetch5DayForecastMultiSource(lat, lng);
+    return res.list;
   } catch {
     return [];
   }
