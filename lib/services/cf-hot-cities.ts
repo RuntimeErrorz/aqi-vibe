@@ -186,11 +186,12 @@ export async function runHotCitiesCronPack(
   let tokenIdx = packIndex * 11;
   const nextToken = () => activeTokens[tokenIdx++ % activeTokens.length];
 
-  const mergedEnv: RawEnvBag = {
-    ...(rawEnv || {}),
-    WAQI_TOKENS: activeTokens.join(','),
+  // Never object-spread Cloudflare Worker `env` (bindings/secrets may be non-enumerable getters)
+  const resolved = resolveProviderSecrets(rawEnv);
+  const secrets = {
+    ...resolved,
+    waqiTokens: activeTokens.length > 0 ? activeTokens : resolved.waqiTokens,
   };
-  const secrets = resolveProviderSecrets(mergedEnv);
 
   // 预检：读取上一轮热城分包缓存（1 次 KV 读），用于和风免费月配额保护：
   // 和风月免费 50,000 次，若同城上一轮由和风更新且距今 < 50 分钟（同整点），直接复用不重复扣额度

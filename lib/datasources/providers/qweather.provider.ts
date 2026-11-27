@@ -99,13 +99,16 @@ export async function signQWeatherJwt(params: {
     pkcs8Bytes.byteOffset + pkcs8Bytes.byteLength
   ) as ArrayBuffer;
 
-  const cryptoKey = await subtle.importKey(
-    'pkcs8',
-    keyBuffer,
-    { name: 'Ed25519' },
-    false,
-    ['sign']
-  );
+  // Support both standard W3C WebCrypto "Ed25519" and legacy Cloudflare workerd "NODE-ED25519"
+  let cryptoKey: CryptoKey;
+  let signAlgo: AlgorithmIdentifier = 'Ed25519';
+  try {
+    cryptoKey = await subtle.importKey('pkcs8', keyBuffer, { name: 'Ed25519' }, false, ['sign']);
+  } catch {
+    const legacyAlgo = { name: 'NODE-ED25519', namedCurve: 'NODE-ED25519' };
+    cryptoKey = await subtle.importKey('pkcs8', keyBuffer, legacyAlgo, false, ['sign']);
+    signAlgo = 'NODE-ED25519';
+  }
 
   const iat = Math.floor(nowMs / 1000) - 30; // 30s clock-skew tolerance per QWeather docs
   const exp = iat + ttlSeconds;
@@ -118,7 +121,7 @@ export async function signQWeatherJwt(params: {
   const signingInput = `${headerB64}.${payloadB64}`;
 
   const signatureBuffer = await subtle.sign(
-    'Ed25519',
+    signAlgo,
     cryptoKey,
     new TextEncoder().encode(signingInput)
   );

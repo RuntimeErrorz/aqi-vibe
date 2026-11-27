@@ -24,6 +24,7 @@ export interface Env {
   };
   RANKING_KV?: KVNamespaceLike;
   WAQI_TOKENS?: string;
+  CARTO_API_KEY?: string;
   // 多数据源可选密钥（配置哪个即自动激活对应数据源，未配置自动跳过）
   QWEATHER_API_HOST?: string;
   QWEATHER_API_KEY?: string;
@@ -446,6 +447,34 @@ export default {
           'Content-Type': upstream.headers.get('Content-Type') || 'image/png',
           'Access-Control-Allow-Origin': '*',
           'Cache-Control': upstream.ok ? 'public, max-age=600, stale-while-revalidate=600' : 'no-store',
+        },
+      });
+      if (edgeCache && ctx && upstream.ok) {
+        ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
+      }
+      return response;
+    }
+
+    // 0.96 CartoDB 地图底图零前端 Key 边缘代理（30 天不可变边缘缓存，无水印且不在 GitHub 暴露 Key）
+    const cartoMatch = url.pathname.match(/^\/api\/carto\/(voyager|dark_all)\/(\d{1,2})\/(\d+)\/(\d+)\.png$/);
+    if (cartoMatch) {
+      const [, style, z, x, y] = cartoMatch;
+      const edgeCache = getEdgeDefaultCache();
+      const cacheKey = new Request(`${url.origin}/api/carto/${style}/${z}/${x}/${y}.png`, { method: 'GET' });
+      if (edgeCache) {
+        const cached = await edgeCache.match(cacheKey);
+        if (cached) return cached;
+      }
+
+      const pathPrefix = style === 'dark_all' ? 'dark_all' : 'rastertiles/voyager';
+      const keyQuery = env.CARTO_API_KEY ? `?key=${encodeURIComponent(env.CARTO_API_KEY)}` : '';
+      const upstream = await fetch(`https://basemaps.cartocdn.com/${pathPrefix}/${z}/${x}/${y}@2x.png${keyQuery}`);
+      const response = new Response(upstream.body, {
+        status: upstream.status,
+        headers: {
+          'Content-Type': upstream.headers.get('Content-Type') || 'image/png',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': upstream.ok ? 'public, max-age=2592000, immutable' : 'no-store',
         },
       });
       if (edgeCache && ctx && upstream.ok) {

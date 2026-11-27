@@ -1,6 +1,6 @@
 name = "aqi-vibe"
 main = "worker.ts"
-compatibility_date = "2024-09-23"
+compatibility_date = "2025-02-04"
 
 [assets]
 directory = "./out"

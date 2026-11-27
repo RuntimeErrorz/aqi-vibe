@@ -169,13 +169,22 @@ export interface RawEnvBag {
 
 /**
  * Extract ProviderSecrets from Cloudflare Worker `env` or Node `process.env`.
+ * IMPORTANT: Never use `{ ...rawEnv }` object spread on Cloudflare Worker `env`,
+ * because `workerd` host-object bindings/secrets may be non-enumerable getters!
+ * Always read each known key explicitly.
  */
 export function resolveProviderSecrets(rawEnv?: RawEnvBag): ProviderSecrets {
   const procEnv: RawEnvBag =
     typeof process !== 'undefined' && process.env ? (process.env as unknown as RawEnvBag) : {};
-  const merged: RawEnvBag = { ...procEnv, ...(rawEnv || {}) };
 
-  const waqiRaw = merged.WAQI_TOKENS || merged.NEXT_PUBLIC_WAQI_TOKEN;
+  const pick = <K extends keyof RawEnvBag>(key: K): string | undefined => {
+    const fromRaw = rawEnv ? rawEnv[key] : undefined;
+    if (typeof fromRaw === 'string' && fromRaw.trim().length > 0) return fromRaw;
+    const fromProc = procEnv[key];
+    return typeof fromProc === 'string' && fromProc.trim().length > 0 ? fromProc : undefined;
+  };
+
+  const waqiRaw = pick('WAQI_TOKENS') || pick('NEXT_PUBLIC_WAQI_TOKEN');
   const waqiTokens = waqiRaw ? parseWaqiTokens(waqiRaw) : [...DEFAULT_WAQI_TOKENS];
 
   const clean = (v?: string): string | undefined => {
@@ -186,18 +195,18 @@ export function resolveProviderSecrets(rawEnv?: RawEnvBag): ProviderSecrets {
 
   return {
     waqiTokens,
-    qweatherHost: clean(merged.QWEATHER_API_HOST)?.replace(/\/+$/, ''),
-    qweatherApiKey: clean(merged.QWEATHER_API_KEY),
-    qweatherJwt: clean(merged.QWEATHER_JWT),
-    qweatherDeveloperId: clean(merged.QWEATHER_DEVELOPER_ID),
-    qweatherProjectId: clean(merged.QWEATHER_PROJECT_ID),
-    qweatherCredentialId: clean(merged.QWEATHER_CREDENTIAL_ID),
-    qweatherPrivateKey: clean(merged.QWEATHER_PRIVATE_KEY)?.replace(/\\n/g, '\n'),
-    caiyunToken: clean(merged.CAIYUN_API_TOKEN),
-    openaqApiKey: clean(merged.OPENAQ_API_KEY),
-    airnowApiKey: clean(merged.AIRNOW_API_KEY),
-    googleAqApiKey: clean(merged.GOOGLE_AQ_API_KEY),
-    moenvApiKey: clean(merged.MOENV_API_KEY),
-    openweatherApiKey: clean(merged.OPENWEATHER_API_KEY),
+    qweatherHost: clean(pick('QWEATHER_API_HOST'))?.replace(/\/+$/, ''),
+    qweatherApiKey: clean(pick('QWEATHER_API_KEY')),
+    qweatherJwt: clean(pick('QWEATHER_JWT')),
+    qweatherDeveloperId: clean(pick('QWEATHER_DEVELOPER_ID')),
+    qweatherProjectId: clean(pick('QWEATHER_PROJECT_ID')),
+    qweatherCredentialId: clean(pick('QWEATHER_CREDENTIAL_ID')),
+    qweatherPrivateKey: clean(pick('QWEATHER_PRIVATE_KEY'))?.replace(/\\n/g, '\n'),
+    caiyunToken: clean(pick('CAIYUN_API_TOKEN')),
+    openaqApiKey: clean(pick('OPENAQ_API_KEY')),
+    airnowApiKey: clean(pick('AIRNOW_API_KEY')),
+    googleAqApiKey: clean(pick('GOOGLE_AQ_API_KEY')),
+    moenvApiKey: clean(pick('MOENV_API_KEY')),
+    openweatherApiKey: clean(pick('OPENWEATHER_API_KEY')),
   };
 }

@@ -19,7 +19,15 @@ import { convertIAQIToConcentration, evaluateAQI, getUSEvaluation } from '@/lib/
 import { iso1A2Code } from '@rapideditor/country-coder';
 
 const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_KEY || '';
-const CARTO_KEY_QUERY = CARTO_KEY ? `?key=${CARTO_KEY}` : '';
+function getCartoTileUrl(theme: 'light' | 'dark'): string {
+  const style = theme === 'dark' ? 'dark_all' : 'voyager';
+  if (CARTO_KEY) {
+    const prefix = theme === 'dark' ? 'dark_all' : 'rastertiles/voyager';
+    return `https://basemaps.cartocdn.com/${prefix}/{z}/{x}/{y}@2x.png?key=${CARTO_KEY}`;
+  }
+  // 线上零前端 Key 时自动走 Cloudflare Worker 边缘代理（30 天强缓存，读取服务端 CARTO_API_KEY Secret，无水印）
+  return `/api/carto/${style}/{z}/{x}/{y}.png`;
+}
 
 export interface FocusCityInfo {
   name: string;
@@ -499,10 +507,7 @@ export default function AirMap({
         zoomDelta: 1,
       });
 
-      const baseUrl =
-        basemapTheme === 'dark'
-          ? `https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png${CARTO_KEY_QUERY}`
-          : `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png${CARTO_KEY_QUERY}`;
+      const baseUrl = getCartoTileUrl(basemapTheme);
 
       basemapLayerRef.current = L.tileLayer(baseUrl, {
         attribution: '&copy; OpenStreetMap &copy; CARTO',
@@ -609,10 +614,7 @@ export default function AirMap({
     if (basemapLayerRef.current) {
       map.removeLayer(basemapLayerRef.current);
     }
-    const baseUrl =
-      basemapTheme === 'dark'
-        ? `https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png${CARTO_KEY_QUERY}`
-        : `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png${CARTO_KEY_QUERY}`;
+    const baseUrl = getCartoTileUrl(basemapTheme);
     basemapLayerRef.current = L.tileLayer(baseUrl, {
       attribution: '&copy; OpenStreetMap &copy; CARTO',
       maxZoom: 19,

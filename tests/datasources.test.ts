@@ -11,7 +11,7 @@ import {
   sortStationsByFreshnessAndDistance,
 } from '@/lib/datasources/freshness';
 import { normalizePollutantUnit } from '@/lib/datasources/units';
-import { ProviderRegistry } from '@/lib/datasources/registry';
+import { ProviderRegistry, resolveProviderSecrets } from '@/lib/datasources/registry';
 import { DataSourceOrchestrator } from '@/lib/datasources/orchestrator';
 import type { AirQualityProvider, ProviderRuntimeContext } from '@/lib/datasources/types';
 import {
@@ -630,5 +630,27 @@ describe('Individual Data Source Provider Adapters', () => {
 
     expect(trend?.isReal).toBe(true);
     expect(trend?.points.length).toBe(4);
+  });
+
+  it('extracts secrets from non-enumerable Cloudflare Worker env objects without object spread loss', () => {
+    const workerdEnv = {};
+    Object.defineProperties(workerdEnv, {
+      QWEATHER_API_HOST: { value: 'https://test.re.qweatherapi.com', enumerable: false },
+      QWEATHER_DEVELOPER_ID: { value: 'QDEV123', enumerable: false },
+      QWEATHER_PROJECT_ID: { value: 'PROJ456', enumerable: false },
+      QWEATHER_CREDENTIAL_ID: { value: 'CRED789', enumerable: false },
+      QWEATHER_PRIVATE_KEY: { value: '-----BEGIN PRIVATE KEY-----\\nABC\\n-----END PRIVATE KEY-----', enumerable: false },
+      OPENAQ_API_KEY: { value: 'openaq-secret', enumerable: false },
+    });
+
+    // Confirm object spread loses non-enumerable properties, while resolveProviderSecrets preserves all of them
+    expect(Object.keys({ ...workerdEnv })).toEqual([]);
+    const secrets = resolveProviderSecrets(workerdEnv as any);
+    expect(secrets.qweatherHost).toBe('https://test.re.qweatherapi.com');
+    expect(secrets.qweatherDeveloperId).toBe('QDEV123');
+    expect(secrets.qweatherProjectId).toBe('PROJ456');
+    expect(secrets.qweatherCredentialId).toBe('CRED789');
+    expect(secrets.qweatherPrivateKey).toContain('\nABC\n');
+    expect(secrets.openaqApiKey).toBe('openaq-secret');
   });
 });

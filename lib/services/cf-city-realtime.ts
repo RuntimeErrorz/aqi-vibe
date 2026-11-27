@@ -26,6 +26,7 @@ import {
   parseObservedTimeMs,
   pruneStaleStations,
   RawEnvBag,
+  resolveProviderSecrets,
   sortStationsByFreshnessAndDistance,
 } from '../datasources';
 
@@ -251,13 +252,15 @@ export async function fetchEdgeCityRealtimePayload(
   if (!city) return null;
 
   const activeTokens = tokens.length > 0 ? tokens : [...DEFAULT_WAQI_TOKENS];
-  const mergedEnv: RawEnvBag = {
-    ...(rawEnv || {}),
-    WAQI_TOKENS: activeTokens.join(','),
+  // Never object-spread Cloudflare Worker `env` (bindings/secrets may be non-enumerable getters)
+  const resolved = resolveProviderSecrets(rawEnv);
+  const secrets = {
+    ...resolved,
+    waqiTokens: activeTokens.length > 0 ? activeTokens : resolved.waqiTokens,
   };
 
   return fetchCityRealtimeMultiSource(city, {
-    rawEnv: mergedEnv,
+    secrets,
     fetchImpl,
     isServer: true,
     concurrency: EDGE_CONCURRENCY,
