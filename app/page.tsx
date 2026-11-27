@@ -56,7 +56,6 @@ const TrendChart = dynamic(
 );
 import {
   MapPin,
-  RefreshCw,
   Thermometer,
   Droplets,
   Wind,
@@ -1157,17 +1156,6 @@ function DashboardPageContent() {
                   )}
                 </div>
               </div>
-
-              <button
-                type="button"
-                onClick={() => loadCityData(selectedCity, selectedStationMode, false)}
-                disabled={loading || stationLoading}
-                className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors shadow-sm cursor-pointer"
-                title="刷新数据"
-                aria-label="刷新当前城市空气质量数据"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading || stationLoading ? 'animate-spin text-sky-600' : ''}`} />
-              </button>
             </div>
 
             {/* AQI 大字与等级徽章 */}
@@ -1343,7 +1331,6 @@ function DashboardPageContent() {
                   <div className="h-7 w-32 bg-slate-200 rounded-lg" />
                   <div className="h-3.5 w-48 bg-slate-100 rounded" />
                 </div>
-                <div className="h-8 w-8 bg-slate-100 rounded-lg" />
               </div>
               <div className="mt-7 flex items-baseline space-x-4">
                 <div className="h-16 w-24 bg-slate-200 rounded-xl" />
