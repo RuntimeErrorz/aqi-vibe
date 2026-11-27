@@ -99,6 +99,13 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
       return;
     }
 
+    if (e.key === 'Escape') {
+      setIsOpen(false);
+      return;
+    }
+
+    if (results.length === 0) return;
+
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setActiveIndex((prev) => (prev + 1) % results.length);
@@ -110,8 +117,6 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
       if (results[activeIndex]) {
         handleSelect(results[activeIndex]);
       }
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
     }
   };
 
@@ -157,7 +162,7 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
 
       {/* Algolia 风格即时预览悬浮下拉面板 */}
       {isOpen && (
-        <div className="absolute left-0 right-0 w-full min-w-0 sm:min-w-[460px] max-w-[calc(100vw-2rem)] top-full mt-2 z-[100] bg-white rounded-2xl border border-slate-200/90 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute left-0 right-0 w-full min-w-0 sm:min-w-[460px] max-w-[calc(100vw-2rem)] top-full mt-2 z-[100] bg-white rounded-2xl border border-slate-200/90 shadow-2xl overflow-hidden">
           <div className="p-2 border-b border-slate-100 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400 px-3">
             <span className="truncate mr-2">
               {query.trim()

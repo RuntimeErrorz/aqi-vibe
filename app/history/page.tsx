@@ -190,15 +190,17 @@ function HistoryPageContent() {
       : (currentYearObj?.pollutedDays ?? 0);
 
   const firstYearPM25 = firstYearObj?.pm25Avg || 0;
+  const validPm25Days = calendarData.filter((d) => typeof d.pm25 === 'number' && d.pm25 > 0);
   const currentYearPM25 =
     currentYearObj?.pm25Avg ??
-    (validTotalDays > 0
-      ? Math.round((calendarData.reduce((acc, d) => acc + (d.pm25 || 0), 0) / validTotalDays) * 10) / 10
+    (validPm25Days.length > 0
+      ? Math.round((validPm25Days.reduce((acc, d) => acc + (d.pm25 as number), 0) / validPm25Days.length) * 10) / 10
       : 0);
 
+  const validAqiDays = calendarData.filter((d) => typeof d.aqi === 'number' && d.aqi > 0);
   const dailyAvgAQI =
-    validTotalDays > 0 && calendarData.length > 0
-      ? Math.round(calendarData.reduce((acc, d) => acc + d.aqi, 0) / validTotalDays)
+    validAqiDays.length > 0
+      ? Math.round(validAqiDays.reduce((acc, d) => acc + d.aqi, 0) / validAqiDays.length)
       : (currentYearObj?.aqiAvg ?? 0);
 
   const avgAQI = onlyPm25

@@ -18,7 +18,7 @@ function getCNBreakpoints(period: AveragingPeriod) {
 }
 
 function calculateIAQI(concentration: number, bpConcentrations: number[], bpIAQI: number[]): number {
-  if (concentration <= 0 || isNaN(concentration)) return 0;
+  if (!Number.isFinite(concentration) || concentration <= 0) return 0;
 
   const maxIdx = Math.min(bpConcentrations.length - 1, bpIAQI.length - 1);
   if (concentration >= bpConcentrations[maxIdx]) {
@@ -33,7 +33,8 @@ function calculateIAQI(concentration: number, bpConcentrations: number[], bpIAQI
 
     if (concentration >= cLow && concentration <= cHigh) {
       const iaqi = ((iHigh - iLow) / (cHigh - cLow)) * (concentration - cLow) + iLow;
-      return Math.round(iaqi);
+      // Valid positive concentration should never round down to 0 ("No Data")
+      return Math.max(1, Math.round(iaqi));
     }
   }
 
@@ -48,7 +49,7 @@ export function calculateConcentrationFromIAQI(
   bpConcentrations: number[],
   bpIAQI: number[]
 ): number {
-  if (iaqi <= 0 || isNaN(iaqi)) return 0;
+  if (!Number.isFinite(iaqi) || iaqi <= 0) return 0;
   const maxIdx = Math.min(bpConcentrations.length - 1, bpIAQI.length - 1);
   if (iaqi >= bpIAQI[maxIdx]) {
     return bpConcentrations[maxIdx];
@@ -147,18 +148,20 @@ const POLLUTANT_NAMES_ZH: Record<string, string> = {
  */
 export function calculatePM25AQI(
   pm25Concentration: number | undefined | null,
-  standard: StandardType = 'US'
+  standard: StandardType = 'US',
+  period: AveragingPeriod = 'hourly'
 ): number {
   if (
     pm25Concentration === undefined ||
     pm25Concentration === null ||
-    isNaN(pm25Concentration) ||
+    !Number.isFinite(pm25Concentration) ||
     pm25Concentration <= 0
   ) {
     return 0;
   }
   if (standard === 'CN') {
-    return calculateIAQI(pm25Concentration, CN_HOURLY_BREAKPOINTS.pm25, CN_HOURLY_BREAKPOINTS.iaqi);
+    const bp = getCNBreakpoints(period);
+    return calculateIAQI(pm25Concentration, bp.pm25, bp.iaqi);
   } else {
     return calculateIAQI(pm25Concentration, US_BREAKPOINTS.pm25, US_BREAKPOINTS.aqi);
   }
@@ -173,8 +176,11 @@ export function evaluateAQI(
   // 1. 若开启「只看 PM2.5」模式：AQI 计算完全只按照 PM2.5 单项物理质量浓度计算
   if (onlyPm25) {
     const pm25Val = pollutants.pm25;
-    const aqi = calculatePM25AQI(pm25Val, standard);
+    const aqi = calculatePM25AQI(pm25Val, standard, period);
     const evalResult = standard === 'CN' ? getCNEvaluation(aqi, 'pm25') : getUSEvaluation(aqi, 'pm25');
+    if (aqi <= 0) {
+      return evalResult;
+    }
     return {
       ...evalResult,
       primaryPollutant: 'pm25',

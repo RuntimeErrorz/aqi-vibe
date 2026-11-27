@@ -11,6 +11,7 @@ import {
   parseObservedTimeMs,
 } from '../freshness';
 import { createTimeoutSignal, normalizePollutantUnit } from '../units';
+import { createHttpError } from '../../utils/common';
 import type {
   AirQualityProvider,
   NormalizedStationSample,
@@ -19,12 +20,6 @@ import type {
 } from '../types';
 
 const OPENAQ_BASE = 'https://api.openaq.org/v3';
-
-function createHttpError(status: number, message: string): Error & { status: number } {
-  const err = new Error(message) as Error & { status: number };
-  err.status = status;
-  return err;
-}
 
 function mapOpenAqParam(paramName: string): keyof PollutantValues | null {
   const p = paramName.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -131,6 +126,7 @@ export const openaqProvider: AirQualityProvider = {
             const measurements: any[] = Array.isArray(latestJson?.results) ? latestJson.results : [];
 
             const pollutants: PollutantValues = {};
+            const keyLatestMs: Partial<Record<keyof PollutantValues, number>> = {};
             let latestMs = 0;
             let latestLocal: string | undefined;
 
@@ -149,7 +145,10 @@ export const openaqProvider: AirQualityProvider = {
               if (!obsMs || ctx.nowMs - obsMs > 24 * 3600 * 1000 || obsMs - ctx.nowMs > 15 * 60 * 1000) {
                 continue;
               }
-              pollutants[key] = normalizedVal;
+              if ((keyLatestMs[key] ?? 0) <= obsMs) {
+                keyLatestMs[key] = obsMs;
+                pollutants[key] = normalizedVal;
+              }
               if (obsMs > latestMs) {
                 latestMs = obsMs;
                 latestLocal = typeof m?.datetime?.local === 'string' ? m.datetime.local : undefined;
@@ -359,7 +358,6 @@ export const openaqProvider: AirQualityProvider = {
           ...(obsMs ? { timestampMs: obsMs } : {}),
           aqi: ev.aqi,
           pm25,
-          o3: 0,
           iaqi,
           isReal: true,
         });

@@ -48,6 +48,7 @@ function ComparePageContent() {
   });
 
   const [dailyDataMap, setDailyDataMap] = useState<Record<string, Record<string, any>>>({});
+  const dailyDataMapRef = React.useRef<Record<string, Record<string, any>>>({});
   const [loadingDaily, setLoadingDaily] = useState<boolean>(false);
 
   useEffect(() => {
@@ -84,26 +85,35 @@ function ComparePageContent() {
     if (!summaryReady) return;
     let cancelled = false;
     const loadData = async () => {
-      const missingIds = selectedCityIds.filter((id) => !dailyDataMap[id]);
-      if (missingIds.length === 0) return;
+      const missingIds = selectedCityIds.filter((id) => !dailyDataMapRef.current[id]);
+      if (missingIds.length === 0) {
+        setLoadingDaily(false);
+        return;
+      }
 
       setLoadingDaily(true);
-      const results = await Promise.all(
-        missingIds.map(async (id) => {
-          const data = await fetchCityDailyHistory(id);
-          return { id, data };
-        })
-      );
+      try {
+        const results = await Promise.all(
+          missingIds.map(async (id) => {
+            const data = await fetchCityDailyHistory(id);
+            return { id, data };
+          })
+        );
 
-      if (!cancelled) {
-        setDailyDataMap((prev) => {
-          const next = { ...prev };
-          results.forEach(({ id, data }) => {
-            next[id] = data;
+        if (!cancelled) {
+          setDailyDataMap((prev) => {
+            const next = { ...prev };
+            results.forEach(({ id, data }) => {
+              next[id] = data;
+            });
+            dailyDataMapRef.current = next;
+            return next;
           });
-          return next;
-        });
-        setLoadingDaily(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingDaily(false);
+        }
       }
     };
 
@@ -118,25 +128,6 @@ function ComparePageContent() {
     setSelectedCityIds(selectedCityIds.filter((id) => id !== cityId));
   };
 
-  const toggleCity = (cityId: string) => {
-    if (selectedCityIds.includes(cityId)) {
-      handleRemoveCity(cityId);
-    } else if (selectedCityIds.length < 5) {
-      setSelectedCityIds([...selectedCityIds, cityId]);
-    } else {
-      setSelectedCityIds([...selectedCityIds.slice(0, 4), cityId]);
-    }
-  };
-
-  const handleAddCity = (city: CityMeta) => {
-    if (selectedCityIds.includes(city.id)) return;
-    if (selectedCityIds.length >= 5) {
-      setSelectedCityIds([...selectedCityIds.slice(0, 4), city.id]);
-      return;
-    }
-    setSelectedCityIds([...selectedCityIds, city.id]);
-  };
-
   const handleQuickAddCity = (cityId: string) => {
     if (selectedCityIds.includes(cityId)) return;
     if (selectedCityIds.length < 5) {
@@ -144,6 +135,18 @@ function ComparePageContent() {
     } else {
       setSelectedCityIds([...selectedCityIds.slice(0, 4), cityId]);
     }
+  };
+
+  const toggleCity = (cityId: string) => {
+    if (selectedCityIds.includes(cityId)) {
+      handleRemoveCity(cityId);
+    } else {
+      handleQuickAddCity(cityId);
+    }
+  };
+
+  const handleAddCity = (city: CityMeta) => {
+    handleQuickAddCity(city.id);
   };
 
   const activeCities = selectedCityIds.map((id, idx) => {

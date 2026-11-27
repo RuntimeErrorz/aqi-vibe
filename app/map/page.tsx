@@ -110,8 +110,7 @@ function MapPageContent() {
       country: c.country,
       latitude: c.latitude,
       longitude: c.longitude,
-      // 港澳台与内地统一归属 domestic
-      isDomestic: ['CN', 'HK', 'MO', 'TW'].includes(c.country),
+      isDomestic: typeof c.isDomestic === 'boolean' ? c.isDomestic : ['CN', 'HK', 'MO', 'TW'].includes(c.country),
     };
 
     handleSelectCity(meta);

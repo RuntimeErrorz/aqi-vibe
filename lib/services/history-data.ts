@@ -146,12 +146,12 @@ export async function fetchCityDailyHistory(cityId: string): Promise<Record<stri
     return clientDailyCache[cityId];
   }
 
-  // 若 summary 尚未加载，先确保加载完成，防止误判为无历史记录
+  // 若 summary 尚未加载，先尝试加载；若 summary 加载成功且明确无该城记录才提前返回
   if (!summaryCache) {
     await loadHistorySummary();
   }
 
-  if (!hasCityHistory(cityId)) {
+  if (summaryCache && !hasCityHistory(cityId)) {
     return {};
   }
 
@@ -248,19 +248,24 @@ export function aggregateMonthlySeasonality(
       if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) continue;
       const b = buckets[monthNum - 1];
       b.daysCount++;
-      const pm25 = rec?.pm25 !== undefined && rec?.pm25 !== null && Number(rec.pm25) > 0 ? Number(rec.pm25) : undefined;
-      const o3 = rec?.o3 !== undefined && rec?.o3 !== null && Number(rec.o3) > 0 ? Number(rec.o3) : undefined;
+      const toPosNum = (v: unknown): number | undefined => {
+        if (v === undefined || v === null) return undefined;
+        const n = Number(v);
+        return Number.isFinite(n) && n > 0 ? n : undefined;
+      };
+      const pm25 = toPosNum(rec?.pm25);
+      const o3 = toPosNum(rec?.o3);
       if (pm25 !== undefined) b.pm25.push(pm25);
       if (o3 !== undefined) b.o3.push(o3);
 
       const evalRes = evaluateAQI(
         {
           pm25,
-          pm10: rec?.pm10 ? Number(rec.pm10) : undefined,
+          pm10: toPosNum(rec?.pm10),
           o3,
-          no2: rec?.no2 ? Number(rec.no2) : undefined,
-          so2: rec?.so2 ? Number(rec.so2) : undefined,
-          co: rec?.co ? Number(rec.co) : undefined,
+          no2: toPosNum(rec?.no2),
+          so2: toPosNum(rec?.so2),
+          co: toPosNum(rec?.co),
         },
         standard,
         onlyPm25,
@@ -405,7 +410,7 @@ export function getAllCitiesRanking(
     if (!yearObj || yearObj.daysCount < 15) continue;
 
     const countryMeta = getCountryInfo(city.country);
-    const earliestObj = yearsArr[0];
+    const earliestObj = yearsArr.reduce((min, cur) => (cur.year < min.year ? cur : min), yearsArr[0]);
     let improvementRate: number | null = null;
     if (earliestObj && earliestObj.year < year && earliestObj.pm25Avg > 0) {
       improvementRate = Number((((yearObj.pm25Avg - earliestObj.pm25Avg) / earliestObj.pm25Avg) * 100).toFixed(1));

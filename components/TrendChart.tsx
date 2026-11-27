@@ -31,7 +31,6 @@ const DEFAULT_SELECTED_MAP: Record<string, boolean> = {
 
 export const TrendChart: React.FC<TrendChartProps> = ({
   data,
-  city,
   isReal = true,
   loading = false,
   timezoneOffset,
@@ -154,7 +153,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({
   });
   const pm25Vals = activePoints.map((d) => d.pm25);
   const pm10Vals = activePoints.map((d) => d.pm10 ?? null);
-  const o3Vals = activePoints.map((d) => d.o3);
+  const o3Vals = activePoints.map((d) => d.o3 ?? null);
   const no2Vals = activePoints.map((d) => d.no2 ?? null);
   const so2Vals = activePoints.map((d) => d.so2 ?? null);
   const coVals = activePoints.map((d) => d.co ?? null);
@@ -264,7 +263,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({
               ? '<span style="color:#0284c7; font-size:11px; background:#f0f9ff; padding:1px 6px; border-radius:4px; border:1px solid #bae6fd;">当前最新实测</span>'
               : isReal
               ? '<span style="color:#059669; font-size:10px; background:#ecfdf5; padding:1px 5px; border-radius:3px; border:1px solid #a7f3d0;">官方真实实测</span>'
-              : '<span style="color:#64748b; font-size:10px; background:#f1f5f9; padding:1px 5px; border-radius:3px;">日内规律反推</span>'
+              : ''
           }
         </div>`;
 

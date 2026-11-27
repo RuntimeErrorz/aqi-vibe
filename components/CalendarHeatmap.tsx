@@ -9,8 +9,6 @@ import {
   Sparkles,
   Leaf,
   Flame,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
 import { StandardType, CalendarHeatmapDay } from '@/lib/types';
 import { PaginationJumper } from './PaginationJumper';
@@ -24,13 +22,6 @@ interface CalendarHeatmapProps {
   loadingDaily?: boolean;
   availableYears?: number[];
 }
-
-const PageJumper: React.FC<{
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (p: number) => void;
-  labelPrefix?: string;
-}> = (props) => <PaginationJumper {...props} compact={true} />;
 
 function formatDateMeta(dateStr: string) {
   const parts = dateStr.split('-');
@@ -683,7 +674,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
                   </div>
                 )}
                 <div
-                  className="w-2.5 h-4.5 rounded-full bg-white shadow-md border-2 transition-transform hover:scale-110 active:scale-125 pointer-events-none"
+                  className="w-2.5 h-4 rounded-full bg-white shadow-md border-2 transition-transform hover:scale-110 active:scale-125 pointer-events-none"
                   style={{ borderColor: getAqiColor(filterRange[0]) }}
                 />
               </div>
@@ -707,7 +698,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
                   </div>
                 )}
                 <div
-                  className="w-2.5 h-4.5 rounded-full bg-white shadow-md border-2 transition-transform hover:scale-110 active:scale-125 pointer-events-none"
+                  className="w-2.5 h-4 rounded-full bg-white shadow-md border-2 transition-transform hover:scale-110 active:scale-125 pointer-events-none"
                   style={{ borderColor: getAqiColor(filterRange[1]) }}
                 />
               </div>
@@ -767,7 +758,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
             </div>
             <div className="grid grid-cols-12 gap-1.5 flex-1 py-2">
               {Array.from({ length: 48 }).map((_, idx) => (
-                <div key={idx} className="rounded-xs bg-slate-200/60 h-full" />
+                <div key={idx} className="rounded-sm bg-slate-200/60 h-full" />
               ))}
             </div>
           </div>
@@ -853,10 +844,11 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
                   {Math.min(bestPage * pageSize, bestDays.length)} 天 / 共{' '}
                   {bestDays.length} 天
                 </span>
-                <PageJumper
+                <PaginationJumper
                   currentPage={bestPage}
                   totalPages={bestTotalPages}
                   onPageChange={setBestPage}
+                  compact={true}
                 />
               </div>
             </div>
@@ -887,10 +879,11 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
                   {Math.min(worstPage * pageSize, worstDays.length)} 天 / 共{' '}
                   {worstDays.length} 天
                 </span>
-                <PageJumper
+                <PaginationJumper
                   currentPage={worstPage}
                   totalPages={worstTotalPages}
                   onPageChange={setWorstPage}
+                  compact={true}
                 />
               </div>
             </div>

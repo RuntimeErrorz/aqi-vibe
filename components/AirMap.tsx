@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import {
   fetchWAQIMapBounds,
   WaqiBoundStation,
@@ -15,13 +14,12 @@ import {
 import { filterStationsForCity, getDistanceKm } from '@/lib/services/geo-filter';
 import {
   formatBrowserLocalChartTime,
-  isSameSovereignCountry,
   parseObservedTimeMs,
 } from '@/lib/datasources/freshness';
 import { CityMeta, StandardType, AirQualityRecord } from '@/lib/types';
 import { useStandard } from '@/components/StandardContext';
 import { convertIAQIToConcentration, evaluateAQI, getUSEvaluation } from '@/lib/aqi-calculator';
-import { iso1A2Code } from '@rapideditor/country-coder';
+import { escapeHtml } from '@/lib/utils/common';
 
 const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_KEY || '';
 function getCartoTileUrl(theme: 'light' | 'dark'): string {
@@ -126,15 +124,6 @@ function getStationPinEvaluation(
   }
 }
 
-function escapeHtml(str: string): string {
-  return (str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
 function filterVisibleStationsByGrid(
   stations: WaqiBoundStation[],
   map: L.Map,
@@ -169,22 +158,18 @@ function findNearestStationForCity(
   city: CityMeta,
   stationPool: WaqiBoundStation[]
 ): (WaqiBoundStation & { distKm: number }) | null {
-  const valid = stationPool
-    .filter((s) => {
-      const a = parseInt(s.aqi, 10);
-      if (isNaN(a) || a <= 0 || a > 500) return false;
-      const stCountry = iso1A2Code([s.lon, s.lat]);
-      if (!isSameSovereignCountry(stCountry, city.country)) return false;
-      return true;
-    })
-    .map((s) => ({
-      ...s,
-      distKm: getDistanceKm(city.latitude, city.longitude, s.lat, s.lon),
-    }))
-    .filter((s) => s.distKm <= 35);
+  const active = stationPool.filter((s) => {
+    const a = parseInt(s.aqi, 10);
+    return !isNaN(a) && a > 0 && a <= 500;
+  });
+  // Reuse unified Voronoi + sovereign country + 35km filter (AGENTS.md §9.3)
+  const owned = filterStationsForCity(active, city).map((s) => ({
+    ...s,
+    distKm: getDistanceKm(city.latitude, city.longitude, s.lat, s.lon),
+  }));
 
-  const sorted = [...valid].sort((a, b) => a.distKm - b.distKm);
-  return sorted[0] || null;
+  owned.sort((a, b) => a.distKm - b.distKm);
+  return owned[0] || null;
 }
 
 function buildStationDetailPopupHtml(
@@ -204,13 +189,17 @@ function buildStationDetailPopupHtml(
     ? rec.updateTime.slice(5, 16)
     : '实时';
 
-  const ev = rec
+  const rawEv = rec
     ? onlyPm25
       ? evaluateAQI({ pm25: rec.pollutants.pm25 }, standard, true)
       : standard === 'CN'
       ? rec.evaluationCN
       : rec.evaluationUS
     : null;
+  const ev =
+    rawEv && rec?.isOffline
+      ? { ...rawEv, color: '#64748b', textColor: '#ffffff', isOffline: true }
+      : rawEv;
 
   const displayAqi = ev ? (ev.aqi > 0 ? String(ev.aqi) : '-') : fallbackStyle.displayAqi;
   const levelText = ev ? ev.level : fallbackStyle.levelText;
@@ -283,6 +272,8 @@ export default function AirMap({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const basemapLayerRef = useRef<L.TileLayer | null>(null);
+  const appliedBasemapThemeRef = useRef<'light' | 'dark'>(basemapTheme);
+  const initialViewAppliedRef = useRef(false);
   const heatmapLayerRef = useRef<L.TileLayer | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -351,10 +342,11 @@ export default function AirMap({
 
       // 点击测站弹窗时按需拉取真实六项分项实测（零伪造，按需请求）
       marker.on('popupopen', () => {
+        const curStyle = getStationPinEvaluation(st, standardRef.current, onlyPm25Ref.current);
         const existing = stationDetailRecRef.current.get(st.uid);
         if (existing) {
           marker.setPopupContent(
-            buildStationDetailPopupHtml(st, existing, standardRef.current, onlyPm25Ref.current, style, false)
+            buildStationDetailPopupHtml(st, existing, standardRef.current, onlyPm25Ref.current, curStyle, false)
           );
           return;
         }
@@ -369,14 +361,18 @@ export default function AirMap({
                 pm25IaqiCN: rec.iaqiCN?.pm25,
               });
             }
-            marker.setPopupContent(
-              buildStationDetailPopupHtml(st, rec, standardRef.current, onlyPm25Ref.current, style, false)
-            );
+            if (mapInstanceRef.current?.hasLayer(marker)) {
+              marker.setPopupContent(
+                buildStationDetailPopupHtml(st, rec, standardRef.current, onlyPm25Ref.current, curStyle, false)
+              );
+            }
           })
           .catch(() => {
-            marker.setPopupContent(
-              buildStationDetailPopupHtml(st, null, standardRef.current, onlyPm25Ref.current, style, false)
-            );
+            if (mapInstanceRef.current?.hasLayer(marker)) {
+              marker.setPopupContent(
+                buildStationDetailPopupHtml(st, null, standardRef.current, onlyPm25Ref.current, curStyle, false)
+              );
+            }
           });
       });
 
@@ -615,10 +611,11 @@ export default function AirMap({
     };
   }, []);
 
-  // 响应浅色 / 深色底图切换
+  // 响应浅色 / 深色底图切换（跳过首帧重复挂载）
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map) return;
+    if (!map || appliedBasemapThemeRef.current === basemapTheme) return;
+    appliedBasemapThemeRef.current = basemapTheme;
     if (basemapLayerRef.current) {
       map.removeLayer(basemapLayerRef.current);
     }
@@ -654,12 +651,15 @@ export default function AirMap({
   }, [showHeatmap, heatmapOpacity]);
 
   useEffect(() => {
-    if (mapInstanceRef.current && center) {
-      mapInstanceRef.current.flyTo(center, zoom || 9, {
-        duration: 1.5,
-        easeLinearity: 0.25,
-      });
+    if (!mapInstanceRef.current || !center) return;
+    if (!initialViewAppliedRef.current) {
+      initialViewAppliedRef.current = true;
+      return;
     }
+    mapInstanceRef.current.flyTo(center, zoom || 9, {
+      duration: 1.5,
+      easeLinearity: 0.25,
+    });
   }, [center, zoom]);
 
   useEffect(() => {

@@ -352,8 +352,9 @@ def update_summary_and_index(touched_city_years):
 
 
 def check_missing_recent_dates(lookback_days=3):
-    """直接基于已入库跟踪的 public/data/history/cn-beijing.json 检查最近 N 天缺失日期"""
-    today = datetime.date.today()
+    """直接基于已入库跟踪的 public/data/history/cn-beijing.json 检查最近 N 天缺失日期（按北京时间 UTC+8 结算）"""
+    cst_tz = datetime.timezone(datetime.timedelta(hours=8))
+    today = datetime.datetime.now(cst_tz).date()
     beijing_file = os.path.join(HISTORY_DIR, 'cn-beijing.json')
     existing_dates = set()
     if os.path.exists(beijing_file):

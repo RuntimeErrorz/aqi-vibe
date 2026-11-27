@@ -40,7 +40,7 @@ import {
   convertIAQIToConcentration,
   getUSEvaluation,
 } from '@/lib/aqi-calculator';
-import { AirQualityRecord, CityMeta, ForecastDay } from '@/lib/types';
+import { AirQualityRecord, CityMeta, ForecastDay, ProviderId } from '@/lib/types';
 
 // 按需异步加载 ECharts 24 小时走势图，避免首页首屏同步打包 ~400KB ECharts 阻塞主线程
 const TrendChart = dynamic(
@@ -247,9 +247,8 @@ function DashboardPageContent() {
       try {
         const found = targetStations.find((s) => s.uid === uidNum);
         const cleanName = found ? extractCleanStationName(found.station?.name || '', targetCity.nameZh) : undefined;
-        const stationProviderId = ((found as any)?.providerId || targetRecord.provenance?.providerId) as
-          | import('@/lib/types').ProviderId
-          | undefined;
+        const stationProviderId = ((found as { providerId?: ProviderId } | undefined)?.providerId ||
+          targetRecord.provenance?.providerId) as ProviderId | undefined;
         let stationData: AirQualityRecord;
 
         if (stationProviderId && stationProviderId !== 'waqi' && found?.pollutants) {
@@ -497,10 +496,15 @@ function DashboardPageContent() {
         }
       }
 
-      // 智能预报整合：WAQI 官方扩散模型立即上屏；缺失时异步拉取 ECMWF/CAMS，绝不阻塞主卡片
-      const todayStr = getTodayDateStr();
+      // 智能预报整合：按城市当地日期过滤 WAQI 官方扩散模型；缺失时异步拉取 ECMWF/CAMS，绝不阻塞主卡片
+      const cityTodayStr = formatLocalTimeForCityWithTz(
+        Date.now(),
+        city.country,
+        city.longitude,
+        city.latitude
+      ).localTime.slice(0, 10);
       const validWaqiForecast = (data.forecast?.pm25 || []).filter(
-        (f) => f.day >= todayStr && typeof f.avg === 'number' && !isNaN(f.avg)
+        (f) => f.day >= cityTodayStr && typeof f.avg === 'number' && !isNaN(f.avg) && f.avg > 0
       );
 
       if (validWaqiForecast.length >= 3) {
@@ -638,14 +642,28 @@ function DashboardPageContent() {
     loadCityData(selectedCity, modeToUse);
   }, [selectedCity, mounted]);
 
-  // 标准或「只看 PM2.5」切换时同步重算当前视图与 24 小时基准时序
+  // 标准或「只看 PM2.5」切换时同步重算当前视图（纯本地计算，零网络开销）
   useEffect(() => {
     if (!baseCityRecord) return;
     if (selectedStationMode === 'composite') {
       setRecord(buildCompositeRecord(baseCityRecord, cityStations, selectedCity));
     }
+  }, [standard, onlyPm25]);
+
+  // 仅当国标/美标切换时重拉 24~72h 逐小时曲线（onlyPm25 由 TrendChart 本地基于物理浓度即时重算，无需发请求）
+  useEffect(() => {
+    if (!baseCityRecord) return;
     if (baseCityRecord.stationIdx || baseCityRecord.provenance?.providerId) {
       const activeReqId = requestIdRef.current;
+      const isSingleStation = selectedStationMode !== 'composite' && selectedStationMode !== 'default';
+      const foundStation = isSingleStation
+        ? cityStations.find((s) => String(s.uid) === selectedStationMode)
+        : undefined;
+      const stationRawId = (foundStation as { stationId?: string } | undefined)?.stationId?.split(':')[1];
+      const stationProviderId =
+        ((foundStation as { providerId?: ProviderId } | undefined)?.providerId) ||
+        baseCityRecord.provenance?.providerId;
+
       fetch24HourHourlyTrend(
         selectedCity.latitude,
         selectedCity.longitude,
@@ -654,38 +672,45 @@ function DashboardPageContent() {
         0,
         0,
         baseCityRecord.updateTime,
-        selectedStationMode !== 'composite' && selectedStationMode !== 'default'
+        isSingleStation
           ? Number(selectedStationMode) || baseCityRecord.stationIdx
           : baseCityRecord.stationIdx,
         {
           cityId: selectedCity.id,
-          providerId: baseCityRecord.provenance?.providerId,
+          providerId: stationProviderId,
+          stationRawId,
         }
       ).then((t) => {
         if (requestIdRef.current !== activeReqId) return;
         if (t.points.length > 0) {
           setTrendResult(t);
-          if (selectedStationMode === 'composite' || selectedStationMode === 'default') {
+          if (!isSingleStation) {
             setBaseTrendResult(t);
           }
         }
       });
     }
-  }, [standard, onlyPm25]);
+  }, [standard]);
 
   const evaluation = useMemo(() => {
     if (!record) return null;
     if (onlyPm25) {
-      return evaluateAQI({ pm25: record.pollutants.pm25 }, standard, true);
+      const ev = evaluateAQI({ pm25: record.pollutants.pm25 }, standard, true);
+      if (record.isOffline) {
+        return { ...ev, color: '#64748b', textColor: '#ffffff', isOffline: true };
+      }
+      return ev;
     }
     return standard === 'CN' ? record.evaluationCN : record.evaluationUS;
   }, [record, standard, onlyPm25]);
 
-  const activeIAQI = record
-    ? standard === 'CN'
-      ? calculateCNIAQI(record.pollutants)
-      : calculateUSIAQI(record.pollutants)
-    : {};
+  const activeIAQI = useMemo(() => {
+    if (!record) return {};
+    if (standard === 'CN') {
+      return record.iaqiCN || calculateCNIAQI(record.pollutants);
+    }
+    return record.iaqiUS || calculateUSIAQI(record.pollutants);
+  }, [record, standard]);
 
   // 严格真实：单站微标在「只看 PM2.5」模式下仅使用已实测的 PM2.5，未拉取到时诚实展示综合 AQI，绝不乘比例伪造
   const getStationEval = (st: WaqiBoundStation) => {
@@ -710,14 +735,15 @@ function DashboardPageContent() {
   };
 
   const compositePreviewEval = useMemo(() => {
-    if (!baseCityRecord) return null;
+    if (!isStationDropdownOpen || !baseCityRecord) return null;
+    if (selectedStationMode === 'composite' && evaluation) return evaluation;
     const comp = buildCompositeRecord(baseCityRecord, cityStations, selectedCity);
-    return onlyPm25
-      ? evaluateAQI({ pm25: comp.pollutants.pm25 }, standard, true)
-      : standard === 'CN'
-      ? comp.evaluationCN
-      : comp.evaluationUS;
-  }, [baseCityRecord, cityStations, selectedCity, standard, onlyPm25]);
+    if (onlyPm25) {
+      const ev = evaluateAQI({ pm25: comp.pollutants.pm25 }, standard, true);
+      return comp.isOffline ? { ...ev, color: '#64748b', textColor: '#ffffff', isOffline: true } : ev;
+    }
+    return standard === 'CN' ? comp.evaluationCN : comp.evaluationUS;
+  }, [isStationDropdownOpen, selectedStationMode, evaluation, baseCityRecord, cityStations, selectedCity, standard, onlyPm25]);
 
   const enrichedPm25Count = useMemo(
     () => cityStations.filter((s) => s.pm25 !== undefined && s.pm25 > 0).length,
@@ -729,13 +755,13 @@ function DashboardPageContent() {
     const prov = baseCityRecord?.provenance;
     if (!prov) return false;
     const sameSourceCount = cityStations.filter(
-      (s) => !(s as any).providerId || (s as any).providerId === prov.providerId
+      (s) => !(s as { providerId?: ProviderId }).providerId || (s as { providerId?: ProviderId }).providerId === prov.providerId
     ).length;
     return prov.tier === 'station-grid-fusion' && sameSourceCount === 0;
   }, [baseCityRecord, cityStations]);
 
   const auxStationsProviderLabel = useMemo(() => {
-    const firstProv = (cityStations[0] as any)?.providerId as import('@/lib/types').ProviderId | undefined;
+    const firstProv = (cityStations[0] as { providerId?: ProviderId } | undefined)?.providerId;
     if (!firstProv || firstProv === baseCityRecord?.provenance?.providerId) return null;
     return PROVIDER_SHORT_LABELS[firstProv] || firstProv;
   }, [cityStations, baseCityRecord]);
@@ -954,7 +980,7 @@ function DashboardPageContent() {
                         <div
                           role="listbox"
                           aria-label="选择监测站点"
-                          className="fixed inset-x-4 top-28 sm:absolute sm:inset-x-auto sm:left-0 sm:top-full mt-1.5 z-50 w-auto sm:w-80 max-w-sm rounded-2xl bg-white shadow-2xl border border-slate-200 p-2 text-xs transition-all animate-in fade-in slide-in-from-top-1 duration-150"
+                          className="fixed inset-x-4 top-28 sm:absolute sm:inset-x-auto sm:left-0 sm:top-full mt-1.5 z-50 w-auto sm:w-80 max-w-sm rounded-2xl bg-white shadow-2xl border border-slate-200 p-2 text-xs transition-all"
                         >
                           <button
                             type="button"
@@ -1194,7 +1220,7 @@ function DashboardPageContent() {
                 <span className="font-bold text-amber-600 text-xs sm:text-sm">{evaluation.primaryPollutantName}</span>
               </div>
               <div className="flex items-start space-x-2 pt-2.5 border-t border-slate-200/80 text-slate-700">
-                <AlertTriangle className="w-4.5 h-4.5 text-sky-600 shrink-0 mt-0.5" />
+                <AlertTriangle className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
                 <p className="leading-relaxed text-xs sm:text-[13.5px] font-medium">{evaluation.healthAdvice}</p>
               </div>
             </div>
@@ -1415,7 +1441,7 @@ function DashboardPageContent() {
       <section className="glass-panel rounded-2xl p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4 sm:mb-5">
           <div className="flex items-center flex-wrap gap-2">
-            <Calendar className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-indigo-600" />
+            <Calendar className="w-5 h-5 text-indigo-600" />
             <h3 className="text-base sm:text-lg font-bold text-slate-900">未来 5 天空气质量预测走势</h3>
             {forecastData.source && (
               <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200 shadow-sm flex items-center space-x-1">
@@ -1501,9 +1527,9 @@ function DashboardPageContent() {
                         <span className="font-bold text-slate-900">{f.avg} μg/m³</span>
                       </div>
                       <div className="flex items-center justify-between text-slate-400 font-mono text-[10px]">
-                        <span>日波动区间</span>
+                        <span>{f.min === f.max ? '预测口径' : '日波动区间'}</span>
                         <span>
-                          {f.min} ~ {f.max} μg/m³
+                          {f.min === f.max ? '日均预测' : `${f.min} ~ ${f.max} μg/m³`}
                         </span>
                       </div>
                     </div>

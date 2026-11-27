@@ -13,9 +13,12 @@ import {
 } from './lib/services/cf-hot-cities';
 import { findCity } from './lib/constants/cities';
 import {
+  createTimeoutSignal,
   fetch5DayForecastMultiSource,
   fetchHourlyTrendMultiSource,
 } from './lib/datasources';
+import { fetchWaqiHourlyRawText } from './lib/services/waqi-decoder';
+import { encodeWaqiTarget } from './lib/utils/common';
 import type { ProviderId, StandardType } from './lib/types';
 
 export interface Env {
@@ -45,6 +48,11 @@ interface WorkerScheduledController {
   cron: string;
 }
 
+const CORS_BASE_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+} as const;
+
 function getEdgeDefaultCache(): Cache | null {
   try {
     const cfCaches = (globalThis as unknown as { caches?: { default?: Cache } }).caches;
@@ -54,175 +62,150 @@ function getEdgeDefaultCache(): Cache | null {
   }
 }
 
+function jsonResponse(
+  body: unknown,
+  status = 200,
+  extraHeaders?: Record<string, string>
+): Response {
+  const payload = typeof body === 'string' ? body : JSON.stringify(body);
+  return new Response(payload, {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      ...extraHeaders,
+    },
+  });
+}
+
+async function withEdgeCache(
+  cacheUrl: string,
+  ctx: WorkerExecutionContext | undefined,
+  producer: () => Promise<{ response: Response; cacheable: boolean }>
+): Promise<Response> {
+  const edgeCache = getEdgeDefaultCache();
+  const cacheKey = new Request(cacheUrl, { method: 'GET' });
+  if (edgeCache) {
+    const cached = await edgeCache.match(cacheKey);
+    if (cached) return cached;
+  }
+
+  const { response, cacheable } = await producer();
+  if (edgeCache && ctx && cacheable) {
+    ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
+  }
+  return response;
+}
+
+function parseFiniteCoord(raw: string | null, fallback: number | undefined, min: number, max: number): number {
+  const trimmed = raw?.trim();
+  const val = trimmed && trimmed.length > 0 ? Number(trimmed) : fallback;
+  if (typeof val !== 'number' || !Number.isFinite(val) || val < min || val > max) {
+    return NaN;
+  }
+  return val;
+}
+
+function pickRandomToken(tokens: string[]): string {
+  return tokens[Math.floor(Math.random() * tokens.length)];
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx?: WorkerExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
-    // 0. 全球与国内实时空气质量排行榜接口（Cloudflare Edge Cache + KV 0ms 极速读取）
-    if (url.pathname === '/api/ranking/realtime') {
-      if (request.method === 'OPTIONS') {
-        return new Response(null, {
-          status: 204,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          },
-        });
-      }
-
-      if (!env.RANKING_KV) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            initializing: true,
-            error: 'RANKING_KV namespace is not bound yet',
-          }),
-          {
-            status: 503,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-              'Cache-Control': 'no-store',
-            },
-          }
-        );
-      }
-
-      const edgeCache = getEdgeDefaultCache();
-      const cacheKey = new Request(`${url.origin}/api/ranking/realtime`, { method: 'GET' });
-
-      // 所有请求统一命中 Cloudflare 边缘缓存（60s），严禁通过 query 参数穿透直击 KV，彻底防刷
-      if (edgeCache) {
-        const cached = await edgeCache.match(cacheKey);
-        if (cached) {
-          return cached;
-        }
-      }
-
-      const snapshotJson = await env.RANKING_KV.get(RANKING_LATEST_KEY);
-      if (!snapshotJson) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            initializing: true,
-            error: 'Ranking KV snapshot initializing, waiting for first Cron cycle',
-          }),
-          {
-            status: 503,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-              'Cache-Control': 'no-store',
-            },
-          }
-        );
-      }
-
-      const response = new Response(snapshotJson, {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
-          'X-Ranking-Source': 'cloudflare-kv',
-        },
-      });
-
-      if (edgeCache && ctx) {
-        ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
-      }
-
-      return response;
+    // 统一处理所有 /api/* 的 CORS OPTIONS 预检请求
+    if (url.pathname.startsWith('/api/') && request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: CORS_BASE_HEADERS });
     }
 
-    // 0.5 单城实况边缘加速聚合接口 (Cloudflare Edge Cache 3 分钟，0 KV 消耗，<= 21 subrequests)
-    if (url.pathname === '/api/city-realtime') {
-      if (request.method === 'OPTIONS') {
-        return new Response(null, {
-          status: 204,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          },
-        });
-      }
-
-      const cityParam = url.searchParams.get('city')?.trim();
-      if (!cityParam) {
-        return new Response(JSON.stringify({ success: false, error: 'Missing city parameter' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        });
-      }
-
-      const edgeCache = getEdgeDefaultCache();
-      const cacheKey = new Request(
-        `${url.origin}/api/city-realtime?city=${encodeURIComponent(cityParam.toLowerCase())}`,
-        { method: 'GET' }
-      );
-
-      if (edgeCache) {
-        const cached = await edgeCache.match(cacheKey);
-        if (cached) {
-          return cached;
-        }
-      }
-
-      try {
-        // 1. 优先命中 40 座全球核心大都市 KV 预热分包（内网 ~10ms，0 次外部 WAQI 请求，彻底消灭 3~5 秒冷查）
-        let sourceHeader = 'cloudflare-edge';
-        let payload = env.RANKING_KV ? await readHotCityFromKV(env.RANKING_KV, cityParam) : null;
-        if (payload) {
-          sourceHeader = 'cloudflare-kv-hot';
-        } else {
-          // 2. 非热门长尾城市或首轮预热尚未完成时，实时边缘多源编排回源（策略 A：区域优先 + 延迟 >90m 自动切源）
-          const tokens = parseWaqiTokens(env.WAQI_TOKENS);
-          payload = await fetchEdgeCityRealtimePayload(cityParam, tokens, fetch, env);
-        }
-
-        if (!payload) {
-          return new Response(
-            JSON.stringify({ success: false, error: 'City not found or no live station data' }),
-            {
-              status: 404,
-              headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Cache-Control': 'no-store',
-              },
-            }
-          );
-        }
-
-        const response = new Response(JSON.stringify(payload), {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
-            'X-City-Source': sourceHeader,
-            'X-Data-Provider': payload.provenance?.providerId || payload.baseRecord?.provenance?.providerId || 'waqi',
-          },
-        });
-
-        if (edgeCache && ctx) {
-          ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
-        }
-
-        return response;
-      } catch (err: any) {
-        return new Response(
-          JSON.stringify({ success: false, error: err?.message || 'Edge city fetch failed' }),
-          {
-            status: 502,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-              'Cache-Control': 'no-store',
-            },
-          }
+    // 0. 全球与国内实时空气质量排行榜接口（Cloudflare Edge Cache + KV 0ms 极速读取）
+    if (url.pathname === '/api/ranking/realtime') {
+      if (!env.RANKING_KV) {
+        return jsonResponse(
+          { success: false, initializing: true, error: 'RANKING_KV namespace is not bound yet' },
+          503,
+          { 'Cache-Control': 'no-store' }
         );
       }
+
+      // 所有请求统一命中 Cloudflare 边缘缓存（60s），严禁通过 query 参数穿透直击 KV，彻底防刷
+      return withEdgeCache(`${url.origin}/api/ranking/realtime`, ctx, async () => {
+        const snapshotJson = await env.RANKING_KV!.get(RANKING_LATEST_KEY);
+        if (!snapshotJson) {
+          return {
+            cacheable: false,
+            response: jsonResponse(
+              {
+                success: false,
+                initializing: true,
+                error: 'Ranking KV snapshot initializing, waiting for first Cron cycle',
+              },
+              503,
+              { 'Cache-Control': 'no-store' }
+            ),
+          };
+        }
+        return {
+          cacheable: true,
+          response: jsonResponse(snapshotJson, 200, {
+            'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+            'X-Ranking-Source': 'cloudflare-kv',
+          }),
+        };
+      });
+    }
+
+    // 0.5 单城实况边缘加速聚合接口 (Cloudflare Edge Cache 5 分钟，优先 KV 热城分包)
+    if (url.pathname === '/api/city-realtime') {
+      const cityParam = url.searchParams.get('city')?.trim();
+      if (!cityParam) {
+        return jsonResponse({ success: false, error: 'Missing city parameter' }, 400);
+      }
+
+      const cacheUrl = `${url.origin}/api/city-realtime?city=${encodeURIComponent(cityParam.toLowerCase())}`;
+      return withEdgeCache(cacheUrl, ctx, async () => {
+        try {
+          let sourceHeader = 'cloudflare-edge';
+          let payload = env.RANKING_KV ? await readHotCityFromKV(env.RANKING_KV, cityParam) : null;
+          if (payload) {
+            sourceHeader = 'cloudflare-kv-hot';
+          } else {
+            const tokens = parseWaqiTokens(env.WAQI_TOKENS);
+            payload = await fetchEdgeCityRealtimePayload(cityParam, tokens, fetch, env);
+          }
+
+          if (!payload) {
+            return {
+              cacheable: false,
+              response: jsonResponse(
+                { success: false, error: 'City not found or no live station data' },
+                404,
+                { 'Cache-Control': 'no-store' }
+              ),
+            };
+          }
+
+          return {
+            cacheable: true,
+            response: jsonResponse(payload, 200, {
+              'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+              'X-City-Source': sourceHeader,
+              'X-Data-Provider':
+                payload.provenance?.providerId || payload.baseRecord?.provenance?.providerId || 'waqi',
+            }),
+          };
+        } catch (err: any) {
+          return {
+            cacheable: false,
+            response: jsonResponse(
+              { success: false, error: err?.message || 'Edge city fetch failed' },
+              502,
+              { 'Cache-Control': 'no-store' }
+            ),
+          };
+        }
+      });
     }
 
     // 0.8 多数据源 24~72 小时逐小时实测网关（自动路由 WAQI / OpenAQ，10 分钟边缘缓存）
@@ -234,193 +217,155 @@ export default {
 
       const city = cityParam ? findCity(cityParam) : undefined;
       if (!city) {
-        return new Response(JSON.stringify({ points: [], isReal: false, source: '未知城市' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        });
+        return jsonResponse({ points: [], isReal: false, source: '未知城市' }, 400);
       }
 
-      const edgeCache = getEdgeDefaultCache();
-      const cacheKey = new Request(
-        `${url.origin}/api/hourly-trend?city=${encodeURIComponent(city.id)}&standard=${standardParam}&provider=${encodeURIComponent(providerParam || '')}&station=${encodeURIComponent(stationParam || '')}`,
-        { method: 'GET' }
-      );
-      if (edgeCache) {
-        const cached = await edgeCache.match(cacheKey);
-        if (cached) return cached;
-      }
-
-      try {
-        const result = await fetchHourlyTrendMultiSource(
-          {
-            city,
-            preferredProviderId: providerParam,
-            stationRawId: stationParam,
-            standard: standardParam,
-          },
-          { rawEnv: env, isServer: true }
-        );
-        const response = new Response(JSON.stringify(result), {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': result.isReal
-              ? 'public, max-age=600, stale-while-revalidate=600'
-              : 'public, max-age=60',
-          },
-        });
-        if (edgeCache && ctx && result.isReal) {
-          ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
+      const cacheUrl = `${url.origin}/api/hourly-trend?city=${encodeURIComponent(city.id)}&standard=${standardParam}&provider=${encodeURIComponent(providerParam || '')}&station=${encodeURIComponent(stationParam || '')}`;
+      return withEdgeCache(cacheUrl, ctx, async () => {
+        try {
+          const result = await fetchHourlyTrendMultiSource(
+            {
+              city,
+              preferredProviderId: providerParam,
+              stationRawId: stationParam,
+              standard: standardParam,
+            },
+            { rawEnv: env, isServer: true }
+          );
+          return {
+            cacheable: result.isReal,
+            response: jsonResponse(result, 200, {
+              'Cache-Control': result.isReal
+                ? 'public, max-age=600, stale-while-revalidate=600'
+                : 'public, max-age=60',
+            }),
+          };
+        } catch (err: any) {
+          return {
+            cacheable: false,
+            response: jsonResponse(
+              { points: [], isReal: false, source: err?.message || 'Fetch failed' },
+              502,
+              { 'Cache-Control': 'no-store' }
+            ),
+          };
         }
-        return response;
-      } catch (err: any) {
-        return new Response(
-          JSON.stringify({ points: [], isReal: false, source: err?.message || 'Fetch failed' }),
-          {
-            status: 502,
-            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          }
-        );
-      }
+      });
     }
 
     // 0.9 多数据源未来 5 天预报网关（WAQI 官方站点扩散模型首选，自动回落 Open-Meteo ECMWF/CAMS，30 分钟边缘缓存）
     if (url.pathname === '/api/forecast') {
       const cityParam = url.searchParams.get('city')?.trim();
       const city = cityParam ? findCity(cityParam) : undefined;
-      const lat = Number(url.searchParams.get('lat') ?? city?.latitude);
-      const lon = Number(url.searchParams.get('lon') ?? city?.longitude);
+      const lat = parseFiniteCoord(url.searchParams.get('lat'), city?.latitude, -90, 90);
+      const lon = parseFiniteCoord(url.searchParams.get('lon'), city?.longitude, -180, 180);
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-        return new Response(JSON.stringify({ list: [], source: '参数无效' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        });
+        return jsonResponse({ list: [], source: '参数无效' }, 400);
       }
 
-      const edgeCache = getEdgeDefaultCache();
-      const cacheKey = new Request(
-        `${url.origin}/api/forecast?city=${encodeURIComponent(city?.id || '')}&lat=${lat.toFixed(2)}&lon=${lon.toFixed(2)}`,
-        { method: 'GET' }
-      );
-      if (edgeCache) {
-        const cached = await edgeCache.match(cacheKey);
-        if (cached) return cached;
-      }
-
-      try {
-        const result = await fetch5DayForecastMultiSource(
-          lat,
-          lon,
-          { rawEnv: env, isServer: true },
-          city
-        );
-        const response = new Response(JSON.stringify(result), {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'public, max-age=1800, stale-while-revalidate=1800',
-          },
-        });
-        if (edgeCache && ctx && result.list.length > 0) {
-          ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
+      const cacheUrl = `${url.origin}/api/forecast?city=${encodeURIComponent(city?.id || '')}&lat=${lat.toFixed(2)}&lon=${lon.toFixed(2)}`;
+      return withEdgeCache(cacheUrl, ctx, async () => {
+        try {
+          const result = await fetch5DayForecastMultiSource(
+            lat,
+            lon,
+            { rawEnv: env, isServer: true },
+            city
+          );
+          return {
+            cacheable: result.list.length > 0,
+            response: jsonResponse(result, 200, {
+              'Cache-Control': 'public, max-age=1800, stale-while-revalidate=1800',
+            }),
+          };
+        } catch (err: any) {
+          return {
+            cacheable: false,
+            response: jsonResponse(
+              { list: [], source: err?.message || 'Forecast failed' },
+              502,
+              { 'Cache-Control': 'no-store' }
+            ),
+          };
         }
-        return response;
-      } catch (err: any) {
-        return new Response(
-          JSON.stringify({ list: [], source: err?.message || 'Forecast failed' }),
-          {
-            status: 502,
-            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          }
-        );
-      }
+      });
     }
 
-    // 0.95 WAQI 零前端 Token 边缘代理（bounds / feed / tile），彻底告别前端源码硬编码 Token
+    // 0.95 WAQI 零前端 Token 边缘代理（bounds / feed / tile）
     if (url.pathname === '/api/waqi/bounds') {
       const latlng = url.searchParams.get('latlng')?.trim() || '';
       if (!/^-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(latlng)) {
-        return new Response(JSON.stringify({ status: 'error', data: 'Invalid latlng' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        });
+        return jsonResponse({ status: 'error', data: 'Invalid latlng' }, 400);
       }
       const tokens = parseWaqiTokens(env.WAQI_TOKENS);
       if (tokens.length === 0) {
-        return new Response(JSON.stringify({ status: 'error', data: 'WAQI_TOKENS not configured' }), {
-          status: 503,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        });
+        return jsonResponse({ status: 'error', data: 'WAQI_TOKENS not configured' }, 503);
       }
 
-      const edgeCache = getEdgeDefaultCache();
-      const cacheKey = new Request(`${url.origin}/api/waqi/bounds?latlng=${encodeURIComponent(latlng)}`, {
-        method: 'GET',
+      const cacheUrl = `${url.origin}/api/waqi/bounds?latlng=${encodeURIComponent(latlng)}`;
+      return withEdgeCache(cacheUrl, ctx, async () => {
+        try {
+          const token = pickRandomToken(tokens);
+          const upstream = await fetch(
+            `https://api.waqi.info/v2/map/bounds?latlng=${latlng}&token=${encodeURIComponent(token)}`,
+            { signal: createTimeoutSignal(8000) }
+          );
+          const body = await upstream.text();
+          return {
+            cacheable: upstream.ok,
+            response: jsonResponse(body, upstream.status, {
+              'Cache-Control': upstream.ok ? 'public, max-age=60, stale-while-revalidate=120' : 'no-store',
+            }),
+          };
+        } catch (err: any) {
+          return {
+            cacheable: false,
+            response: jsonResponse(
+              { status: 'error', data: err?.message || 'Upstream bounds fetch failed' },
+              502,
+              { 'Cache-Control': 'no-store' }
+            ),
+          };
+        }
       });
-      if (edgeCache) {
-        const cached = await edgeCache.match(cacheKey);
-        if (cached) return cached;
-      }
-
-      const token = tokens[Math.floor(Math.random() * tokens.length)];
-      const upstream = await fetch(`https://api.waqi.info/v2/map/bounds?latlng=${latlng}&token=${token}`);
-      const body = await upstream.text();
-      const response = new Response(body, {
-        status: upstream.status,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Cache-Control': upstream.ok ? 'public, max-age=60, stale-while-revalidate=120' : 'no-store',
-        },
-      });
-      if (edgeCache && ctx && upstream.ok) {
-        ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
-      }
-      return response;
     }
 
     if (url.pathname === '/api/waqi/feed') {
       const target = url.searchParams.get('target')?.trim() || '';
       if (!/^(@-?\d+|[a-zA-Z0-9._\-\u4e00-\u9fa5% ]+)$/.test(target) || target.includes('..') || target.includes('/')) {
-        return new Response(JSON.stringify({ status: 'error', data: 'Invalid target' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        });
+        return jsonResponse({ status: 'error', data: 'Invalid target' }, 400);
       }
       const tokens = parseWaqiTokens(env.WAQI_TOKENS);
       if (tokens.length === 0) {
-        return new Response(JSON.stringify({ status: 'error', data: 'WAQI_TOKENS not configured' }), {
-          status: 503,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        });
+        return jsonResponse({ status: 'error', data: 'WAQI_TOKENS not configured' }, 503);
       }
 
-      const edgeCache = getEdgeDefaultCache();
-      const cacheKey = new Request(`${url.origin}/api/waqi/feed?target=${encodeURIComponent(target)}`, {
-        method: 'GET',
+      const cacheUrl = `${url.origin}/api/waqi/feed?target=${encodeURIComponent(target)}`;
+      return withEdgeCache(cacheUrl, ctx, async () => {
+        try {
+          const token = pickRandomToken(tokens);
+          const upstream = await fetch(
+            `https://api.waqi.info/feed/${encodeWaqiTarget(target)}/?token=${encodeURIComponent(token)}`,
+            { signal: createTimeoutSignal(8000) }
+          );
+          const body = await upstream.text();
+          return {
+            cacheable: upstream.ok,
+            response: jsonResponse(body, upstream.status, {
+              'Cache-Control': upstream.ok ? 'public, max-age=120, stale-while-revalidate=240' : 'no-store',
+            }),
+          };
+        } catch (err: any) {
+          return {
+            cacheable: false,
+            response: jsonResponse(
+              { status: 'error', data: err?.message || 'Upstream feed fetch failed' },
+              502,
+              { 'Cache-Control': 'no-store' }
+            ),
+          };
+        }
       });
-      if (edgeCache) {
-        const cached = await edgeCache.match(cacheKey);
-        if (cached) return cached;
-      }
-
-      const token = tokens[Math.floor(Math.random() * tokens.length)];
-      const upstream = await fetch(`https://api.waqi.info/feed/${encodeURIComponent(target)}/?token=${token}`);
-      const body = await upstream.text();
-      const response = new Response(body, {
-        status: upstream.status,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Cache-Control': upstream.ok ? 'public, max-age=120, stale-while-revalidate=240' : 'no-store',
-        },
-      });
-      if (edgeCache && ctx && upstream.ok) {
-        ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
-      }
-      return response;
     }
 
     const tileMatch = url.pathname.match(/^\/api\/waqi\/tile\/(\d{1,2})\/(\d+)\/(\d+)\.png$/);
@@ -431,135 +376,105 @@ export default {
         return new Response('WAQI_TOKENS not configured', { status: 503 });
       }
 
-      const edgeCache = getEdgeDefaultCache();
-      const cacheKey = new Request(`${url.origin}/api/waqi/tile/${z}/${x}/${y}.png`, { method: 'GET' });
-      if (edgeCache) {
-        const cached = await edgeCache.match(cacheKey);
-        if (cached) return cached;
-      }
-
-      const token = tokens[Math.floor(Math.random() * tokens.length)];
-      const upstream = await fetch(`https://tiles.aqicn.org/tiles/usepa-aqi/${z}/${x}/${y}.png?token=${token}`);
-      const response = new Response(upstream.body, {
-        status: upstream.status,
-        headers: {
-          'Content-Type': upstream.headers.get('Content-Type') || 'image/png',
-          'Access-Control-Allow-Origin': '*',
-          'Cache-Control': upstream.ok ? 'public, max-age=600, stale-while-revalidate=600' : 'no-store',
-        },
+      const cacheUrl = `${url.origin}/api/waqi/tile/${z}/${x}/${y}.png`;
+      return withEdgeCache(cacheUrl, ctx, async () => {
+        try {
+          const token = pickRandomToken(tokens);
+          const upstream = await fetch(
+            `https://tiles.aqicn.org/tiles/usepa-aqi/${z}/${x}/${y}.png?token=${encodeURIComponent(token)}`,
+            { signal: createTimeoutSignal(8000) }
+          );
+          return {
+            cacheable: upstream.ok,
+            response: new Response(upstream.body, {
+              status: upstream.status,
+              headers: {
+                'Content-Type': upstream.headers.get('Content-Type') || 'image/png',
+                'Access-Control-Allow-Origin': '*',
+                'Cache-Control': upstream.ok ? 'public, max-age=600, stale-while-revalidate=600' : 'no-store',
+              },
+            }),
+          };
+        } catch {
+          return {
+            cacheable: false,
+            response: new Response('Tile upstream unavailable', { status: 502 }),
+          };
+        }
       });
-      if (edgeCache && ctx && upstream.ok) {
-        ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
-      }
-      return response;
     }
 
-    // 0.96 CartoDB 地图底图零前端 Key 边缘代理（30 天不可变边缘缓存，无水印且不在 GitHub 暴露 Key）
+    // 0.96 CartoDB 地图底图零前端 Key 边缘代理（30 天不可变边缘缓存）
     const cartoMatch = url.pathname.match(/^\/api\/carto\/(voyager|dark_all)\/(\d{1,2})\/(\d+)\/(\d+)\.png$/);
     if (cartoMatch) {
       const [, style, z, x, y] = cartoMatch;
-      const edgeCache = getEdgeDefaultCache();
-      const cacheKey = new Request(`${url.origin}/api/carto/${style}/${z}/${x}/${y}.png`, { method: 'GET' });
-      if (edgeCache) {
-        const cached = await edgeCache.match(cacheKey);
-        if (cached) return cached;
-      }
-
-      const pathPrefix = style === 'dark_all' ? 'dark_all' : 'rastertiles/voyager';
-      const keyQuery = env.CARTO_API_KEY ? `?key=${encodeURIComponent(env.CARTO_API_KEY)}` : '';
-      const upstream = await fetch(`https://basemaps.cartocdn.com/${pathPrefix}/${z}/${x}/${y}@2x.png${keyQuery}`);
-      const response = new Response(upstream.body, {
-        status: upstream.status,
-        headers: {
-          'Content-Type': upstream.headers.get('Content-Type') || 'image/png',
-          'Access-Control-Allow-Origin': '*',
-          'Cache-Control': upstream.ok ? 'public, max-age=2592000, immutable' : 'no-store',
-        },
+      const cacheUrl = `${url.origin}/api/carto/${style}/${z}/${x}/${y}.png`;
+      return withEdgeCache(cacheUrl, ctx, async () => {
+        try {
+          const pathPrefix = style === 'dark_all' ? 'dark_all' : 'rastertiles/voyager';
+          const keyQuery = env.CARTO_API_KEY ? `?key=${encodeURIComponent(env.CARTO_API_KEY)}` : '';
+          const upstream = await fetch(
+            `https://basemaps.cartocdn.com/${pathPrefix}/${z}/${x}/${y}@2x.png${keyQuery}`,
+            { signal: createTimeoutSignal(8000) }
+          );
+          return {
+            cacheable: upstream.ok,
+            response: new Response(upstream.body, {
+              status: upstream.status,
+              headers: {
+                'Content-Type': upstream.headers.get('Content-Type') || 'image/png',
+                'Access-Control-Allow-Origin': '*',
+                'Cache-Control': upstream.ok ? 'public, max-age=2592000, immutable' : 'no-store',
+              },
+            }),
+          };
+        } catch {
+          return {
+            cacheable: false,
+            response: new Response('Basemap tile upstream unavailable', { status: 502 }),
+          };
+        }
       });
-      if (edgeCache && ctx && upstream.ok) {
-        ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
-      }
-      return response;
     }
 
-    // 1. WAQI 24小时逐小时时序专线网关 (接入 Cloudflare Edge Cache 10 分钟真正缓存，彻底消除刷新时 2 次串行 POST)
+    // 1. WAQI 24~72小时逐小时时序专线网关（严格校验纯数字 station idx，防止上游路径注入）
     if (url.pathname === '/api/waqi-hourly') {
-      const idx = url.searchParams.get('idx')?.trim();
-      if (!idx) {
-        return new Response(JSON.stringify({ error: 'Missing idx' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        });
+      const idx = url.searchParams.get('idx')?.trim() || '';
+      if (!/^-?\d+$/.test(idx)) {
+        return jsonResponse({ error: 'Invalid or missing numeric idx' }, 400);
       }
 
-      const edgeCache = getEdgeDefaultCache();
-      const hourlyCacheKey = new Request(
-        `${url.origin}/api/waqi-hourly?idx=${encodeURIComponent(idx)}`,
-        { method: 'GET' }
-      );
-      if (edgeCache) {
-        const cached = await edgeCache.match(hourlyCacheKey);
-        if (cached) {
-          return cached;
-        }
-      }
-
-      try {
-        const uid = 'u' + Date.now();
-        const tokenRes = await fetch(`https://api2.waqi.info/api/token/${idx}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `key=-&uid=${uid}`,
-        });
-
-        if (!tokenRes.ok) {
-          return new Response(JSON.stringify({ error: `Token fetch error: ${tokenRes.status}` }), {
-            status: 502,
-            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      const cacheUrl = `${url.origin}/api/waqi-hourly?idx=${encodeURIComponent(idx)}`;
+      return withEdgeCache(cacheUrl, ctx, async () => {
+        try {
+          const raw = await fetchWaqiHourlyRawText(idx, {
+            fetchImpl: fetch,
+            tokenTimeoutMs: 6000,
+            feedTimeoutMs: 7000,
           });
+          if (!raw.ok) {
+            return {
+              cacheable: false,
+              response: jsonResponse({ error: raw.error }, raw.status, { 'Cache-Control': 'no-store' }),
+            };
+          }
+          return {
+            cacheable: true,
+            response: jsonResponse(raw.text, 200, {
+              'Cache-Control': 'public, max-age=600, stale-while-revalidate=600',
+            }),
+          };
+        } catch (err: any) {
+          return {
+            cacheable: false,
+            response: jsonResponse(
+              { error: err?.message || 'Fetch failed' },
+              500,
+              { 'Cache-Control': 'no-store' }
+            ),
+          };
         }
-
-        const tokenJson: any = await tokenRes.json();
-        const token = tokenJson?.rxs?.obs?.[0]?.msg?.token;
-        if (!token) {
-          return new Response(JSON.stringify({ error: 'Failed to acquire WAQI token' }), {
-            status: 502,
-            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          });
-        }
-
-        const feedUid = 'f' + Date.now();
-        const waqiRes = await fetch(`https://api2.waqi.info/api/feed/@${idx}/aqi.json`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `key=-&token=${token}&uid=${feedUid}&rqc=2`,
-        });
-
-        if (!waqiRes.ok) {
-          return new Response(JSON.stringify({ error: `WAQI status ${waqiRes.status}` }), {
-            status: 502,
-            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          });
-        }
-
-        const data = await waqiRes.text();
-        const response = new Response(data, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'public, max-age=600, stale-while-revalidate=600',
-          },
-        });
-        if (edgeCache && ctx) {
-          ctx.waitUntil(edgeCache.put(hourlyCacheKey, response.clone()));
-        }
-        return response;
-      } catch (err: any) {
-        return new Response(JSON.stringify({ error: err.message || 'Fetch failed' }), {
-          status: 500,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        });
-      }
+      });
     }
 
     // 2. 优先交由 Cloudflare Workers Assets 静态托管分发

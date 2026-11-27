@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { StandardType, AirQualityRecord } from '../lib/types';
 
 export interface CachedCityAqiSummary {
@@ -164,8 +164,8 @@ export const StandardProvider: React.FC<{
       if (savedOnlyPm25 !== null) {
         setOnlyPm25State(savedOnlyPm25 === 'true');
       } else {
-        setOnlyPm25State(true);
-        localStorage.setItem('aqi_only_pm25', 'true');
+        setOnlyPm25State(initialOnlyPm25);
+        localStorage.setItem('aqi_only_pm25_v2', String(initialOnlyPm25));
       }
 
       const savedFavCity = localStorage.getItem(STORAGE_KEY_FAVORITE_CITY);
@@ -188,28 +188,36 @@ export const StandardProvider: React.FC<{
     setMounted(true);
   }, []);
 
-  const setStandard = (std: StandardType) => {
+  const setStandard = useCallback((std: StandardType) => {
     setStandardState(std);
     try {
       localStorage.setItem('aqi_standard_v2', std);
       localStorage.setItem('aqi_standard', std);
       document.cookie = `aqi_standard=${std}; path=/; max-age=31536000; SameSite=Lax`;
     } catch {}
-  };
+  }, []);
 
-  const toggleStandard = () => {
-    setStandard(standard === 'US' ? 'CN' : 'US');
-  };
+  const toggleStandard = useCallback(() => {
+    setStandardState((prev) => {
+      const next: StandardType = prev === 'US' ? 'CN' : 'US';
+      try {
+        localStorage.setItem('aqi_standard_v2', next);
+        localStorage.setItem('aqi_standard', next);
+        document.cookie = `aqi_standard=${next}; path=/; max-age=31536000; SameSite=Lax`;
+      } catch {}
+      return next;
+    });
+  }, []);
 
-  const setOnlyPm25 = (val: boolean) => {
+  const setOnlyPm25 = useCallback((val: boolean) => {
     setOnlyPm25State(val);
     try {
       localStorage.setItem('aqi_only_pm25_v2', String(val));
       localStorage.setItem('aqi_only_pm25', String(val));
     } catch {}
-  };
+  }, []);
 
-  const toggleOnlyPm25 = () => {
+  const toggleOnlyPm25 = useCallback(() => {
     setOnlyPm25State((prev) => {
       const next = !prev;
       try {
@@ -218,16 +226,9 @@ export const StandardProvider: React.FC<{
       } catch {}
       return next;
     });
-  };
+  }, []);
 
-  const persistWatchlist = (next: string[]) => {
-    setWatchlistIdsState(next);
-    try {
-      localStorage.setItem(STORAGE_KEY_WATCHLIST, JSON.stringify(next));
-    } catch {}
-  };
-
-  const setFavoriteCityId = (cityId: string) => {
+  const setFavoriteCityId = useCallback((cityId: string) => {
     if (!cityId) return;
     setFavoriteCityIdState(cityId);
     try {
@@ -241,52 +242,88 @@ export const StandardProvider: React.FC<{
       } catch {}
       return next;
     });
-  };
+  }, []);
 
   const setActiveCityId = useCallback((cityId: string) => {
     if (!cityId) return;
     setActiveCityIdState(cityId);
   }, []);
 
-  const toggleWatchlistCity = (cityId: string) => {
+  const toggleWatchlistCity = useCallback((cityId: string) => {
     if (!cityId) return;
-    if (watchlistIds.includes(cityId)) {
-      if (watchlistIds.length <= 1) return;
-      persistWatchlist(watchlistIds.filter((id) => id !== cityId));
-    } else {
-      persistWatchlist([cityId, ...watchlistIds.filter((id) => id !== cityId)].slice(0, MAX_WATCHLIST));
-    }
-  };
+    setWatchlistIdsState((prev) => {
+      let next: string[];
+      if (prev.includes(cityId)) {
+        if (prev.length <= 1) return prev;
+        next = prev.filter((id) => id !== cityId);
+      } else {
+        next = [cityId, ...prev.filter((id) => id !== cityId)].slice(0, MAX_WATCHLIST);
+      }
+      try {
+        localStorage.setItem(STORAGE_KEY_WATCHLIST, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
 
-  const removeWatchlistCity = (cityId: string) => {
-    if (watchlistIds.length <= 1) return;
-    persistWatchlist(watchlistIds.filter((id) => id !== cityId));
-  };
+  const removeWatchlistCity = useCallback((cityId: string) => {
+    setWatchlistIdsState((prev) => {
+      if (prev.length <= 1) return prev;
+      const next = prev.filter((id) => id !== cityId);
+      try {
+        localStorage.setItem(STORAGE_KEY_WATCHLIST, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  const contextValue = useMemo<StandardContextProps>(
+    () => ({
+      standard,
+      setStandard,
+      toggleStandard,
+      onlyPm25,
+      setOnlyPm25,
+      toggleOnlyPm25,
+      favoriteCityId,
+      setFavoriteCityId,
+      activeCityId,
+      setActiveCityId,
+      watchlistIds,
+      toggleWatchlistCity,
+      removeWatchlistCity,
+      cityCompositeRecords,
+      reportCityCompositeRecord,
+      rankingAqiMap,
+      reportRankingCities,
+      ensureRankingAqiLoaded,
+      mounted,
+    }),
+    [
+      standard,
+      setStandard,
+      toggleStandard,
+      onlyPm25,
+      setOnlyPm25,
+      toggleOnlyPm25,
+      favoriteCityId,
+      setFavoriteCityId,
+      activeCityId,
+      setActiveCityId,
+      watchlistIds,
+      toggleWatchlistCity,
+      removeWatchlistCity,
+      cityCompositeRecords,
+      reportCityCompositeRecord,
+      rankingAqiMap,
+      reportRankingCities,
+      ensureRankingAqiLoaded,
+      mounted,
+    ]
+  );
 
   return (
-    <StandardContext.Provider
-      value={{
-        standard,
-        setStandard,
-        toggleStandard,
-        onlyPm25,
-        setOnlyPm25,
-        toggleOnlyPm25,
-        favoriteCityId,
-        setFavoriteCityId,
-        activeCityId,
-        setActiveCityId,
-        watchlistIds,
-        toggleWatchlistCity,
-        removeWatchlistCity,
-        cityCompositeRecords,
-        reportCityCompositeRecord,
-        rankingAqiMap,
-        reportRankingCities,
-        ensureRankingAqiLoaded,
-        mounted,
-      }}
-    >
+    <StandardContext.Provider value={contextValue}>
       {children}
     </StandardContext.Provider>
   );

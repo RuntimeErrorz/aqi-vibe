@@ -7,18 +7,13 @@ import {
   parseObservedTimeMs,
 } from '../freshness';
 import { createTimeoutSignal, normalizePollutantUnit } from '../units';
+import { createHttpError } from '../../utils/common';
 import type {
   AirQualityProvider,
   NormalizedStationSample,
   ProviderCitySnapshot,
   ProviderRuntimeContext,
 } from '../types';
-
-function createHttpError(status: number, message: string): Error & { status: number } {
-  const err = new Error(message) as Error & { status: number };
-  err.status = status;
-  return err;
-}
 
 // ============================================================
 // Zero-dependency Web Crypto Ed25519 JWT Signer (Cloudflare Workers + Node 20+)
@@ -188,7 +183,6 @@ async function buildAuthHeaders(ctx: ProviderRuntimeContext): Promise<Record<str
   };
 
   if (
-    ctx.env.qweatherDeveloperId &&
     ctx.env.qweatherProjectId &&
     ctx.env.qweatherCredentialId &&
     ctx.env.qweatherPrivateKey
@@ -259,8 +253,7 @@ export const qweatherProvider: AirQualityProvider = {
 
   isAvailable(ctx: ProviderRuntimeContext): boolean {
     const hasDynamicJwt = Boolean(
-      ctx.env.qweatherDeveloperId &&
-        ctx.env.qweatherProjectId &&
+      ctx.env.qweatherProjectId &&
         ctx.env.qweatherCredentialId &&
         ctx.env.qweatherPrivateKey
     );
@@ -431,11 +424,12 @@ export const qweatherProvider: AirQualityProvider = {
           const day = String(d?.forecastStartTime || '').slice(0, 10);
           const pollutants = extractPollutantsFromQWeather(d?.pollutants);
           const avg = Math.round(pollutants.pm25 ?? 0);
+          // QWeather daily forecast only provides daily mean; do not fabricate synthetic +/-20% min/max bounds.
           return {
             day,
             avg,
-            min: Math.max(0, Math.round(avg * 0.8)),
-            max: Math.round(avg * 1.2),
+            min: avg,
+            max: avg,
           };
         })
         .filter((d) => d.day.length === 10 && d.avg > 0);

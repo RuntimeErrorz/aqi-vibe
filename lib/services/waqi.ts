@@ -7,7 +7,7 @@ import {
   DataProvenance,
   FreshnessMeta,
 } from '../types';
-import { evaluateAQI, getCNEvaluation, getUSEvaluation, convertIAQIToConcentration, calculateCNIAQI } from '../aqi-calculator';
+import { evaluateAQI, getUSEvaluation, convertIAQIToConcentration, calculateCNIAQI } from '../aqi-calculator';
 import { findCity } from '../constants/cities';
 import {
   aggregateCompositeRecord,
@@ -21,6 +21,10 @@ import {
   pruneStaleStations,
   sortStationsByFreshnessAndDistance,
 } from '../datasources/freshness';
+import { createTimeoutSignal } from '../datasources/units';
+import { encodeWaqiTarget, extractCleanStationName, getDistanceKm } from '../utils/common';
+
+export { extractCleanStationName, getDistanceKm };
 
 // 零源码硬编码 Token：本地 dev 读取 .env.local，线上静态产物自动走 Cloudflare Worker /api/waqi/* 零 Token 代理
 const WAQI_TOKENS: string[] = (
@@ -44,7 +48,7 @@ function getNextWaqiToken(): string {
 function buildWaqiFeedUrl(target: string): string {
   const token = getNextWaqiToken();
   if (token) {
-    return `https://api.waqi.info/feed/${encodeURIComponent(target)}/?token=${token}`;
+    return `https://api.waqi.info/feed/${encodeWaqiTarget(target)}/?token=${encodeURIComponent(token)}`;
   }
   return `/api/waqi/feed?target=${encodeURIComponent(target)}`;
 }
@@ -108,20 +112,6 @@ export async function fetchWAQICityData(cityIdentifier: string): Promise<AirQual
     console.warn(`[WAQI] Fetch failed for ${cityIdentifier}:`, err?.message || err);
     throw new Error(err?.message || `WAQI 暂未收录该站点或当前无数据发布`);
   }
-}
-
-export function extractCleanStationName(rawName: string, cityNameZh?: string): string {
-  if (!rawName) return '未命名测站';
-  const match = rawName.match(/\((.+?)\)/);
-  if (match && match[1]) {
-    let name = match[1].trim();
-    if (cityNameZh && name.startsWith(cityNameZh)) {
-      const stripped = name.slice(cityNameZh.length).trim();
-      if (stripped.length > 0) return stripped;
-    }
-    return name;
-  }
-  return rawName.split(',')[0].trim();
 }
 
 export async function fetchWAQIStationByUid(
@@ -210,9 +200,29 @@ const stationDetailInFlight = new Map<number, Promise<StationDetailEntry | null>
 const cityStationsInFlight = new Map<string, Promise<WaqiBoundStation[]>>();
 const edgeCityInFlight = new Map<string, Promise<EdgeCityRealtimePayload | null>>();
 
+function raceWithSignal<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T | null> {
+  if (!signal) return promise;
+  if (signal.aborted) return Promise.resolve(null);
+  return new Promise<T | null>((resolve, reject) => {
+    const onAbort = () => resolve(null);
+    signal.addEventListener('abort', onAbort, { once: true });
+    promise.then(
+      (val) => {
+        signal.removeEventListener('abort', onAbort);
+        resolve(val);
+      },
+      (err) => {
+        signal.removeEventListener('abort', onAbort);
+        reject(err);
+      }
+    );
+  });
+}
+
 /**
  * 优先请求 Cloudflare Worker 边缘加速聚合接口 (/api/city-realtime?city=...)
- * 命中 3 分钟 Edge Cache 时 < 100ms 秒开；在本地 next dev 或纯静态托管下返回 null，自动回落前端并发通道。
+ * 命中 5 分钟 Edge Cache 时 < 100ms 秒开；在本地 next dev 或纯静态托管下返回 null，自动回落前端并发通道。
+ * 并发去重池不绑定单个调用方的 AbortSignal，避免调用方 A 取消请求时误杀复用的调用方 B。
  */
 export async function fetchEdgeCityRealtime(
   cityId: string,
@@ -220,92 +230,82 @@ export async function fetchEdgeCityRealtime(
 ): Promise<EdgeCityRealtimePayload | null> {
   if (typeof window === 'undefined') return null;
 
-  const existing = edgeCityInFlight.get(cityId);
-  if (existing) return existing;
-
-  const task = (async (): Promise<EdgeCityRealtimePayload | null> => {
-    try {
-      const res = await fetch(`/api/city-realtime?city=${encodeURIComponent(cityId)}`, {
-        signal,
-      });
-      if (!res.ok) return null;
-      const json = (await res.json()) as EdgeCityRealtimePayload;
-      if (json && json.success && json.baseRecord && json.compositeRecord) {
-        // 顺手将边缘返回的单站分项同步写入内存缓存，方便用户在页面内切单站或顶部胶囊秒读
-        const now = Date.now();
-        if (Array.isArray(json.stations)) {
-          for (const st of json.stations) {
-            if (st.pollutants) {
-              stationDetailCache.set(st.uid, {
-                pm25: st.pm25,
-                pm25IaqiUS: st.pm25IaqiUS,
-                pm25IaqiCN: st.pm25IaqiCN,
-                pollutants: st.pollutants,
-                weather: st.weather || {},
-                timestamp: now,
-              });
+  let task = edgeCityInFlight.get(cityId);
+  if (!task) {
+    task = (async (): Promise<EdgeCityRealtimePayload | null> => {
+      try {
+        const res = await fetch(`/api/city-realtime?city=${encodeURIComponent(cityId)}`, {
+          signal: createTimeoutSignal(8000),
+        });
+        if (!res.ok) return null;
+        const json = (await res.json()) as EdgeCityRealtimePayload;
+        if (json && json.success && json.baseRecord && json.compositeRecord) {
+          // 仅将 WAQI 同源单站分项同步写入内存缓存，避免与非 WAQI 哈希 UID 混淆
+          const now = Date.now();
+          if (Array.isArray(json.stations)) {
+            for (const st of json.stations) {
+              const stProv = (st as { providerId?: string }).providerId;
+              if (st.pollutants && (!stProv || stProv === 'waqi')) {
+                stationDetailCache.set(st.uid, {
+                  pm25: st.pm25,
+                  pm25IaqiUS: st.pm25IaqiUS,
+                  pm25IaqiCN: st.pm25IaqiCN,
+                  pollutants: st.pollutants,
+                  weather: st.weather || {},
+                  timestamp: now,
+                });
+              }
             }
           }
+          return json;
         }
-        return json;
+        return null;
+      } catch {
+        return null;
+      } finally {
+        edgeCityInFlight.delete(cityId);
       }
-      return null;
-    } catch {
-      return null;
-    } finally {
-      edgeCityInFlight.delete(cityId);
-    }
-  })();
+    })();
 
-  edgeCityInFlight.set(cityId, task);
-  return task;
+    edgeCityInFlight.set(cityId, task);
+  }
+
+  return raceWithSignal(task, signal);
 }
 
 function fetchSingleStationPm25(uid: number, signal?: AbortSignal): Promise<StationDetailEntry | null> {
-  const existing = stationDetailInFlight.get(uid);
-  if (existing) return existing;
+  if (signal?.aborted) return Promise.resolve(null);
 
-  const task = (async (): Promise<StationDetailEntry | null> => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
-    const onParentAbort = () => controller.abort();
-    if (signal) {
-      if (signal.aborted) {
-        clearTimeout(timer);
-        return null;
-      }
-      signal.addEventListener('abort', onParentAbort, { once: true });
-    }
-
-    try {
-      const url = buildWaqiFeedUrl(`@${uid}`);
-      const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.status === 'ok' && json.data) {
-          const metrics = extractStationMetricsFromIaqi(json.data.iaqi);
-          const entry: StationDetailEntry = {
-            ...metrics,
-            timestamp: Date.now(),
-          };
-          stationDetailCache.set(uid, entry);
-          return entry;
+  let task = stationDetailInFlight.get(uid);
+  if (!task) {
+    task = (async (): Promise<StationDetailEntry | null> => {
+      try {
+        const url = buildWaqiFeedUrl(`@${uid}`);
+        const res = await fetch(url, { cache: 'no-store', signal: createTimeoutSignal(6000) });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.status === 'ok' && json.data) {
+            const metrics = extractStationMetricsFromIaqi(json.data.iaqi);
+            const entry: StationDetailEntry = {
+              ...metrics,
+              timestamp: Date.now(),
+            };
+            stationDetailCache.set(uid, entry);
+            return entry;
+          }
         }
+        return null;
+      } catch {
+        return null;
+      } finally {
+        stationDetailInFlight.delete(uid);
       }
-      return null;
-    } catch {
-      return null;
-    } finally {
-      clearTimeout(timer);
-      if (signal) {
-        signal.removeEventListener('abort', onParentAbort);
-      }
-      stationDetailInFlight.delete(uid);
-    }
-  })();
+    })();
 
-  stationDetailInFlight.set(uid, task);
-  return task;
+    stationDetailInFlight.set(uid, task);
+  }
+
+  return raceWithSignal(task, signal);
 }
 
 /**
@@ -389,23 +389,6 @@ export async function fetchWAQIMapBounds(
     console.warn('[WAQI] Bounds fetch failed:', err?.message || err);
     return [];
   }
-}
-
-/**
- * 计算两个经纬度坐标之间的球面大圆距离（单位：千米）
- */
-export function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
 }
 
 /**
@@ -535,7 +518,7 @@ function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
   const iaqiCN = calculateCNIAQI(pollutants);
 
   const geo = data.city?.geo || (cityMeta ? [cityMeta.latitude, cityMeta.longitude] : [39.9, 116.4]);
-  const isDomestic = cityMeta ? cityMeta.isDomestic : (data.city?.name?.includes('China') || false);
+  const isDomestic = cityMeta ? Boolean(cityMeta.isDomestic) : false;
 
   const isNoLiveData = data.aqi === '-' || data.aqi === null || data.aqi === undefined;
 
@@ -566,10 +549,12 @@ function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
       textColor: '#ffffff',
       isOffline: true,
     };
-  } else if (evaluationUS.aqi === 0 && typeof data.aqi === 'number' && !isNaN(data.aqi)) {
-    // 严格遵守 AQI 计算公理：仅在全部实测分项污染物均缺失时，才使用 WAQI 顶层 data.aqi 作为兜底
+  } else if (evaluationUS.aqi === 0 && typeof data.aqi === 'number' && !isNaN(data.aqi) && data.aqi > 0) {
+    // 严格遵守 AQI 计算公理：仅在全部实测分项污染物均缺失时，才使用 WAQI 顶层 data.aqi 作为兜底，并同步折算国标
     const officialAqi = Math.round(data.aqi);
     evaluationUS = getUSEvaluation(officialAqi, evaluationUS.primaryPollutant);
+    const estPm25 = convertIAQIToConcentration('pm25', officialAqi, 'US');
+    evaluationCN = evaluateAQI({ pm25: estPm25 }, 'CN');
   }
 
   const obsMs = parseObservedTimeMs(data.time?.iso || data.time?.s, data.time?.tz);
@@ -595,8 +580,8 @@ function parseWAQIResponse(data: any, cityMeta?: any): AirQualityRecord {
     isDomestic,
     isOffline: isNoLiveData,
     stationIdx: typeof data.idx === 'number' ? data.idx : undefined,
-    latitude: geo[0] || 0,
-    longitude: geo[1] || 0,
+    latitude: typeof geo[0] === 'number' && Number.isFinite(geo[0]) ? geo[0] : 0,
+    longitude: typeof geo[1] === 'number' && Number.isFinite(geo[1]) ? geo[1] : 0,
     updateTime: data.time?.s || new Date().toLocaleString(),
     pollutants,
     iaqi: iaqiUS,

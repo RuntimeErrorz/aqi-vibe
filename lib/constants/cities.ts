@@ -9373,7 +9373,7 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "country": "TW",
     "latitude": 22.7554,
     "longitude": 121.1505,
-    "isDomestic": false,
+    "isDomestic": true,
     "waqiSlug": "taitung-city",
     "population": 450000
   },
@@ -9396,7 +9396,7 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "country": "TW",
     "latitude": 25.0273,
     "longitude": 121.3094,
-    "isDomestic": false,
+    "isDomestic": true,
     "waqiSlug": "taoyuan-city",
     "population": 450000
   },
@@ -9455,7 +9455,7 @@ export const CITIES_REGISTRY: CityMeta[] = [
     "country": "TW",
     "latitude": 23.7119,
     "longitude": 120.545,
-    "isDomestic": false,
+    "isDomestic": true,
     "waqiSlug": "douliu",
     "population": 450000
   },
@@ -10792,19 +10792,19 @@ const COUNTRY_SYNONYMS: Record<string, string> = {
 // 按国家检索时优先呈现的核心代表城市
 const MAJOR_CITIES_ORDER: Record<string, string[]> = {
   CN: ['cn-beijing', 'cn-shanghai', 'cn-guangzhou', 'cn-shenzhen', 'cn-chengdu', 'cn-hangzhou', 'cn-wuhan', 'cn-chongqing', 'cn-tianjin', 'cn-nanjing'],
-  US: ['us-new-york', 'us-los-angeles', 'us-chicago', 'us-san-francisco', 'us-seattle', 'us-houston', 'us-boston', 'us-washington'],
+  US: ['gl-newyork', 'gl-losangeles', 'gl-chicago', 'gl-sanfrancisco', 'gl-seattle', 'gl-houston', 'gl-boston', 'gl-washington'],
   GB: ['gl-london', 'gl-manchester', 'gl-birmingham', 'gl-edinburgh', 'gl-glasgow'],
   JP: ['gl-tokyo', 'gl-osaka', 'gl-kyoto', 'gl-yokohama', 'gl-nagoya', 'gl-sapporo', 'gl-fukuoka'],
   FR: ['gl-paris', 'gl-marseille', 'gl-lyon', 'gl-toulouse', 'gl-nice'],
-  DE: ['gl-berlin', 'gl-munich', 'gl-frankfurt', 'gl-hamburg', 'gl-cologne'],
+  DE: ['gl-berlin', 'gl-munich', 'gl-frankfurt', 'gl-hamburg', 'gl-koln'],
   IN: ['gl-delhi', 'gl-mumbai', 'gl-bengaluru', 'gl-kolkata', 'gl-chennai'],
   KR: ['gl-seoul', 'gl-busan', 'gl-incheon', 'gl-daegu'],
   IT: ['gl-rome', 'gl-milan', 'gl-naples', 'gl-florence'],
-  ES: ['gl-madrid', 'gl-barcelona', 'gl-valencia', 'gl-seville'],
+  ES: ['gl-madrid', 'gl-barcelona', 'gl-valencia', 'gl-sevilla'],
   AU: ['gl-sydney', 'gl-melbourne', 'gl-brisbane', 'gl-perth'],
   CA: ['gl-toronto', 'gl-vancouver', 'gl-montreal', 'gl-ottawa'],
-  BR: ['gl-sao-paulo', 'gl-rio-de-janeiro'],
-  RU: ['gl-moscow', 'gl-saint-petersburg'],
+  BR: ['gl-saopaulo', 'gl-riodejaneiro'],
+  RU: ['gl-moscow', 'gl-spb'],
 };
 
 export const HOT_CITY_IDS: string[] = [

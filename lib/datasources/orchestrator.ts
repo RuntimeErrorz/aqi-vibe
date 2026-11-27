@@ -35,6 +35,7 @@ import {
   sortStationsByFreshnessAndDistance,
 } from './freshness';
 import { createTimeoutSignal } from './units';
+import { getDistanceKm, mergeWeatherInfo } from '../utils/common';
 import { ProviderRegistry } from './registry';
 import type {
   AirQualityProvider,
@@ -88,19 +89,6 @@ const FORECAST_CHAIN: readonly ProviderId[] = [
 export function getRealtimeChainForCountry(country?: string): readonly ProviderId[] {
   const code = (country || '').toUpperCase();
   return REALTIME_CHAINS_BY_REGION[code] || REALTIME_CHAINS_BY_REGION.DEFAULT;
-}
-
-function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 /**
@@ -253,8 +241,8 @@ function buildRecordFromSample(
     isDomestic: Boolean(city.isDomestic),
     isOffline,
     stationIdx: sample.providerId === 'waqi' ? sample.numericUid : undefined,
-    latitude: sample.latitude || city.latitude,
-    longitude: sample.longitude || city.longitude,
+    latitude: Number.isFinite(sample.latitude) ? sample.latitude : city.latitude,
+    longitude: Number.isFinite(sample.longitude) ? sample.longitude : city.longitude,
     updateTime,
     pollutants,
     iaqi: iaqiUS,
@@ -666,10 +654,10 @@ export class DataSourceOrchestrator {
       const liveWeather = await (weatherPromise ??
         fetchOpenMeteoCurrentWeather(city.latitude, city.longitude, ctx));
       if (liveWeather) {
-        baseRecord.weather = { ...liveWeather, ...(baseRecord.weather || {}) };
+        baseRecord.weather = mergeWeatherInfo(liveWeather, baseRecord.weather);
         compositeRecord = {
           ...compositeRecord,
-          weather: { ...liveWeather, ...(compositeRecord.weather || {}) },
+          weather: mergeWeatherInfo(liveWeather, compositeRecord.weather),
         };
       }
     }

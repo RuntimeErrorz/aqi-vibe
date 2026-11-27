@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
+import { escapeHtml } from '@/lib/utils/common';
 
 export interface RadarCityMetric {
   name: string;
@@ -133,7 +134,7 @@ export const CompareRadarChart: React.FC<CompareRadarChartProps> = ({ cities, lo
         return `
           <div style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
             <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:${color};"></span>
-            <span>${name} · 实测污染物构成</span>
+            <span>${escapeHtml(name)} · 实测污染物构成</span>
           </div>
           <div style="font-size: 11px; line-height: 1.7; color: #475569;">
             <div>PM2.5: ${fmtVal(city.pm25, 'μg/m³')} <span style="color: #94a3b8;">(刻度上限 ${maxPM25})</span></div>

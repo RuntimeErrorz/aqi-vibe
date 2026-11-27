@@ -20,6 +20,7 @@ import {
   parseWaqiStationResponse,
 } from './cf-city-realtime';
 import {
+  createTimeoutSignal,
   defaultProviderRegistry,
   fetchCityRealtimeMultiSource,
   getRealtimeChainForCountry,
@@ -129,13 +130,6 @@ export interface HotPackRunSummary {
   perCitySampled: Record<string, number>;
 }
 
-function createTimeoutSignal(ms: number): AbortSignal | undefined {
-  if (typeof AbortSignal !== 'undefined' && typeof (AbortSignal as any).timeout === 'function') {
-    return (AbortSignal as any).timeout(ms);
-  }
-  return undefined;
-}
-
 /**
  * 从 KV 分包秒读热门大都市预热快照（内网 ~10ms，0 WAQI 外部请求）
  */
@@ -188,7 +182,8 @@ export async function runHotCitiesCronPack(
 
   const activeTokens = tokens.length > 0 ? tokens : [...DEFAULT_WAQI_TOKENS];
   let tokenIdx = packIndex * 11;
-  const nextToken = () => activeTokens[tokenIdx++ % activeTokens.length];
+  const nextToken = () =>
+    activeTokens.length > 0 ? activeTokens[tokenIdx++ % activeTokens.length] : '';
 
   // Never object-spread Cloudflare Worker `env` (bindings/secrets may be non-enumerable getters)
   const resolved = resolveProviderSecrets(rawEnv);
@@ -276,7 +271,8 @@ export async function runHotCitiesCronPack(
         );
         if (res && res.success) {
           multiSourceResults[city.id] = res;
-          subrequestsUsed += Math.max(1, Math.min(8, res.sampledStations));
+          // Conservatively account for bounds/stations/weather enrichment subrequests within CF 50-subrequest limit
+          subrequestsUsed += Math.max(2, Math.min(10, res.sampledStations + 2));
           continue;
         }
       } catch {
@@ -289,7 +285,7 @@ export async function runHotCitiesCronPack(
 
   // 1. 读取 ranking:draft（1 次 KV 读），为剩余走 WAQI 的城市复用全网官方站 UID，免去大部分 map/bounds 请求
   let draftCities: RankingDraftState['cities'] = {};
-  if (waqiFallbackCityIds.length > 0) {
+  if (waqiFallbackCityIds.length > 0 && activeTokens.length > 0) {
     try {
       const draftRaw = await kv.get(RANKING_DRAFT_KEY);
       if (draftRaw) {
@@ -303,7 +299,7 @@ export async function runHotCitiesCronPack(
 
   const cityContexts: Array<{ city: CityMeta; stations: StationCompositeSample[] }> = [];
 
-  for (const cityId of waqiFallbackCityIds) {
+  for (const cityId of activeTokens.length > 0 ? waqiFallbackCityIds : []) {
     const city = findCity(cityId);
     if (!city) continue;
 
@@ -325,7 +321,7 @@ export async function runHotCitiesCronPack(
             aqi: String(entry.a),
             station: {
               name: entry.n || city.nameZh,
-              time: new Date(entry.t).toISOString(),
+              time: new Date(entry.ot ?? entry.t).toISOString(),
             },
           },
         });
@@ -347,7 +343,7 @@ export async function runHotCitiesCronPack(
         if (res.ok) {
           const json = (await res.json()) as any;
           if (json?.status === 'ok' && Array.isArray(json.data)) {
-            stations = filterStationsEdge(json.data, city);
+            stations = filterStationsEdge(json.data, city, nowMs);
           }
         }
       } catch {}
@@ -413,13 +409,9 @@ export async function runHotCitiesCronPack(
           weather: metrics.weather,
         };
 
+        // 优先取距市中心最近的官方站 (stationIdx === 0) 作为基准元数据与预报源
         if (task.stationIdx === 0 || !baseRecordByCity[task.cityIdx]) {
-          // 优先取距市中心最近的官方站 (stationIdx === 0) 作为基准元数据与预报源
-          if (task.stationIdx === 0) {
-            baseRecordByCity[task.cityIdx] = parseWaqiStationResponse(json.data, task.city);
-          } else if (!baseRecordByCity[task.cityIdx]) {
-            baseRecordByCity[task.cityIdx] = parseWaqiStationResponse(json.data, task.city);
-          }
+          baseRecordByCity[task.cityIdx] = parseWaqiStationResponse(json.data, task.city, nowMs);
         }
       } catch {
         // 单站超时静默容灾

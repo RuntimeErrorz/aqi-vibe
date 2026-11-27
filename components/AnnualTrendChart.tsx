@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { AnnualTrend, StandardType } from '@/lib/types';
 import { calculatePM25AQI } from '@/lib/aqi-calculator';
+import { escapeHtml } from '@/lib/utils/common';
 
 interface AnnualTrendChartProps {
   data: AnnualTrend[];
@@ -45,12 +46,17 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
   const pm25s = data.map((d) => d.pm25Avg);
   const goodRatios = data.map((d) => d.goodDaysRatio);
   const pollutedDays = data.map((d) => d.pollutedDays ?? d.heavyPollutionDays);
-  const heavyDays = data.map((d) => d.heavyPollutionDays);
 
   const ratioLabel = '优良天数比例 (%)';
   const pollutedLabel = '超标污染天数 (AQI>100, 天)';
   const aqiLabel = '年均 AQI';
-  const aqiAvgs = data.map((d) => onlyPm25 ? (d.pm25Avg > 0 ? calculatePM25AQI(d.pm25Avg, standard) : 0) : (d.aqiAvg ?? Math.round(d.pm25Avg * 1.2)));
+  const aqiAvgs = data.map((d) =>
+    onlyPm25
+      ? d.pm25Avg > 0
+        ? calculatePM25AQI(d.pm25Avg, standard)
+        : null
+      : d.aqiAvg ?? null
+  );
 
   const option = {
     backgroundColor: 'transparent',
@@ -65,7 +71,7 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
         if (!Array.isArray(params) || params.length === 0) return '';
         const dataIndex = params[0].dataIndex;
         const cur = data[dataIndex];
-        let html = `<div class="font-bold text-slate-900 border-b border-slate-100 pb-1 mb-1.5">${cityName} · ${cur.year} 年度</div>`;
+        let html = `<div class="font-bold text-slate-900 border-b border-slate-100 pb-1 mb-1.5">${escapeHtml(cityName)} · ${cur.year} 年度</div>`;
         params.forEach((p: any) => {
           html += `<div class="flex items-center justify-between gap-4 py-0.5 text-xs">
             <span class="flex items-center gap-1.5">${p.marker} <span class="text-slate-600">${p.seriesName}</span></span>

@@ -5,6 +5,8 @@ import { convertIAQIToConcentration, evaluateAQI, calculatePM25AQI } from '../aq
 import type { RankedCityItem, RankingApiResponse } from './realtime-ranking';
 import { iso1A2Code } from '@rapideditor/country-coder';
 import { isSameSovereignCountry, parseObservedTimeMs } from '../datasources/freshness';
+import { createTimeoutSignal } from '../datasources/units';
+import { extractCleanStationName, filterSpatialOutliersByValue } from '../utils/common';
 
 /**
  * Cloudflare Workers KV 最小兼容接口（免额外安装 @cloudflare/workers-types，
@@ -63,23 +65,6 @@ export function getBoundsForBatch(batchIndex: number): string[] {
   return RANKING_BOUNDS.slice(start, end);
 }
 
-/**
- * 纯函数提取简洁测站名称（零 Node / DOM 依赖）
- */
-function extractCleanStationNameEdge(rawName: string, cityNameZh?: string): string {
-  if (!rawName) return '未命名测站';
-  const match = rawName.match(/\((.+?)\)/);
-  if (match && match[1]) {
-    const name = match[1].trim();
-    if (cityNameZh && name.startsWith(cityNameZh)) {
-      const stripped = name.slice(cityNameZh.length).trim();
-      if (stripped.length > 0) return stripped;
-    }
-    return name;
-  }
-  return rawName.split(',')[0].trim();
-}
-
 // ==========================================
 // 1° × 1° 空间网格索引（将单次匹配从 O(940) 降至 O(1~5)，压低至 Free Tier 10ms CPU 预算内）
 // ==========================================
@@ -117,7 +102,7 @@ function ensureSpatialIndex(): {
 
 /**
  * 纯客观几何 Voronoi 最近城市判定 + 主权国家矢量排他：
- * 1. 先通过 3×3 空间网格粗筛出物理距离 <= 30km 的候选城市；若无候选直接返回 null，省去无谓的 country-coder 查表。
+ * 1. 先通过 3×3 空间网格粗筛出物理距离 <= 35km 的候选城市；若无候选直接返回 null，省去无谓的 country-coder 查表。
  * 2. 有候选时调用 @rapideditor/country-coder 判定测站主权 ISO-2，在同国候选中取最短大圆距离。
  * 严格遵循 AGENTS.md §9.3，零字符串正则、零启发式特判。
  */
@@ -163,7 +148,7 @@ export function findClosestCityFast(
 
   if (!candidates || candidates.length === 0) return null;
 
-  // 仅当测站确实落在某在册城市 30km 半径内时才执行矢量主权校验
+  // 仅当测站确实落在某在册城市 35km 半径内时才执行矢量主权校验
   const stationCountry = iso1A2Code([sLon, sLat]);
 
   let closest: CityMeta | null = null;
@@ -213,28 +198,6 @@ interface StationCandidate {
 }
 
 /**
- * 空间统计学离群值检验 (Median-MAD 稳健离散度检验，与 realtime-ranking.ts 算法完全同源)
- */
-function filterSpatialOutliers(stations: StationCandidate[]): StationCandidate[] {
-  if (stations.length < 3) return stations;
-
-  const values = stations.map((s) => s.pm25).sort((a, b) => a - b);
-  const mid = Math.floor(values.length / 2);
-  const median = values.length % 2 === 0 ? (values[mid - 1] + values[mid]) / 2 : values[mid];
-
-  const deviations = values.map((v) => Math.abs(v - median)).sort((a, b) => a - b);
-  const mad =
-    deviations.length % 2 === 0
-      ? (deviations[mid - 1] + deviations[mid]) / 2
-      : deviations[mid];
-
-  const effectiveScale = Math.max(mad * 1.4826, 12.0);
-  const MAX_DEV_Z = 4.0;
-
-  return stations.filter((s) => Math.abs(s.pm25 - median) <= MAX_DEV_Z * effectiveScale);
-}
-
-/**
  * 将草稿中累积的全网城市测站桶聚合为最终标准双标排行榜快照
  */
 export function buildRankingSnapshotFromDraft(
@@ -270,7 +233,7 @@ export function buildRankingSnapshotFromDraft(
     const activeCandidates = officialCandidates.length > 0 ? officialCandidates : candidates;
     totalStations += activeCandidates.length;
 
-    const validStations = filterSpatialOutliers(activeCandidates);
+    const validStations = filterSpatialOutliersByValue(activeCandidates, (s) => s.pm25);
     if (validStations.length === 0) continue;
 
     // 严格遵循 HJ 633-2012 / US EPA 2024【浓度优先 (Concentration-First)】规范：
@@ -280,7 +243,7 @@ export function buildRankingSnapshotFromDraft(
     if (cityPm25Conc <= 0) continue;
 
     const pm25AqiUS = calculatePM25AQI(cityPm25Conc, 'US');
-    const pm25AqiCN = evaluateAQI({ pm25: cityPm25Conc }, 'CN', true).aqi;
+    const pm25AqiCN = calculatePM25AQI(cityPm25Conc, 'CN');
 
     const rawAqiSum = validStations.reduce((acc, s) => acc + s.aqi, 0);
     const stationAvgAqi = Math.round(rawAqiSum / validStations.length);
@@ -307,7 +270,7 @@ export function buildRankingSnapshotFromDraft(
     ).aqi;
     const repPm25 = primaryStation.pm25;
     const repPm25AqiUS = calculatePM25AQI(primaryStation.pm25, 'US');
-    const repPm25AqiCN = evaluateAQI({ pm25: primaryStation.pm25 }, 'CN', true).aqi;
+    const repPm25AqiCN = calculatePM25AQI(primaryStation.pm25, 'CN');
 
     allRanked.push({
       id: city.id,
@@ -359,13 +322,6 @@ export function buildRankingSnapshotFromDraft(
   };
 }
 
-function createTimeoutSignal(ms: number): AbortSignal | undefined {
-  if (typeof AbortSignal !== 'undefined' && typeof (AbortSignal as any).timeout === 'function') {
-    return (AbortSignal as any).timeout(ms);
-  }
-  return undefined;
-}
-
 export interface CronBatchRunSummary {
   batchIndex: number;
   slicesRequested: number;
@@ -382,7 +338,7 @@ export interface CronBatchRunSummary {
  * - 每批就地完成空间归属与 2 小时死站清理，均摊至极低 CPU 开销
  * - 批号 0..6：写 1 次 `ranking:draft`（严格 1 KV 写）
  * - 批号 7：合并全网 8 批数据原子发布 `ranking:latest`（严格 1 KV 写）
- * 全天总写入 = 4 轮/时 × 8 次/轮 × 24 时 = 768 次/天 < 1,000 次/天免费额度。
+ * 全天总写入 = 2 轮/时 × 8 次/轮 × 24 时 = 384 次/天 < 1,000 次/天免费额度。
  */
 export async function runRankingCronBatch(
   kv: KVNamespaceLike,
@@ -392,7 +348,8 @@ export async function runRankingCronBatch(
   fetchImpl: typeof fetch = fetch
 ): Promise<CronBatchRunSummary> {
   const bounds = getBoundsForBatch(batchIndex);
-  if (bounds.length === 0) {
+  const activeTokens = tokens.length > 0 ? tokens : [...DEFAULT_WAQI_TOKENS];
+  if (bounds.length === 0 || activeTokens.length === 0) {
     return {
       batchIndex,
       slicesRequested: 0,
@@ -403,8 +360,6 @@ export async function runRankingCronBatch(
       totalCities: 0,
     };
   }
-
-  const activeTokens = tokens.length > 0 ? tokens : [...DEFAULT_WAQI_TOKENS];
 
   // 1. 读取现有滚动草稿（与网络拉取并行发起，零额外延迟）
   const draftPromise = kv
@@ -468,7 +423,7 @@ export async function runRankingCronBatch(
                   matchedByCity.set(matched.city.id, cityStations);
                 }
 
-                const cleanName = extractCleanStationNameEdge(
+                const cleanName = extractCleanStationName(
                   st.station?.name || '',
                   matched.city.nameZh
                 );

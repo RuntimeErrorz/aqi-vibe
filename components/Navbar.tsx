@@ -79,12 +79,7 @@ export const Navbar: React.FC = () => {
             </div>
           </Link>
 
-          <div className="hidden lg:block">
-            <HeaderCitySwitcher />
-          </div>
-          <div className="lg:hidden">
-            <HeaderCitySwitcher compact={true} />
-          </div>
+          <HeaderCitySwitcher />
         </div>
 
         {/* 桌面端菜单项 (lg 及以上展示，避免 768px 平板竖屏挤压折行) */}
@@ -314,7 +309,7 @@ export const Navbar: React.FC = () => {
       {/* 移动端背景半透明遮罩 (点击可直接关闭抽屉) */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 top-16 bg-slate-900/30 backdrop-blur-xs z-40 lg:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 top-16 bg-slate-900/30 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
           aria-hidden="true"
         />
@@ -322,7 +317,7 @@ export const Navbar: React.FC = () => {
 
       {/* 移动端折叠抽屉面板 (Mobile Navigation Drawer) */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden relative z-50 border-t border-slate-200/90 bg-white shadow-2xl animate-in slide-in-from-top-2 duration-200 max-h-[calc(100vh-4rem)] overflow-y-auto">
+        <div className="lg:hidden relative z-50 border-t border-slate-200/90 bg-white shadow-2xl max-h-[calc(100vh-4rem)] overflow-y-auto">
           <div className="px-4 py-4 space-y-4">
             {/* 移动端导航主链接 */}
             <div className="space-y-1">

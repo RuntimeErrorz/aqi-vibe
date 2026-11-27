@@ -1,6 +1,6 @@
 import { StandardType, ForecastDay, ProviderId } from '../types';
 import { build24HourPointsFromWaqiObs, fetchWaqiHourlyDirect } from './waqi-decoder';
-import { fetch5DayForecastMultiSource, getCityUtcOffsetMinutes } from '../datasources';
+import { fetch5DayForecastMultiSource, getCityUtcOffsetMinutes, createTimeoutSignal } from '../datasources';
 import { findCity } from '../constants/cities';
 
 export interface HourlyTrendPoint {
@@ -10,7 +10,7 @@ export interface HourlyTrendPoint {
   aqi: number;
   pm25: number;   // μg/m³
   pm10?: number;  // μg/m³
-  o3: number;     // μg/m³
+  o3?: number;    // μg/m³
   no2?: number;   // μg/m³
   so2?: number;   // μg/m³
   co?: number;    // mg/m³
@@ -45,19 +45,17 @@ export async function fetch24HourHourlyTrend(
   lat: number,
   lng: number,
   standard: StandardType = 'US',
-  currentAQI = 65,
-  currentPM25 = 32,
-  currentO3 = 40,
-  updateTime?: string,
+  _legacyCurrentAQI = 0,
+  _legacyCurrentPM25 = 0,
+  _legacyCurrentO3 = 0,
+  _legacyUpdateTime?: string,
   stationIdx?: number,
   options?: { cityId?: string; providerId?: ProviderId; stationRawId?: string }
 ): Promise<HourlyTrendResult> {
-  void lat;
-  void lng;
-  void currentAQI;
-  void currentPM25;
-  void currentO3;
-  void updateTime;
+  void _legacyCurrentAQI;
+  void _legacyCurrentPM25;
+  void _legacyCurrentO3;
+  void _legacyUpdateTime;
 
   // 通道 0：当存在非 WAQI 活跃数据源或已传 cityId 时，优先走 Worker 多源小时流接口 (/api/hourly-trend)
   if (typeof window !== 'undefined' && window.location.origin && options?.cityId) {
@@ -74,7 +72,7 @@ export async function fetch24HourHourlyTrend(
       }
 
       const res = await fetch(`${window.location.origin}/api/hourly-trend?${params.toString()}`, {
-        signal: AbortSignal.timeout(5000),
+        signal: createTimeoutSignal(5000),
       });
       if (res.ok) {
         const json = (await res.json()) as HourlyTrendResult;
@@ -102,7 +100,7 @@ export async function fetch24HourHourlyTrend(
       racers.push(
         (async () => {
           const edgeRes = await fetch(`${window.location.origin}/api/waqi-hourly?idx=${stationIdx}`, {
-            signal: AbortSignal.timeout(4500),
+            signal: createTimeoutSignal(4500),
           });
           if (!edgeRes.ok) throw new Error(`Edge HTTP ${edgeRes.status}`);
           const waqiJson = await edgeRes.json();
@@ -171,7 +169,7 @@ export async function fetch5DayForecast(
       });
       if (city?.id || cityId) params.set('city', city?.id || cityId!);
       const res = await fetch(`${window.location.origin}/api/forecast?${params.toString()}`, {
-        signal: AbortSignal.timeout(5000),
+        signal: createTimeoutSignal(5000),
       });
       if (res.ok) {
         const json = (await res.json()) as { list?: ForecastDay[]; source?: string };

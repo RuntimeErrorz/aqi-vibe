@@ -1,13 +1,10 @@
 import type { CityMeta, ForecastData, PollutantValues, WeatherInfo } from '../../types';
-import {
-  calculateCNIAQI,
-  convertIAQIToConcentration,
-  evaluateAQI,
-} from '../../aqi-calculator';
+import { convertIAQIToConcentration } from '../../aqi-calculator';
 import { extractStationMetricsFromIaqi } from '../../services/composite-aggregator';
 import {
   build24HourPointsFromWaqiObs,
   fetchWaqiHourlyDirect,
+  fetchWaqiHourlyRawText,
 } from '../../services/waqi-decoder';
 import {
   computeFreshness,
@@ -18,6 +15,7 @@ import {
 } from '../freshness';
 import { filterAndRankStationsForCity } from '../orchestrator';
 import { createTimeoutSignal } from '../units';
+import { createHttpError, encodeWaqiTarget } from '../../utils/common';
 import type {
   AirQualityProvider,
   NormalizedStationSample,
@@ -109,27 +107,15 @@ async function fetchWaqiHourlyWithFetch(
   for (let attempt = 0; attempt < 2; attempt++) {
     if (ctx.signal?.aborted) return null;
     try {
-      const uid = 'u' + (ctx.nowMs + attempt);
-      const tokenRes = await ctx.fetchImpl(`https://api2.waqi.info/api/token/${stationIdx}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `key=-&uid=${uid}`,
-        signal: createTimeoutSignal(7500, ctx.signal),
+      const raw = await fetchWaqiHourlyRawText(stationIdx, {
+        fetchImpl: ctx.fetchImpl,
+        nowMs: ctx.nowMs + attempt,
+        tokenTimeoutMs: 7500,
+        feedTimeoutMs: 8500,
+        signal: ctx.signal,
       });
-      if (!tokenRes.ok) continue;
-      const tokenJson = (await tokenRes.json()) as any;
-      const token = tokenJson?.rxs?.obs?.[0]?.msg?.token;
-      if (!token) continue;
-
-      const feedUid = 'f' + (ctx.nowMs + attempt);
-      const feedRes = await ctx.fetchImpl(`https://api2.waqi.info/api/feed/@${stationIdx}/aqi.json`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `key=-&token=${token}&uid=${feedUid}&rqc=2`,
-        signal: createTimeoutSignal(8500, ctx.signal),
-      });
-      if (!feedRes.ok) continue;
-      const feedJson = (await feedRes.json()) as any;
+      if (!raw.ok) continue;
+      const feedJson = JSON.parse(raw.text) as any;
       const obs = feedJson?.rxs?.obs?.[0]?.msg?.obs;
       if (!obs || !obs.pm25) continue;
 
@@ -155,12 +141,6 @@ function parseWaqiForecast(daily: any): ForecastData | undefined {
     o3: daily.o3 || [],
     uvi: daily.uvi || [],
   };
-}
-
-function createHttpError(status: number, message: string): Error & { status: number } {
-  const err = new Error(message) as Error & { status: number };
-  err.status = status;
-  return err;
 }
 
 function boundItemToNormalized(item: any, nowMs: number): NormalizedStationSample | null {
@@ -527,7 +507,7 @@ export const waqiProvider: AirQualityProvider = {
 
       const fetchForecastByTarget = async (target: string) => {
         const res = await ctx.fetchImpl(
-          `https://api.waqi.info/feed/${encodeURIComponent(target)}/?token=${pickToken(tokens)}`,
+          `https://api.waqi.info/feed/${encodeWaqiTarget(target)}/?token=${pickToken(tokens)}`,
           { cache: 'no-store', signal: createTimeoutSignal(timeoutMs, ctx.signal) }
         );
         if (!res.ok) return null;
@@ -581,14 +561,3 @@ export const waqiProvider: AirQualityProvider = {
     },
   },
 };
-
-export function evaluateSampleBriefAqi(sample: NormalizedStationSample): {
-  cn: number;
-  us: number;
-} {
-  const cn = evaluateAQI(sample.pollutants, 'CN').aqi;
-  const us = evaluateAQI(sample.pollutants, 'US').aqi;
-  return { cn, us };
-}
-
-export { calculateCNIAQI };

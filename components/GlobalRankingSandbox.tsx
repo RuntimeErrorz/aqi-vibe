@@ -7,8 +7,6 @@ import {
   getAllCountriesRanking,
   isHistorySummaryLoaded,
   loadHistorySummary,
-  CityRankingItem,
-  CountryRankingItem,
 } from '@/lib/services/history-data';
 import { PaginationJumper } from './PaginationJumper';
 import { COUNTRIES_META } from '@/lib/constants/countries';
@@ -17,7 +15,6 @@ import {
   Trophy,
   Globe,
   Search,
-  ArrowUpDown,
   ArrowUp,
   ArrowDown,
   TrendingDown,
@@ -27,14 +24,15 @@ import {
   Building2,
   Calendar,
   ExternalLink,
-  ChevronLeft,
-  ChevronRight,
   X,
-  Leaf,
-  Flame,
   Users,
 } from 'lucide-react';
-import { formatPopulation, DOMESTIC_CITY_COUNT, GLOBAL_CITY_COUNT } from '@/lib/constants/cities';
+import {
+  formatPopulation,
+  TOTAL_CITY_COUNT,
+  DOMESTIC_CITY_COUNT,
+  GLOBAL_CITY_COUNT,
+} from '@/lib/constants/cities';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -59,12 +57,6 @@ const POPULATION_THRESHOLDS: Record<PopulationTier, number> = {
 };
 
 const AVAILABLE_YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019];
-
-const PageJumper: React.FC<{
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (p: number) => void;
-}> = (props) => <PaginationJumper {...props} compact={false} />;
 
 export function GlobalRankingSandbox({
   selectedCityIds,
@@ -91,28 +83,6 @@ export function GlobalRankingSandbox({
   const [populationTier, setPopulationTier] = useState<PopulationTier>('all');
   const [sortMetric, setSortMetric] = useState<SortMetric>('aqi');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-
-  type RankMode = 'cleanest' | 'polluted' | 'improved';
-
-  const rankMode: RankMode =
-    sortMetric === 'improved'
-      ? 'improved'
-      : sortMetric === 'aqi' && sortOrder === 'desc'
-      ? 'polluted'
-      : 'cleanest';
-
-  const setRankMode = (mode: RankMode) => {
-    if (mode === 'cleanest') {
-      setSortMetric('aqi');
-      setSortOrder('asc');
-    } else if (mode === 'polluted') {
-      setSortMetric('aqi');
-      setSortOrder('desc');
-    } else if (mode === 'improved') {
-      setSortMetric('improved');
-      setSortOrder('asc');
-    }
-  };
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSearchPreviewOpen, setIsSearchPreviewOpen] = useState<boolean>(false);
@@ -217,7 +187,7 @@ export function GlobalRankingSandbox({
       ...item,
       rank: index + 1,
     }));
-  }, [rawCities, geoScope, selectedCountry, populationTier, sortMetric, sortOrder, onlyPm25]);
+  }, [rawCities, geoScope, selectedCountry, populationTier, sortMetric, sortOrder]);
 
   // 4. 应用关键词搜索过滤城市（保留城市既有权威排名，不重置为1）
   const filteredCities = useMemo(() => {
@@ -378,8 +348,8 @@ export function GlobalRankingSandbox({
             }`}
           >
             <Building2 className="w-3.5 h-3.5 shrink-0" />
-            <span className="sm:hidden whitespace-nowrap">城市榜 ({rawCities.length || 928})</span>
-            <span className="hidden sm:inline whitespace-nowrap">城市精细榜 ({rawCities.length || 928}城)</span>
+            <span className="sm:hidden whitespace-nowrap">城市榜 ({rawCities.length || TOTAL_CITY_COUNT})</span>
+            <span className="hidden sm:inline whitespace-nowrap">城市精细榜 ({rawCities.length || TOTAL_CITY_COUNT}城)</span>
           </button>
           <button
             onClick={() => handleTabSwitch('countries')}
@@ -390,8 +360,8 @@ export function GlobalRankingSandbox({
             }`}
           >
             <Globe className="w-3.5 h-3.5 shrink-0" />
-            <span className="sm:hidden whitespace-nowrap">国家榜 ({rawCountries.length || 93})</span>
-            <span className="hidden sm:inline whitespace-nowrap">国家/地区综合榜 ({rawCountries.length || 93}国)</span>
+            <span className="sm:hidden whitespace-nowrap">国家榜 ({rawCountries.length || Object.keys(COUNTRIES_META).length})</span>
+            <span className="hidden sm:inline whitespace-nowrap">国家/地区综合榜 ({rawCountries.length || Object.keys(COUNTRIES_META).length}国)</span>
           </button>
         </div>
       </div>
@@ -457,7 +427,7 @@ export function GlobalRankingSandbox({
                 }}
                 className="bg-transparent font-semibold text-slate-700 focus:outline-none cursor-pointer"
               >
-                <option value="ALL">全部国家 / 地区 (93国)</option>
+                <option value="ALL">全部国家 / 地区 ({countryOptions.length || Object.keys(COUNTRIES_META).length}国)</option>
                 {countryOptions.map((co) => (
                   <option key={co.code} value={co.code}>
                     {co.code} · {co.nameZh} ({co.count}城)
@@ -583,10 +553,10 @@ export function GlobalRankingSandbox({
               placeholder={
                 activeTab === 'cities'
                   ? geoScope === 'domestic'
-                    ? '搜索国内 375 城市查排名 (如: 成都 / 北京)...'
+                    ? `搜索国内 ${DOMESTIC_CITY_COUNT} 城市查排名 (如: 成都 / 北京)...`
                     : geoScope === 'international'
-                    ? '搜索海外 564 城市查排名 (如: 伦敦 / 东京)...'
-                    : '搜索全球 939 城市查排名 (如: 成都 / 纽约)...'
+                    ? `搜索海外 ${GLOBAL_CITY_COUNT} 城市查排名 (如: 伦敦 / 东京)...`
+                    : `搜索全球 ${TOTAL_CITY_COUNT} 城市查排名 (如: 成都 / 纽约)...`
                   : '搜索国家名称 / 代码 (如: 中国 / CN)...'
               }
               className="w-full pl-8 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 placeholder:text-slate-400 text-xs shadow-sm"
@@ -608,7 +578,7 @@ export function GlobalRankingSandbox({
 
             {/* 即时搜索智能预览卡片面板 */}
             {isSearchPreviewOpen && searchQuery.trim() && (
-              <div className="absolute left-0 right-0 sm:right-auto sm:w-[420px] max-w-[calc(100vw-2rem)] top-full mt-1.5 z-50 bg-white rounded-xl border border-slate-200/90 shadow-2xl overflow-hidden animate-in fade-in duration-100">
+              <div className="absolute left-0 right-0 sm:right-auto sm:w-[420px] max-w-[calc(100vw-2rem)] top-full mt-1.5 z-50 bg-white rounded-xl border border-slate-200/90 shadow-2xl overflow-hidden">
                 <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                   <span>
                     找到 <b className="text-slate-900">{totalItems}</b> 个符合条件的{activeTab === 'cities' ? '城市' : '国家/地区'}
@@ -1118,10 +1088,11 @@ export function GlobalRankingSandbox({
           </div>
         </div>
 
-        <PageJumper
+        <PaginationJumper
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
+          compact={false}
         />
       </div>
     </div>

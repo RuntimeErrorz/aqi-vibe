@@ -1,9 +1,10 @@
 import { CITIES_REGISTRY } from '../constants/cities';
 import { CityMeta } from '../types';
 import { convertIAQIToConcentration, evaluateAQI, calculatePM25AQI } from '../aqi-calculator';
-import { extractCleanStationName } from './waqi';
 import { iso1A2Code } from '@rapideditor/country-coder';
 import { isSameSovereignCountry, parseObservedTimeMs } from '../datasources/freshness';
+import { createTimeoutSignal } from '../datasources/units';
+import { extractCleanStationName, filterSpatialOutliersByValue } from '../utils/common';
 
 export interface RankedCityItem {
   id: string;
@@ -54,67 +55,7 @@ const WAQI_TOKENS: string[] = (
 )
   .split(/[,\s]+/)
   .map((t) => t.trim())
-  .filter(Boolean);
-
-interface CoreCityPM25Snapshot {
-  pm25IaqiUS: number;
-  pm25IaqiCN: number;
-  pm25: number;
-  compAqiUS: number;
-  timestamp: number;
-}
-
-const CORE_CITY_PM25_MAP = new Map<string, CoreCityPM25Snapshot>();
-
-const CORE_KEY_CITIES = [
-  'beijing', 'tianjin', 'shanghai', 'chongqing', 'guangzhou', 'shenzhen',
-  'chengdu', 'wuhan', 'hangzhou', 'nanjing', 'xian', 'tokyo', 'seoul',
-  'london', 'paris', 'newyork', 'moscow', 'saopaulo', 'delhi'
-];
-
-async function syncCoreCitiesRealPM25(force = false) {
-  const now = Date.now();
-  const TTL = 10 * 60 * 1000;
-  const needed = CORE_KEY_CITIES.filter((slug) => {
-    const cached = CORE_CITY_PM25_MAP.get(slug);
-    return force || !cached || now - cached.timestamp > TTL;
-  });
-  if (needed.length === 0) return;
-
-  await Promise.allSettled(
-    needed.map(async (slug, idx) => {
-      const token = WAQI_TOKENS[idx % WAQI_TOKENS.length];
-      const url = `https://api.waqi.info/feed/${encodeURIComponent(slug)}/?token=${token}`;
-      try {
-        const res = await fetch(url, { cache: 'no-store' });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.status === 'ok' && json.data) {
-            const rawAqi = Number(json.data.aqi) || 0;
-            const rawPm25 = json.data.iaqi?.pm25?.v;
-            let pm25IaqiUS: number;
-            let pm25Conc: number;
-            if (rawPm25 !== undefined && !isNaN(rawPm25)) {
-              pm25IaqiUS = Math.max(1, Math.round(rawPm25));
-              pm25Conc = convertIAQIToConcentration('pm25', pm25IaqiUS, 'US');
-            } else {
-              pm25Conc = convertIAQIToConcentration('pm25', rawAqi, 'US');
-              pm25IaqiUS = rawAqi;
-            }
-            const evalCN = evaluateAQI({ pm25: pm25Conc }, 'CN', true);
-            CORE_CITY_PM25_MAP.set(slug, {
-              pm25IaqiUS,
-              pm25IaqiCN: evalCN.aqi,
-              pm25: pm25Conc,
-              compAqiUS: rawAqi,
-              timestamp: now,
-            });
-          }
-        }
-      } catch {}
-    })
-  );
-}
+  .filter((t) => Boolean(t) && !t.startsWith('your_'));
 
 
 /**
@@ -289,23 +230,22 @@ function findClosestCity(
 }
 
 
-// 客户端超时信号兼容
-function getTimeoutSignal(ms: number): AbortSignal {
-  if (typeof AbortSignal !== 'undefined' && typeof (AbortSignal as any).timeout === 'function') {
-    return (AbortSignal as any).timeout(ms);
-  }
-  const controller = new AbortController();
-  setTimeout(() => controller.abort(), ms);
-  return controller.signal;
-}
-
 // 方案 1 & 2：服务端内存 SWR 缓存与请求单例控制器
 let memoryRankingCache: RankingApiResponse | null = null;
 let lastFetchTimestamp = 0;
 let inFlightFetchPromise: Promise<RankingApiResponse> | null = null;
 
-// 全局在册测站累积池：跨请求持久保留有效测站，新值覆盖旧值，彻底杜绝单次网络抖动导致的城市消失
-const cumulativeStationMap = new Map<number, any>();
+// 全局在册测站累积池：跨请求保留 2 小时内活跃测站，自动清理过期记录防止内存与僵尸站堆积
+const CUMULATIVE_STATION_TTL_MS = 2 * 60 * 60 * 1000;
+const cumulativeStationMap = new Map<number, { station: any; fetchedAt: number }>();
+
+function pruneCumulativeStations(nowMs: number) {
+  cumulativeStationMap.forEach((entry, uid) => {
+    if (nowMs - entry.fetchedAt > CUMULATIVE_STATION_TTL_MS) {
+      cumulativeStationMap.delete(uid);
+    }
+  });
+}
 
 // 缓存与防抖规范 (方案 1 & 2)
 const FRESH_TTL_MS = 8 * 60 * 1000; // 8 分钟内视为绝对保鲜，直接 0ms 返回快照
@@ -387,13 +327,15 @@ async function fetchBoundsBatch(
   concurrency: number,
   onStation: (st: any) => void
 ): Promise<void> {
+  if (WAQI_TOKENS.length === 0) return;
+
   let nextIndex = 0;
   const fetchWorker = async () => {
     while (nextIndex < boundsList.length) {
       const idx = nextIndex++;
       const bounds = boundsList[idx];
       const activeToken = WAQI_TOKENS[idx % WAQI_TOKENS.length];
-      const url = `https://api.waqi.info/v2/map/bounds/?latlng=${bounds}&token=${activeToken}`;
+      const url = `https://api.waqi.info/v2/map/bounds/?latlng=${bounds}&token=${encodeURIComponent(activeToken)}`;
       let attempts = 4;
 
       while (attempts > 0) {
@@ -401,7 +343,7 @@ async function fetchBoundsBatch(
           // 通过全局时钟调度器平滑放行，紧贴官方 16.6 QPS 物理上限并留出绝对安全裕度
           await rateLimiter.acquire();
 
-          const res = await fetch(url, { signal: getTimeoutSignal(10000), cache: 'no-store' });
+          const res = await fetch(url, { signal: createTimeoutSignal(10000), cache: 'no-store' });
 
           if (res.status === 429) {
             attempts--;
@@ -504,53 +446,22 @@ function computeRankingSnapshot(stations: any[], isRefreshing = false): RankingA
     }
   }
 
-/**
- * 空间统计学离群值检验 (基于稳健统计学 Median-MAD 相对离散度检验)
- * 当同城拥有 >= 3 个监测点时，自动对比各测站与城市中位数的相对离散度
- * 纯客观数据驱动，绝不使用硬编码固定阈值，避免误杀真实的区域重污染，同时精准剔除单一失真/死锁探头
- */
-function filterSpatialOutliers(stations: StationCandidate[]): StationCandidate[] {
-  if (stations.length < 3) return stations;
-
-  const values = stations.map((s) => s.pm25).sort((a, b) => a - b);
-  const mid = Math.floor(values.length / 2);
-  const median = values.length % 2 === 0 ? (values[mid - 1] + values[mid]) / 2 : values[mid];
-
-  const deviations = values.map((v) => Math.abs(v - median)).sort((a, b) => a - b);
-  const mad = deviations.length % 2 === 0
-    ? (deviations[mid - 1] + deviations[mid]) / 2
-    : deviations[mid];
-
-  // 稳健标准差估计量 (标准正态分布一致性乘子 1.4826)，底限 12.0 μg/m³ 保护正常局地梯度分布
-  const effectiveScale = Math.max(mad * 1.4826, 12.0);
-  const MAX_DEV_Z = 4.0; // 偏离中位数超过 4 个有效标准差，判定为极端硬件故障/爆表异常点
-
-  return stations.filter((s) => {
-    const diff = Math.abs(s.pm25 - median);
-    return diff <= MAX_DEV_Z * effectiveScale;
-  });
-}
-
   // 转换为排名项：分别以国标与美标精确折算 AQI
   const allRanked: RankedCityItem[] = [];
+  let totalValidStations = 0;
   for (const [_, item] of Array.from(cityCluster.entries())) {
     if (item.stations.length === 0) continue;
 
     // 官方参考站 (uid > 0) 严格优先：同城存在官方国控站时排除民间负 uid 微感器
     const officialStations = item.stations.filter((s) => s.uid > 0);
     const activeStations = officialStations.length > 0 ? officialStations : item.stations;
+    totalValidStations += activeStations.length;
 
     // 空间相对离群点检验：纯客观剔除与同城其他测站偏离过大的单一失真噪点
-    const validStations = filterSpatialOutliers(activeStations);
+    const validStations = filterSpatialOutliersByValue(activeStations, (s) => s.pm25);
     if (validStations.length === 0) continue;
 
-    // 核心城市实测 PM2.5 匹配
-    const citySlug = item.city.waqiSlug || item.city.nameEn.toLowerCase().replace(/[^a-z]/g, '');
-    const coreSnapshot = CORE_CITY_PM25_MAP.get(citySlug);
-
-    // 严格遵循 HJ 663-2012 / US EPA 规范【浓度优先 (Concentration-First)】：
-    // 全市均值统一对辖区内所有有效测站物理浓度求空间算术平均（不再用单站 coreSnapshot 覆盖全城多站均值），
-    // coreSnapshot 仅保留给「市中心代表站 (rep)」口径使用，彻底消除全市均值与单站混同偏差。
+    // 严格遵循 HJ 633-2012 / US EPA 2024【浓度优先 (Concentration-First)】规范：
     const pm25s = validStations.map((s) => s.pm25);
     const cityPm25Conc = Number((pm25s.reduce((a, b) => a + b, 0) / pm25s.length).toFixed(1));
 
@@ -558,42 +469,25 @@ function filterSpatialOutliers(stations: StationCandidate[]): StationCandidate[]
 
     // 1. PM2.5 单项 AQI (美标与国标)：由全城空间物理质量浓度严格计算
     const pm25AqiUS = calculatePM25AQI(cityPm25Conc, 'US');
-    const pm25AqiCN = evaluateAQI({ pm25: cityPm25Conc }, 'CN', true).aqi;
+    const pm25AqiCN = calculatePM25AQI(cityPm25Conc, 'CN');
 
     // 2. 综合全项 AQI (美标与国标)：涵盖 O3、PM10、PM2.5 等全部在册污染物的实测综合指数
-    // 综合全项指数必定大于等于单项 PM2.5 指数 (Max 准则)
     const rawAqis = validStations.map((s) => s.aqi).filter((a) => a > 0);
     const stationAvgAqi = rawAqis.length > 0 ? Math.round(rawAqis.reduce((a, b) => a + b, 0) / rawAqis.length) : pm25AqiUS;
     const compAqiUS = Math.max(stationAvgAqi, pm25AqiUS);
     const compAqiCN = evaluateAQI({ pm25: convertIAQIToConcentration('pm25', compAqiUS, 'US') }, 'CN', false).aqi;
 
-    // 提取市中心核心基准站：
+    // 提取市中心核心基准站（同站口径自洽，绝不将另一站点的 PM2.5 嫁接到当前代表站）
     const sortedByDist = [...validStations].sort((a, b) => a.distKm - b.distKm);
     const primaryStation = sortedByDist[0];
 
-    let repAqiUS = compAqiUS;
-    let repAqiCN = compAqiCN;
-    let repPm25AqiUS = pm25AqiUS;
-    let repPm25AqiCN = pm25AqiCN;
-    let repPm25 = cityPm25Conc;
-    let repStationName = item.city.nameZh;
-    let repStationUid: number | undefined = undefined;
-
-    if (primaryStation) {
-      repAqiUS = primaryStation.aqi;
-      repAqiCN = evaluateAQI({ pm25: convertIAQIToConcentration('pm25', primaryStation.aqi, 'US') }, 'CN', false).aqi;
-      if (coreSnapshot) {
-        repPm25 = coreSnapshot.pm25;
-        repPm25AqiUS = coreSnapshot.pm25IaqiUS;
-        repPm25AqiCN = coreSnapshot.pm25IaqiCN;
-      } else {
-        repPm25 = primaryStation.pm25;
-        repPm25AqiUS = calculatePM25AQI(primaryStation.pm25, 'US');
-        repPm25AqiCN = evaluateAQI({ pm25: primaryStation.pm25 }, 'CN', true).aqi;
-      }
-      repStationName = extractCleanStationName(primaryStation.name, item.city.nameZh);
-      repStationUid = primaryStation.uid;
-    }
+    const repAqiUS = primaryStation.aqi;
+    const repAqiCN = evaluateAQI({ pm25: convertIAQIToConcentration('pm25', primaryStation.aqi, 'US') }, 'CN', false).aqi;
+    const repPm25 = primaryStation.pm25;
+    const repPm25AqiUS = calculatePM25AQI(primaryStation.pm25, 'US');
+    const repPm25AqiCN = calculatePM25AQI(primaryStation.pm25, 'CN');
+    const repStationName = extractCleanStationName(primaryStation.name, item.city.nameZh);
+    const repStationUid = primaryStation.uid;
 
     allRanked.push({
       id: item.city.id,
@@ -622,7 +516,7 @@ function filterSpatialOutliers(stations: StationCandidate[]): StationCandidate[]
     });
   }
 
-  // 国内榜单 (从属于国内 375 城的站点聚合)
+  // 国内榜单 (从属于国内在册城市的站点聚合)
   const domesticList = allRanked.filter((c) => c.isDomestic);
   domesticList.sort((a, b) => a.aqi - b.aqi);
 
@@ -639,7 +533,7 @@ function filterSpatialOutliers(stations: StationCandidate[]): StationCandidate[]
   return {
     success: true,
     updatedAt: new Date().toISOString(),
-    totalStations: stations.length,
+    totalStations: totalValidStations,
     totalCities: allRanked.length,
     isRefreshing,
     domestic: {
@@ -656,40 +550,37 @@ function filterSpatialOutliers(stations: StationCandidate[]): StationCandidate[]
 let isPhase2Running = false;
 
 /**
- * 实际执行全网两阶段抓取流水线的核心引擎：
- * Phase 1 (核心阶段)：16.5 QPS 抓取包含全部 442 座百万大城的 168 个核心切片 (约 10 秒)，立即返回完整榜单 (名次 100% 恒定永不跳变)
- * Phase 2 (长尾阶段)：后台无缝静默抓取剩余长尾小城切片，完成后自动刷新全量快照，用户无论何时切“全部”都已有数据
+ * 实际执行全网两阶段抓取流水线的核心引擎
  */
-async function performFetchAndAggregate(forceRefresh = false): Promise<RankingApiResponse> {
+async function performFetchAndAggregate(_forceRefresh = false): Promise<RankingApiResponse> {
+  if (WAQI_TOKENS.length === 0) {
+    throw new Error('实时排行服务初始化中，请稍后重试（服务端 WAQI_TOKENS 未配置）');
+  }
+
   const isClient = typeof window !== 'undefined';
   const CONCURRENCY = isClient ? 10 : 16;
   const rateLimiter = new RequestRateLimiter(isClient ? 12.0 : 16.5);
 
-    // 异步同步核心大城真实实测 PM2.5 分项
-    await syncCoreCitiesRealPM25(forceRefresh);
-
   try {
-    // ==========================================
-    // Phase 1：百万级大都会切片优先抓取 (~10秒)
-    // ==========================================
     console.log(`[RealtimeRanking] Phase 1 starting: fetching ${TIER_1_BOUNDS.length} Tier 1 bounds for 1M+ cities...`);
     const p1Start = Date.now();
 
     await fetchBoundsBatch(TIER_1_BOUNDS, rateLimiter, CONCURRENCY, (st) => {
-      cumulativeStationMap.set(st.uid, st);
+      cumulativeStationMap.set(st.uid, { station: st, fetchedAt: Date.now() });
     });
 
-    const p1Duration = ((Date.now() - p1Start) / 1000).toFixed(1);
+    const p1Now = Date.now();
+    pruneCumulativeStations(p1Now);
+    const p1Duration = ((p1Now - p1Start) / 1000).toFixed(1);
     console.log(`[RealtimeRanking] Phase 1 completed in ${p1Duration}s. Cumulative stations: ${cumulativeStationMap.size}`);
 
-    // 生成 Phase 1 快照：百万大都会已 100% 齐备完备，标识 isRefreshing = true (长尾小城后台同步中)
-    const phase1Result = computeRankingSnapshot(Array.from(cumulativeStationMap.values()), true);
+    const phase1Result = computeRankingSnapshot(
+      Array.from(cumulativeStationMap.values(), (v) => v.station),
+      true
+    );
     memoryRankingCache = phase1Result;
-    lastFetchTimestamp = Date.now();
+    lastFetchTimestamp = p1Now;
 
-    // ==========================================
-    // Phase 2：长尾小城镇切片后台静默拉取
-    // ==========================================
     if (!isPhase2Running) {
       isPhase2Running = true;
       (async () => {
@@ -698,16 +589,20 @@ async function performFetchAndAggregate(forceRefresh = false): Promise<RankingAp
           const p2Start = Date.now();
 
           await fetchBoundsBatch(TIER_2_BOUNDS, rateLimiter, CONCURRENCY, (st) => {
-            cumulativeStationMap.set(st.uid, st);
+            cumulativeStationMap.set(st.uid, { station: st, fetchedAt: Date.now() });
           });
 
-          const p2Duration = ((Date.now() - p2Start) / 1000).toFixed(1);
+          const p2Now = Date.now();
+          pruneCumulativeStations(p2Now);
+          const p2Duration = ((p2Now - p2Start) / 1000).toFixed(1);
           console.log(`[RealtimeRanking] Phase 2 completed in ${p2Duration}s. Cumulative stations: ${cumulativeStationMap.size}`);
 
-          // Phase 2 完成：生成全网 100% 全量快照，并解除 isRefreshing
-          const fullResult = computeRankingSnapshot(Array.from(cumulativeStationMap.values()), false);
+          const fullResult = computeRankingSnapshot(
+            Array.from(cumulativeStationMap.values(), (v) => v.station),
+            false
+          );
           memoryRankingCache = fullResult;
-          lastFetchTimestamp = Date.now();
+          lastFetchTimestamp = p2Now;
           console.log(`[RealtimeRanking] All data fully in sync: ${fullResult.totalCities} cities, ${fullResult.totalStations} stations.`);
         } catch (err) {
           console.warn('[RealtimeRanking] Background Phase 2 fetch encountered error:', err);
@@ -717,7 +612,6 @@ async function performFetchAndAggregate(forceRefresh = false): Promise<RankingAp
       })();
     }
 
-    // 耗时仅约 10 秒，前端立即拿到完整稳定的百万大都会榜单
     return phase1Result;
   } catch (err: any) {
     console.error('[RealtimeRanking] Phase 1 fetch failed:', err);

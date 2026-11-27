@@ -76,12 +76,33 @@ export function normalizePollutantUnit(
 
 /**
  * Create a cross-runtime timeout AbortSignal compatible with Cloudflare Workers, Node 20+, and browsers.
+ * Uses native AbortSignal.timeout / AbortSignal.any when available to avoid leaking setTimeout handles.
  */
 export function createTimeoutSignal(ms: number, parent?: AbortSignal): AbortSignal | undefined {
   if (parent?.aborted) return parent;
+
+  const hasNativeTimeout =
+    typeof AbortSignal !== 'undefined' && typeof (AbortSignal as any).timeout === 'function';
+  const hasNativeAny =
+    typeof AbortSignal !== 'undefined' && typeof (AbortSignal as any).any === 'function';
+
+  if (hasNativeTimeout) {
+    const timeoutSig: AbortSignal = (AbortSignal as any).timeout(ms);
+    if (!parent) return timeoutSig;
+    if (hasNativeAny) {
+      return (AbortSignal as any).any([parent, timeoutSig]);
+    }
+  }
+
   if (typeof AbortController !== 'undefined') {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), ms);
+    const timer = setTimeout(() => {
+      if (parent) parent.removeEventListener('abort', onParentAbort);
+      controller.abort();
+    }, ms);
+    if (typeof (timer as any)?.unref === 'function') {
+      (timer as any).unref();
+    }
     const onParentAbort = () => {
       clearTimeout(timer);
       controller.abort();
@@ -89,14 +110,6 @@ export function createTimeoutSignal(ms: number, parent?: AbortSignal): AbortSign
     if (parent) {
       parent.addEventListener('abort', onParentAbort, { once: true });
     }
-    controller.signal.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(timer);
-        if (parent) parent.removeEventListener('abort', onParentAbort);
-      },
-      { once: true }
-    );
     return controller.signal;
   }
   return undefined;

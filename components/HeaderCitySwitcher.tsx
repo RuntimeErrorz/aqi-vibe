@@ -157,11 +157,11 @@ export const HeaderCitySwitcher: React.FC<HeaderCitySwitcherProps> = ({ compact 
   const getCityEval = (cid: string) => {
     const rec = cityCompositeRecords[cid];
     if (!rec) return null;
-    return onlyPm25
-      ? evaluateAQI({ pm25: rec.pollutants.pm25 }, standard, true)
-      : standard === 'CN'
-      ? rec.evaluationCN
-      : rec.evaluationUS;
+    if (onlyPm25) {
+      const ev = evaluateAQI({ pm25: rec.pollutants.pm25 }, standard, true);
+      return rec.isOffline ? { ...ev, color: '#64748b', textColor: '#ffffff', isOffline: true } : ev;
+    }
+    return standard === 'CN' ? rec.evaluationCN : rec.evaluationUS;
   };
 
   // 搜索结果即时读取已缓存 AQI：优先精确多站实测缓存 (cityCompositeRecords)，其次 Cloudflare 排行快照 (rankingAqiMap)
@@ -220,11 +220,11 @@ export const HeaderCitySwitcher: React.FC<HeaderCitySwitcherProps> = ({ compact 
         aria-expanded={isOpen}
         aria-haspopup="dialog"
         title={`当前城市: ${activeCity.nameZh} (${activeCity.nameEn}) — 点击搜索城市或管理关注列表 (Ctrl+K)`}
-        className={`group flex items-center space-x-1.5 rounded-xl border transition-all cursor-pointer select-none shadow-2xs ${
+        className={`group flex items-center space-x-1.5 rounded-xl border transition-all cursor-pointer select-none shadow-2xs text-xs ${
           isOpen
             ? 'bg-white border-sky-400 ring-2 ring-sky-500/15 text-slate-900'
             : 'bg-slate-50/90 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-800'
-        } ${compact ? 'px-2 py-1.5 text-xs max-w-[148px]' : 'px-2.5 py-1.5 text-xs'}`}
+        } ${compact ? 'px-2 py-1.5 max-w-[148px]' : 'px-2 lg:px-2.5 py-1.5 max-w-[148px] lg:max-w-none'}`}
       >
         <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-600 transition-colors shrink-0" />
 
@@ -272,7 +272,7 @@ export const HeaderCitySwitcher: React.FC<HeaderCitySwitcherProps> = ({ compact 
           <div
             role="dialog"
             aria-label="城市检索与关注城市看板"
-            className="fixed inset-x-3 top-[4.5rem] sm:absolute sm:inset-x-auto sm:left-0 sm:top-full sm:mt-2 z-50 w-auto sm:w-[440px] max-w-[calc(100vw-1.5rem)] rounded-2xl bg-white border border-slate-200 shadow-2xl shadow-slate-900/15 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150"
+            className="fixed inset-x-3 top-[4.5rem] sm:absolute sm:inset-x-auto sm:left-0 sm:top-full sm:mt-2 z-50 w-auto sm:w-[440px] max-w-[calc(100vw-1.5rem)] rounded-2xl bg-white border border-slate-200 shadow-2xl shadow-slate-900/15 overflow-hidden"
           >
             {/* 顶部搜索框 */}
             <div className="p-2.5 border-b border-slate-100 bg-slate-50/60">

@@ -7,10 +7,12 @@ import type {
 } from '../types';
 import {
   calculateCNIAQI,
+  calculatePM25AQI,
   calculateUSIAQI,
   convertIAQIToConcentration,
   evaluateAQI,
 } from '../aqi-calculator';
+import { filterSpatialOutliersByValue, getDistanceKm } from '../utils/common';
 
 export interface StationCompositeSample {
   uid: number;
@@ -82,22 +84,9 @@ export function extractStationMetricsFromIaqi(iaqiRaw: Record<string, { v?: numb
     typeof raw.pm25?.v === 'number' && !isNaN(raw.pm25.v) ? Math.round(raw.pm25.v) : undefined;
   const pm25 = pollutants.pm25;
   const pm25IaqiCN =
-    pm25 !== undefined && pm25 > 0 ? evaluateAQI({ pm25 }, 'CN', true).aqi : undefined;
+    pm25 !== undefined && pm25 > 0 ? calculatePM25AQI(pm25, 'CN') : undefined;
 
   return { pollutants, weather, pm25, pm25IaqiUS, pm25IaqiCN };
-}
-
-function getDistanceKmPure(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function averagePositive(values: Array<number | undefined>, decimals = 1): number | undefined {
@@ -106,39 +95,6 @@ function averagePositive(values: Array<number | undefined>, decimals = 1): numbe
   const mean = valid.reduce((a, b) => a + b, 0) / valid.length;
   const factor = Math.pow(10, decimals);
   return Math.round(mean * factor) / factor;
-}
-
-/**
- * 空间统计学离群值检验 (Median-MAD 稳健离散度检验，与排行榜引擎算法 100% 同源)
- * 仅在拥有 >= 3 个有效测站时执行，剔除偏离中位数 > 4 个有效标准差的单一故障探头
- */
-function filterOutlierStationsByPm25(stations: StationCompositeSample[]): StationCompositeSample[] {
-  const withPm25 = stations.filter((s) => {
-    const v = s.pollutants?.pm25 ?? s.pm25;
-    return typeof v === 'number' && Number.isFinite(v) && v > 0;
-  });
-  if (withPm25.length < 3) return stations;
-
-  const values = withPm25
-    .map((s) => (s.pollutants?.pm25 ?? s.pm25) as number)
-    .sort((a, b) => a - b);
-  const mid = Math.floor(values.length / 2);
-  const median = values.length % 2 === 0 ? (values[mid - 1] + values[mid]) / 2 : values[mid];
-
-  const deviations = values.map((v) => Math.abs(v - median)).sort((a, b) => a - b);
-  const mad =
-    deviations.length % 2 === 0
-      ? (deviations[mid - 1] + deviations[mid]) / 2
-      : deviations[mid];
-
-  const effectiveScale = Math.max(mad * 1.4826, 12.0);
-  const MAX_DEV_Z = 4.0;
-
-  return stations.filter((s) => {
-    const v = s.pollutants?.pm25 ?? s.pm25;
-    if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) return true;
-    return Math.abs(v - median) <= MAX_DEV_Z * effectiveScale;
-  });
 }
 
 function averageFinite(values: Array<number | undefined>, decimals = 1): number | undefined {
@@ -166,7 +122,10 @@ export function aggregateCompositeRecord(
   const sameSourceStations = baseProviderId
     ? stations.filter((s) => !s.providerId || s.providerId === baseProviderId)
     : stations;
-  const pool = filterOutlierStationsByPm25(preferOfficialStations(sameSourceStations));
+  const pool = filterSpatialOutliersByValue(
+    preferOfficialStations(sameSourceStations),
+    (s) => s.pollutants?.pm25 ?? s.pm25
+  );
 
   const pollutants: PollutantValues = {
     pm25:
@@ -196,8 +155,8 @@ export function aggregateCompositeRecord(
     pressure: averageFinite(pool.map((s) => s.weather?.pressure), 1) ?? baseRecord.weather?.pressure,
   };
 
-  const evalCN = evaluateAQI(pollutants, 'CN', onlyPm25);
-  const evalUS = evaluateAQI(pollutants, 'US', onlyPm25);
+  let evalCN = evaluateAQI(pollutants, 'CN', onlyPm25);
+  let evalUS = evaluateAQI(pollutants, 'US', onlyPm25);
   const iaqiCN = calculateCNIAQI(pollutants);
   const iaqiUS = calculateUSIAQI(pollutants);
 
@@ -209,12 +168,29 @@ export function aggregateCompositeRecord(
       (s.pollutants?.o3 !== undefined && s.pollutants.o3 > 0)
   );
 
+  // AGENTS.md §9.1: 若全城无活跃实测站且基准站已标记离线，严格保留离线灰色降级语义
+  const isOffline = Boolean(baseRecord.isOffline && sampledStations.length === 0);
+  if (isOffline) {
+    evalCN = {
+      ...evalCN,
+      color: '#64748b',
+      textColor: '#ffffff',
+      isOffline: true,
+    };
+    evalUS = {
+      ...evalUS,
+      color: '#64748b',
+      textColor: '#ffffff',
+      isOffline: true,
+    };
+  }
+
   let compositeCentroid: [number, number] = [targetCity.latitude, targetCity.longitude];
   const centroidPool = sampledStations.length >= 2 ? sampledStations : pool;
   if (centroidPool.length >= 2) {
     const avgLat = centroidPool.reduce((sum, s) => sum + s.lat, 0) / centroidPool.length;
     const avgLon = centroidPool.reduce((sum, s) => sum + s.lon, 0) / centroidPool.length;
-    if (getDistanceKmPure(avgLat, avgLon, targetCity.latitude, targetCity.longitude) <= 15) {
+    if (getDistanceKm(avgLat, avgLon, targetCity.latitude, targetCity.longitude) <= 15) {
       compositeCentroid = [avgLat, avgLon];
     }
   }
@@ -225,6 +201,7 @@ export function aggregateCompositeRecord(
     id: `${targetCity.id}-composite`,
     name: targetCity.nameZh,
     nameEn: targetCity.nameEn,
+    isOffline,
     pollutants,
     weather,
     iaqi: standard === 'CN' ? iaqiCN : iaqiUS,
@@ -232,7 +209,7 @@ export function aggregateCompositeRecord(
     iaqiUS,
     evaluationUS: evalUS,
     evaluationCN: evalCN,
-    compositeStationCount: sampledStations.length || pool.length || 1,
+    compositeStationCount: isOffline ? 0 : (sampledStations.length || pool.length || 1),
     compositeCentroid,
   };
 }

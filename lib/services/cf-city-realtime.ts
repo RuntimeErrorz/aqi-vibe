@@ -30,6 +30,7 @@ import {
   resolveProviderSecrets,
   sortStationsByFreshnessAndDistance,
 } from '../datasources';
+import { getDistanceKm } from '../utils/common';
 
 const EDGE_CONCURRENCY = 6; // 精确贴合 Cloudflare Workers 单调用 6 并发外连上限
 const MAX_SAMPLED_STATIONS = 12; // 长尾冷查采样距市中心最近 12 个官方站（2 轮并发 ≈ 2.2s，<= 13 subrequests）
@@ -46,19 +47,6 @@ export interface EdgeCityRealtimeResult {
   updatedAt: string;
   provenance?: DataProvenance;
   freshness?: FreshnessMeta;
-}
-
-function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 export function parseWaqiStationResponse(
@@ -145,9 +133,11 @@ export function parseWaqiStationResponse(
       textColor: '#ffffff',
       isOffline: true,
     };
-  } else if (evaluationUS.aqi === 0 && typeof data.aqi === 'number' && !isNaN(data.aqi)) {
+  } else if (evaluationUS.aqi === 0 && typeof data.aqi === 'number' && !isNaN(data.aqi) && data.aqi > 0) {
     const officialAqi = Math.round(data.aqi);
     evaluationUS = getUSEvaluation(officialAqi, evaluationUS.primaryPollutant);
+    const estPm25 = convertIAQIToConcentration('pm25', officialAqi, 'US');
+    evaluationCN = evaluateAQI({ pm25: estPm25 }, 'CN');
   }
 
   return {
@@ -158,8 +148,8 @@ export function parseWaqiStationResponse(
     isDomestic: Boolean(cityMeta.isDomestic),
     isOffline: isNoLiveData,
     stationIdx: typeof data.idx === 'number' ? data.idx : undefined,
-    latitude: geo[0] || cityMeta.latitude,
-    longitude: geo[1] || cityMeta.longitude,
+    latitude: typeof geo[0] === 'number' && Number.isFinite(geo[0]) ? geo[0] : cityMeta.latitude,
+    longitude: typeof geo[1] === 'number' && Number.isFinite(geo[1]) ? geo[1] : cityMeta.longitude,
     updateTime: data.time?.s || new Date(nowMs).toISOString(),
     pollutants,
     iaqi: iaqiUS,
