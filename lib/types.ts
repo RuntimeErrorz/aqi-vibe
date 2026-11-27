@@ -3,13 +3,7 @@ export type StandardType = 'CN' | 'US';
 export type ProviderId =
   | 'waqi'
   | 'qweather'
-  | 'caiyun'
   | 'openaq'
-  | 'hk-epd'
-  | 'tw-moenv'
-  | 'airnow'
-  | 'google-aq'
-  | 'openweather'
   | 'open-meteo';
 
 export type ObservationTier =

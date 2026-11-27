@@ -160,7 +160,7 @@ export async function readHotCityFromKV(
 
 /**
  * 执行单批（4 座大都市）高密度官方站预热并写入独立 KV 分包 `hot:{packIndex}`
- * 支持策略 A 多源路由：当该城具备更低延迟的区域优先源（如和风天气/香港环保署/台湾环境部）且已配置时，
+ * 支持策略 A 多源路由：当该城具备更低延迟的区域优先源（如和风天气 / OpenAQ）且已配置时，
  * 直接通过多源编排器抓取（通常仅消耗 1~7 subrequests）；否则无缝复用 ranking:draft 执行 WAQI 零 bounds 预热。
  */
 export async function runHotCitiesCronPack(

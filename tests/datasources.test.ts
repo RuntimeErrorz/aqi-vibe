@@ -22,14 +22,8 @@ import {
   signQWeatherJwt,
   clearQWeatherJwtCache,
 } from '@/lib/datasources/providers/qweather.provider';
-import { caiyunProvider } from '@/lib/datasources/providers/caiyun.provider';
 import { waqiProvider } from '@/lib/datasources/providers/waqi.provider';
-import { hkEpdProvider, clearHkEpdCache, parseHkEpdXml } from '@/lib/datasources/providers/hk-epd.provider';
-import { twMoenvProvider, clearTwMoenvCache } from '@/lib/datasources/providers/tw-moenv.provider';
 import { openaqProvider } from '@/lib/datasources/providers/openaq.provider';
-import { airnowProvider } from '@/lib/datasources/providers/airnow.provider';
-import { googleAqProvider } from '@/lib/datasources/providers/google-aq.provider';
-import { openweatherProvider } from '@/lib/datasources/providers/openweather.provider';
 import { openMeteoProvider } from '@/lib/datasources/providers/openmeteo.provider';
 
 const NOW_MS = Date.parse('2026-11-27T07:36:00Z'); // 15:36 CST
@@ -267,41 +261,6 @@ describe('Strategy A Orchestrator (Region-Aware + >90m Freshness Auto-Failover)'
 });
 
 describe('Individual Data Source Provider Adapters', () => {
-  beforeEach(() => {
-    clearHkEpdCache();
-    clearTwMoenvCache();
-  });
-
-  it('parses Hong Kong EPD XML for both realtime stations and 24h hourly trend', async () => {
-    const sampleXml = `<?xml version="1.0" encoding="UTF-8"?>
-<AQHI24HrPollutantConcentration>
-  <PollutantConcentration><StationName>Central/Western</StationName><DateTime>Fri, 27 Nov 2026 13:00:00 +0800</DateTime><NO2>40</NO2><O3>55</O3><SO2>5</SO2><CO>500</CO><PM10>30</PM10><PM2.5>18</PM2.5></PollutantConcentration>
-  <PollutantConcentration><StationName>Central/Western</StationName><DateTime>Fri, 27 Nov 2026 14:00:00 +0800</DateTime><NO2>42</NO2><O3>58</O3><SO2>5</SO2><CO>520</CO><PM10>32</PM10><PM2.5>19</PM2.5></PollutantConcentration>
-  <PollutantConcentration><StationName>Central/Western</StationName><DateTime>Fri, 27 Nov 2026 15:00:00 +0800</DateTime><NO2>45</NO2><O3>60</O3><SO2>6</SO2><CO>600</CO><PM10>35</PM10><PM2.5>22</PM2.5></PollutantConcentration>
-</AQHI24HrPollutantConcentration>`;
-
-    expect(parseHkEpdXml(sampleXml).length).toBe(3);
-
-    const mockFetch: typeof fetch = async () => new Response(sampleXml, { status: 200 });
-    const hk = findCity('gl-hong-kong')!;
-    const ctx: ProviderRuntimeContext = { env: {}, fetchImpl: mockFetch, nowMs: NOW_MS, isServer: true };
-
-    const snap = await hkEpdProvider.realtime!.fetchCitySnapshot(hk, ctx);
-    expect(snap?.providerId).toBe('hk-epd');
-    expect(snap?.stations.length).toBe(1);
-    expect(snap?.stations[0].pollutants.pm25).toBe(22);
-    expect(snap?.stations[0].pollutants.co).toBe(0.6); // 600 ug/m3 -> 0.6 mg/m3
-    expect(snap?.stations[0].freshness?.delayMinutes).toBe(36);
-
-    const hourly = await hkEpdProvider.hourlyTrend!.fetchHourlyTrend(
-      { city: hk, standard: 'CN' },
-      ctx
-    );
-    expect(hourly?.isReal).toBe(true);
-    expect(hourly?.points.length).toBe(3);
-    expect(hourly?.points[2].pm25).toBe(22);
-  });
-
   it('parses QWeather Air Quality v1 current + linked station responses', async () => {
     const chengdu = findCity('cn-chengdu')!;
     const mockFetch: typeof fetch = async (input) => {
@@ -389,7 +348,7 @@ describe('Individual Data Source Provider Adapters', () => {
     expect(valid).toBe(true);
   });
 
-  it('parses OpenAQ v3, Taiwan MOENV, US AirNow, Google AQ, and OpenWeather payloads', async () => {
+  it('parses OpenAQ v3 payloads with unit normalization', async () => {
     const paris = findCity('gl-paris')!;
     const openaqFetch: typeof fetch = async (input) => {
       const url = String(input);
@@ -430,162 +389,9 @@ describe('Individual Data Source Provider Adapters', () => {
     });
     expect(oaqSnap?.stations[0].pollutants.pm25).toBe(14.5);
     expect(oaqSnap?.stations[0].pollutants.no2).toBeCloseTo(37.6, 1);
-
-    // Taiwan MOENV
-    const taipei = findCity('gl-taipei')!;
-    const twSnap = await twMoenvProvider.realtime!.fetchCitySnapshot(taipei, {
-      env: { moenvApiKey: 'k' },
-      fetchImpl: async () =>
-        new Response(
-          JSON.stringify({
-            records: [
-              {
-                siteid: '11',
-                sitename: '中山',
-                county: '臺北市',
-                aqi: '52',
-                'pm2.5': '16',
-                pm10: '28',
-                o3: '35',
-                co: '0.4',
-                publishtime: '2026-11-27 15:00',
-                latitude: '25.0623',
-                longitude: '121.5265',
-              },
-            ],
-          }),
-          { status: 200 }
-        ),
-      nowMs: NOW_MS,
-      isServer: true,
-    });
-    expect(twSnap?.stations[0].pollutants.pm25).toBe(16);
-    expect(twSnap?.stations[0].freshness?.delayMinutes).toBe(36);
-
-    // US AirNow
-    const nyc = findCity('gl-newyork')!;
-    const anSnap = await airnowProvider.realtime!.fetchCitySnapshot(nyc, {
-      env: { airnowApiKey: 'k' },
-      fetchImpl: async () =>
-        new Response(
-          JSON.stringify([
-            {
-              DateObserved: '2026-11-27 ',
-              HourObserved: 2,
-              LocalTimeZone: 'EST',
-              ReportingArea: 'New York City',
-              StateCode: 'NY',
-              Latitude: 40.7128,
-              Longitude: -74.006,
-              ParameterName: 'PM2.5',
-              AQI: 55,
-            },
-          ]),
-          { status: 200 }
-        ),
-      nowMs: NOW_MS,
-      isServer: true,
-    });
-    expect(anSnap?.stations[0].pollutants.pm25).toBeGreaterThan(10);
-    expect(anSnap?.stations[0].freshness?.delayMinutes).toBe(36);
-
-    // Google AQ
-    const gSnap = await googleAqProvider.realtime!.fetchCitySnapshot(paris, {
-      env: { googleAqApiKey: 'k' },
-      fetchImpl: async () =>
-        new Response(
-          JSON.stringify({
-            dateTime: '2026-11-27T07:00:00Z',
-            pollutants: [
-              { code: 'pm25', concentration: { value: 18.2, units: 'MICROGRAMS_PER_CUBIC_METER' } },
-              { code: 'no2', concentration: { value: 15, units: 'PARTS_PER_BILLION' } },
-            ],
-          }),
-          { status: 200 }
-        ),
-      nowMs: NOW_MS,
-      isServer: true,
-    });
-    expect(gSnap?.directCityReading?.pollutants.pm25).toBe(18.2);
-    expect(gSnap?.directCityReading?.pollutants.no2).toBeCloseTo(28.2, 1);
-
-    // OpenWeather
-    const owSnap = await openweatherProvider.realtime!.fetchCitySnapshot(paris, {
-      env: { openweatherApiKey: 'k' },
-      fetchImpl: async () =>
-        new Response(
-          JSON.stringify({
-            list: [
-              {
-                dt: Math.floor((NOW_MS - 36 * 60_000) / 1000),
-                components: { pm2_5: 19.4, pm10: 27.1, o3: 44.2, no2: 21.0, so2: 3.1, co: 450 },
-              },
-            ],
-          }),
-          { status: 200 }
-        ),
-      nowMs: NOW_MS,
-      isServer: true,
-    });
-    expect(owSnap?.directCityReading?.pollutants.pm25).toBe(19.4);
-    expect(owSnap?.directCityReading?.pollutants.co).toBe(0.45);
   });
 
-  it('parses Caiyun Weather v2.6 realtime pollutants, weather unit conversions, and 5-day PM2.5 forecast', async () => {
-    const chengdu = findCity('cn-chengdu')!;
-    const mockFetch: typeof fetch = async () =>
-      new Response(
-        JSON.stringify({
-          status: 'ok',
-          server_time: Math.floor(NOW_MS / 1000),
-          result: {
-            realtime: {
-              temperature: 14.5,
-              humidity: 0.68,
-              wind: { speed: 10.8 },
-              pressure: 101500,
-              air_quality: {
-                pm25: 23,
-                pm10: 41,
-                o3: 76,
-                no2: 18,
-                so2: 5,
-                co: 0.6,
-                aqi: { chn: 41, usa: 74 },
-              },
-            },
-            daily: {
-              air_quality: {
-                pm25: [
-                  { date: '2026-11-27T00:00+08:00', max: 35, avg: 24, min: 15 },
-                  { date: '2026-11-28T00:00+08:00', max: 42, avg: 30, min: 18 },
-                  { date: '2026-11-29T00:00+08:00', max: 28, avg: 20, min: 12 },
-                ],
-              },
-            },
-          },
-        }),
-        { status: 200 }
-      );
-
-    const snap = await caiyunProvider.realtime!.fetchCitySnapshot(chengdu, {
-      env: { caiyunToken: 'test-token' },
-      fetchImpl: mockFetch,
-      nowMs: NOW_MS,
-      isServer: true,
-    });
-
-    expect(snap?.providerId).toBe('caiyun');
-    expect(snap?.directCityReading?.pollutants.pm25).toBe(23);
-    expect(snap?.directCityReading?.weather?.temp).toBe(14.5);
-    expect(snap?.directCityReading?.weather?.humidity).toBe(68);
-    expect(snap?.directCityReading?.weather?.windSpeed).toBe(3); // 10.8 km/h -> 3.0 m/s
-    expect(snap?.directCityReading?.weather?.pressure).toBe(1015); // 101500 Pa -> 1015 hPa
-    expect(snap?.forecast?.pm25?.length).toBe(3);
-    expect(snap?.forecast?.pm25?.[1]).toEqual({ day: '2026-11-28', avg: 30, min: 18, max: 42 });
-  });
-
-  it('decouples 72h WAQI hourly trend by auto-resolving city stationIdx when realtime came from QWeather/Caiyun', async () => {
+  it('decouples 72h WAQI hourly trend by auto-resolving city stationIdx when realtime came from QWeather', async () => {
     const chengdu = findCity('cn-chengdu')!;
     const mockFetch: typeof fetch = async (input) => {
       const url = String(input);

@@ -159,12 +159,7 @@ export interface RawEnvBag {
   QWEATHER_PROJECT_ID?: string;
   QWEATHER_CREDENTIAL_ID?: string;
   QWEATHER_PRIVATE_KEY?: string;
-  CAIYUN_API_TOKEN?: string;
   OPENAQ_API_KEY?: string;
-  AIRNOW_API_KEY?: string;
-  GOOGLE_AQ_API_KEY?: string;
-  MOENV_API_KEY?: string;
-  OPENWEATHER_API_KEY?: string;
 }
 
 /**
@@ -202,11 +197,6 @@ export function resolveProviderSecrets(rawEnv?: RawEnvBag): ProviderSecrets {
     qweatherProjectId: clean(pick('QWEATHER_PROJECT_ID')),
     qweatherCredentialId: clean(pick('QWEATHER_CREDENTIAL_ID')),
     qweatherPrivateKey: clean(pick('QWEATHER_PRIVATE_KEY'))?.replace(/\\n/g, '\n'),
-    caiyunToken: clean(pick('CAIYUN_API_TOKEN')),
     openaqApiKey: clean(pick('OPENAQ_API_KEY')),
-    airnowApiKey: clean(pick('AIRNOW_API_KEY')),
-    googleAqApiKey: clean(pick('GOOGLE_AQ_API_KEY')),
-    moenvApiKey: clean(pick('MOENV_API_KEY')),
-    openweatherApiKey: clean(pick('OPENWEATHER_API_KEY')),
   };
 }

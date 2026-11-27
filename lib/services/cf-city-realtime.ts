@@ -246,7 +246,7 @@ export function filterStationsEdge(
 
 /**
  * Cloudflare Worker 单城实况边缘加速聚合器（已升级为策略 A 多源无缝切源架构）：
- * - 按区域自动路由首选实测源（中国大陆和风优先 / 香港环保署直连 / 台湾环境部 / 欧美 WAQI+AirNow+OpenAQ）
+ * - 按区域自动路由首选实测源（国内/港澳和风优先 / 北美与台湾 OpenAQ 优先 / 其余全球 WAQI 优先）
  * - 策略 A：主源延迟 > 90 分钟或离线时自动静默探测更鲜同等级备源并无缝替换
  * - 全程严守免费版 50 subrequests 硬红线，由外层 Edge Cache 缓存 5 分钟
  */

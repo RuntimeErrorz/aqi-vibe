@@ -50,16 +50,6 @@ export const Footer: React.FC = () => {
           </a>
           <span className="text-slate-200">/</span>
           <a
-            href="https://www.aqhi.gov.hk/"
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
-          >
-            <span>香港环保署</span>
-            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
-          </a>
-          <span className="text-slate-200">/</span>
-          <a
             href="https://open-meteo.com/"
             target="_blank"
             rel="noreferrer"

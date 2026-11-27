@@ -24,12 +24,7 @@ export interface ProviderSecrets {
   qweatherProjectId?: string;
   qweatherCredentialId?: string;
   qweatherPrivateKey?: string;
-  caiyunToken?: string;
   openaqApiKey?: string;
-  airnowApiKey?: string;
-  googleAqApiKey?: string;
-  moenvApiKey?: string;
-  openweatherApiKey?: string;
 }
 
 export interface ProviderRuntimeContext {

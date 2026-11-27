@@ -25,7 +25,7 @@ export interface Env {
   RANKING_KV?: KVNamespaceLike;
   WAQI_TOKENS?: string;
   CARTO_API_KEY?: string;
-  // 多数据源可选密钥（配置哪个即自动激活对应数据源，未配置自动跳过）
+  // 多数据源密钥（和风天气 + OpenAQ）
   QWEATHER_API_HOST?: string;
   QWEATHER_API_KEY?: string;
   QWEATHER_JWT?: string;
@@ -33,12 +33,7 @@ export interface Env {
   QWEATHER_PROJECT_ID?: string;
   QWEATHER_CREDENTIAL_ID?: string;
   QWEATHER_PRIVATE_KEY?: string;
-  CAIYUN_API_TOKEN?: string;
   OPENAQ_API_KEY?: string;
-  AIRNOW_API_KEY?: string;
-  GOOGLE_AQ_API_KEY?: string;
-  MOENV_API_KEY?: string;
-  OPENWEATHER_API_KEY?: string;
 }
 
 interface WorkerExecutionContext {
@@ -230,7 +225,7 @@ export default {
       }
     }
 
-    // 0.8 多数据源 24~72 小时逐小时实测网关（自动路由和风/香港环保署/WAQI/OpenAQ/Google AQ，10 分钟边缘缓存）
+    // 0.8 多数据源 24~72 小时逐小时实测网关（自动路由 WAQI / OpenAQ，10 分钟边缘缓存）
     if (url.pathname === '/api/hourly-trend') {
       const cityParam = url.searchParams.get('city')?.trim();
       const standardParam: StandardType = url.searchParams.get('standard') === 'CN' ? 'CN' : 'US';
@@ -290,7 +285,7 @@ export default {
       }
     }
 
-    // 0.9 多数据源未来 5 天预报网关（优先彩云 AI 预报，自动回落 Open-Meteo ECMWF/CAMS，30 分钟边缘缓存）
+    // 0.9 多数据源未来 5 天预报网关（Open-Meteo ECMWF/CAMS 主源，和风天气兜底，30 分钟边缘缓存）
     if (url.pathname === '/api/forecast') {
       const lat = Number(url.searchParams.get('lat'));
       const lon = Number(url.searchParams.get('lon'));

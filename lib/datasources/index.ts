@@ -10,26 +10,14 @@ import type {
 } from './types';
 import { waqiProvider } from './providers/waqi.provider';
 import { qweatherProvider } from './providers/qweather.provider';
-import { caiyunProvider } from './providers/caiyun.provider';
-import { hkEpdProvider } from './providers/hk-epd.provider';
-import { twMoenvProvider } from './providers/tw-moenv.provider';
 import { openaqProvider } from './providers/openaq.provider';
-import { airnowProvider } from './providers/airnow.provider';
-import { googleAqProvider } from './providers/google-aq.provider';
-import { openweatherProvider } from './providers/openweather.provider';
 import { openMeteoProvider } from './providers/openmeteo.provider';
 
 export function createDefaultProviderRegistry(): ProviderRegistry {
   const registry = new ProviderRegistry();
   registry.register(qweatherProvider);
-  registry.register(caiyunProvider);
-  registry.register(hkEpdProvider);
-  registry.register(twMoenvProvider);
   registry.register(waqiProvider);
-  registry.register(airnowProvider);
   registry.register(openaqProvider);
-  registry.register(googleAqProvider);
-  registry.register(openweatherProvider);
   registry.register(openMeteoProvider);
   return registry;
 }
@@ -45,13 +33,7 @@ export const defaultOrchestrator = new DataSourceOrchestrator(defaultProviderReg
 export const PROVIDER_SHORT_LABELS: Record<ProviderId, string> = {
   waqi: 'WAQI',
   qweather: '和风天气',
-  caiyun: '彩云天气',
   openaq: 'OpenAQ',
-  'hk-epd': '香港环保署',
-  'tw-moenv': '台湾环境部',
-  airnow: 'US AirNow',
-  'google-aq': 'Google AQ',
-  openweather: 'OpenWeather',
   'open-meteo': 'ECMWF CAMS',
 };
 

@@ -37,7 +37,7 @@ export interface HourlyTrendResult {
 
 /**
  * 过去 24~72 小时逐小时走势分析（已接入多数据源网关）：
- * 1. 优先请求同源 Cloudflare Worker `/api/hourly-trend` 多源网关（自动路由和风/香港环保署/WAQI/OpenAQ/Google AQ）
+ * 1. 优先请求同源 Cloudflare Worker `/api/hourly-trend` 多源网关（自动路由 WAQI / OpenAQ 72h 实测流）
  * 2. 若本地 dev 无 Worker 或未命中，平滑并行竞速 WAQI 官方逐小时时序流
  * 绝不注入虚构或 CAMS 数值模拟曲线冒充地面实测。
  */
@@ -154,7 +154,7 @@ export async function fetch24HourHourlyTrend(
 
 /**
  * 获取未来 5 天大气质量预报（能力解耦独立链）：
- * 1. 优先请求同源 Worker `/api/forecast`（自动启用彩云 AI 预报 / Open-Meteo ECMWF/CAMS 等）
+ * 1. 优先请求同源 Worker `/api/forecast`（Open-Meteo ECMWF/CAMS 主源，和风天气兜底）
  * 2. 本地 dev 无 Worker 时自动直连 Open-Meteo ECMWF/CAMS（免 Key 永久可用）
  */
 export async function fetch5DayForecast(lat: number, lng: number): Promise<ForecastDay[]> {

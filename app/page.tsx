@@ -254,7 +254,7 @@ function DashboardPageContent() {
         let stationData: AirQualityRecord;
 
         if (stationProviderId && stationProviderId !== 'waqi' && found?.pollutants) {
-          // 非 WAQI 源（如香港环保署/OpenAQ/台湾环境部）测站已自带完整物理浓度，直接无额外网络开销构建单站记录
+          // 非 WAQI 源（如 OpenAQ）测站已自带完整物理浓度，直接无额外网络开销构建单站记录
           const stPollutants = found.pollutants;
           const stObsMs =
             typeof (found as any)?.observedAtMs === 'number'

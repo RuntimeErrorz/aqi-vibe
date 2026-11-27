@@ -62,41 +62,26 @@ const TIER_PRIORITY: Record<ObservationTier, number> = {
  * - Unconfigured providers (missing API key) are skipped in O(1) without network calls.
  */
 const REALTIME_CHAINS_BY_REGION: Record<string, readonly ProviderId[]> = {
-  CN: ['qweather', 'caiyun', 'waqi', 'google-aq', 'openaq', 'openweather'],
-  HK: ['hk-epd', 'qweather', 'caiyun', 'waqi', 'google-aq', 'openweather'],
-  MO: ['qweather', 'caiyun', 'waqi', 'google-aq', 'openweather'],
-  TW: ['tw-moenv', 'openaq', 'qweather', 'waqi', 'google-aq', 'openweather'],
-  US: ['openaq', 'airnow', 'waqi', 'qweather', 'google-aq', 'openweather'],
-  CA: ['openaq', 'airnow', 'waqi', 'qweather', 'google-aq', 'openweather'],
-  GB: ['waqi', 'openaq', 'qweather', 'google-aq', 'openweather'],
-  FR: ['waqi', 'openaq', 'qweather', 'google-aq', 'openweather'],
-  DE: ['waqi', 'openaq', 'qweather', 'google-aq', 'openweather'],
-  IT: ['waqi', 'openaq', 'qweather', 'google-aq', 'openweather'],
-  ES: ['waqi', 'openaq', 'qweather', 'google-aq', 'openweather'],
-  AU: ['waqi', 'openaq', 'qweather', 'google-aq', 'openweather'],
-  JP: ['waqi', 'openaq', 'qweather', 'google-aq', 'openweather'],
-  KR: ['waqi', 'openaq', 'qweather', 'google-aq', 'openweather'],
-  DEFAULT: ['waqi', 'openaq', 'qweather', 'google-aq', 'openweather'],
+  CN: ['qweather', 'waqi', 'openaq'],
+  HK: ['qweather', 'waqi', 'openaq'],
+  MO: ['qweather', 'waqi', 'openaq'],
+  TW: ['openaq', 'qweather', 'waqi'],
+  US: ['openaq', 'waqi', 'qweather'],
+  CA: ['openaq', 'waqi', 'qweather'],
+  DEFAULT: ['waqi', 'openaq', 'qweather'],
 };
 
-// Decoupled past 24~72h historical trend chains: even when realtime switches to QWeather/Caiyun,
-// past 3-day observed AQI seamlessly continues via WAQI 72h / HK EPD 24h / OpenAQ 36h / Google AQ 48h.
+// Decoupled past 24~72h historical trend chains: even when realtime switches to QWeather,
+// past 3-day observed AQI seamlessly continues via WAQI 72h / OpenAQ 72h.
 const HOURLY_CHAINS_BY_REGION: Record<string, readonly ProviderId[]> = {
-  CN: ['waqi', 'openaq', 'google-aq'],
-  HK: ['hk-epd', 'waqi', 'google-aq'],
-  TW: ['openaq', 'waqi', 'google-aq'],
-  US: ['waqi', 'openaq', 'google-aq'],
-  CA: ['waqi', 'openaq', 'google-aq'],
-  DEFAULT: ['waqi', 'openaq', 'google-aq'],
+  TW: ['openaq', 'waqi'],
+  DEFAULT: ['waqi', 'openaq'],
 };
 
-// Decoupled 5-day forecast chain: Caiyun AI forecast (when configured) -> Open-Meteo ECMWF/CAMS -> QWeather -> Google AQ -> OpenWeather
+// Decoupled 5-day forecast chain: Open-Meteo ECMWF/CAMS primary -> QWeather fallback
 const FORECAST_CHAIN: readonly ProviderId[] = [
-  'caiyun',
   'open-meteo',
   'qweather',
-  'google-aq',
-  'openweather',
 ];
 
 export function getRealtimeChainForCountry(country?: string): readonly ProviderId[] {
@@ -530,7 +515,7 @@ export class DataSourceOrchestrator {
       candidates.length > 1 ? { ...ctx, hasBackupCandidate: true } : ctx;
     const allowWeatherEnrich = ctx.enrichWeather ?? !ctx.isServer;
     const weatherPromise: Promise<WeatherInfo | undefined> | null =
-      allowWeatherEnrich && primary.id !== 'waqi' && primary.id !== 'caiyun'
+      allowWeatherEnrich && primary.id !== 'waqi'
         ? fetchOpenMeteoCurrentWeather(city.latitude, city.longitude, ctx)
         : null;
     const primaryOutcome = await this.querySingleProvider(primary, city, primaryCtx);
