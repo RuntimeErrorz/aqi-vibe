@@ -25,7 +25,7 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
   filterCity,
   showCachedAqi = false,
 }) => {
-  const { standard, onlyPm25, cityCompositeRecords, rankingAqiMap, ensureRankingAqiLoaded } = useStandard();
+  const { standard, onlyPm25, cityCompositeRecords, isCityCompositeFresh, rankingAqiMap, ensureRankingAqiLoaded } = useStandard();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<CityMeta[]>([]);
@@ -42,14 +42,17 @@ export const CitySearchAutocomplete: React.FC<CitySearchAutocompleteProps> = ({
 
   const getCachedEval = (cid: string) => {
     if (!showCachedAqi) return null;
-    const rec = cityCompositeRecords[cid];
+    const rec = isCityCompositeFresh(cid) ? cityCompositeRecords[cid] : undefined;
     if (rec) {
-      const ev = onlyPm25
-        ? evaluateAQI({ pm25: rec.pollutants.pm25 }, standard, true)
-        : standard === 'CN'
-        ? rec.evaluationCN
-        : rec.evaluationUS;
-      if (ev && ev.aqi > 0) return ev;
+      if (onlyPm25) {
+        const ev = evaluateAQI({ pm25: rec.pollutants.pm25 }, standard, true);
+        if (ev && ev.aqi > 0) {
+          return rec.isOffline ? { ...ev, color: '#64748b', textColor: '#ffffff', isOffline: true } : ev;
+        }
+      } else {
+        const ev = standard === 'CN' ? rec.evaluationCN : rec.evaluationUS;
+        if (ev && ev.aqi > 0) return ev;
+      }
     }
     const snap = rankingAqiMap[cid];
     if (!snap) return null;

@@ -98,6 +98,7 @@ export const openaqProvider: AirQualityProvider = {
 
       const maxFetch = Math.min(sortedLocs.length, ctx.isServer ? 6 : 8);
       const stations: NormalizedStationSample[] = [];
+      let breakerError: (Error & { status?: number }) | null = null;
 
       await Promise.all(
         sortedLocs.slice(0, maxFetch).map(async (loc) => {
@@ -121,6 +122,10 @@ export const openaqProvider: AirQualityProvider = {
               headers,
               signal: createTimeoutSignal(timeoutMs, ctx.signal),
             });
+            if (latestRes.status === 401 || latestRes.status === 403 || latestRes.status === 429) {
+              breakerError = createHttpError(latestRes.status, `OpenAQ latest HTTP ${latestRes.status}`);
+              return;
+            }
             if (!latestRes.ok) return;
             const latestJson = (await latestRes.json()) as any;
             const measurements: any[] = Array.isArray(latestJson?.results) ? latestJson.results : [];
@@ -191,7 +196,10 @@ export const openaqProvider: AirQualityProvider = {
         })
       );
 
-      if (stations.length === 0) return null;
+      if (stations.length === 0) {
+        if (breakerError) throw breakerError;
+        return null;
+      }
 
       return {
         providerId: 'openaq',
@@ -249,6 +257,9 @@ export const openaqProvider: AirQualityProvider = {
           headers,
           signal: createTimeoutSignal(timeoutMs, ctx.signal),
         });
+        if (locRes.status === 401 || locRes.status === 403 || locRes.status === 429) {
+          throw createHttpError(locRes.status, `OpenAQ locations HTTP ${locRes.status}`);
+        }
         if (!locRes.ok) return null;
 
         const locJson = (await locRes.json()) as any;
@@ -293,6 +304,9 @@ export const openaqProvider: AirQualityProvider = {
           signal: createTimeoutSignal(timeoutMs, ctx.signal),
         }
       );
+      if (hoursRes.status === 401 || hoursRes.status === 403 || hoursRes.status === 429) {
+        throw createHttpError(hoursRes.status, `OpenAQ hours HTTP ${hoursRes.status}`);
+      }
       if (!hoursRes.ok) return null;
 
       const hoursJson = (await hoursRes.json()) as any;

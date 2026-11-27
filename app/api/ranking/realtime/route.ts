@@ -10,11 +10,12 @@ export async function GET(request: Request) {
     const forceRefresh = url.searchParams.get('refresh') === 'true' || url.searchParams.has('t');
     const data = await getRealtimeRanking(forceRefresh);
 
+    const noCache = forceRefresh || Boolean(data.isRefreshing);
     return NextResponse.json(data, {
       headers: {
-        'Cache-Control': forceRefresh
+        'Cache-Control': noCache
           ? 'no-cache, no-store, must-revalidate'
-          : 'public, max-age=60, stale-while-revalidate=120',
+          : 'public, max-age=0, s-maxage=60',
         'Access-Control-Allow-Origin': '*',
       },
     });

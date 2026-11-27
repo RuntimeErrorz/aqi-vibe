@@ -110,6 +110,38 @@ function pickRandomToken(tokens: string[]): string {
   return tokens[Math.floor(Math.random() * tokens.length)];
 }
 
+/**
+ * WAQI API returns HTTP 200 even on business errors like `{"status":"error","data":"Over quota"}`.
+ * Verify the payload actually has `"status":"ok"` before allowing Edge or browser caching.
+ */
+function isWaqiOkPayload(rawText: string): boolean {
+  try {
+    const parsed = JSON.parse(rawText) as { status?: string };
+    return parsed?.status === 'ok';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Snap map bounds outward to a 0.05° grid (~5.5km) so tiny Leaflet float deltas share Edge Cache
+ * without ever shrinking the requested viewport.
+ */
+function normalizeOutwardBounds(latlng: string): string | null {
+  const parts = latlng.split(',').map(Number);
+  if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n))) return null;
+  let [minLat, minLon, maxLat, maxLon] = parts;
+  if (minLat > maxLat) [minLat, maxLat] = [maxLat, minLat];
+  if (minLon > maxLon) [minLon, maxLon] = [maxLon, minLon];
+  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+  const step = 20; // 0.05° resolution
+  const sMinLat = clamp(Math.floor(minLat * step) / step, -90, 90);
+  const sMinLon = clamp(Math.floor(minLon * step) / step, -180, 180);
+  const sMaxLat = clamp(Math.ceil(maxLat * step) / step, -90, 90);
+  const sMaxLon = clamp(Math.ceil(maxLon * step) / step, -180, 180);
+  return `${sMinLat.toFixed(2)},${sMinLon.toFixed(2)},${sMaxLat.toFixed(2)},${sMaxLon.toFixed(2)}`;
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx?: WorkerExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -149,7 +181,8 @@ export default {
         return {
           cacheable: true,
           response: jsonResponse(snapshotJson, 200, {
-            'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+            // 浏览器不囤旧盘缓存，Edge 边缘缓存 60s（严格遵循 AGENTS.md §9.4）
+            'Cache-Control': 'public, max-age=0, s-maxage=60',
             'X-Ranking-Source': 'cloudflare-kv',
           }),
         };
@@ -163,16 +196,26 @@ export default {
         return jsonResponse({ success: false, error: 'Missing city parameter' }, 400);
       }
 
-      const cacheUrl = `${url.origin}/api/city-realtime?city=${encodeURIComponent(cityParam.toLowerCase())}`;
+      // 归一化城市别名（如 beijing / 北京 / cn-beijing 统一命中同一份 Edge Cache）
+      const canonicalCity = findCity(cityParam);
+      if (!canonicalCity) {
+        return jsonResponse(
+          { success: false, error: 'City not found or no live station data' },
+          404,
+          { 'Cache-Control': 'no-store' }
+        );
+      }
+
+      const cacheUrl = `${url.origin}/api/city-realtime?city=${encodeURIComponent(canonicalCity.id)}`;
       return withEdgeCache(cacheUrl, ctx, async () => {
         try {
           let sourceHeader = 'cloudflare-edge';
-          let payload = env.RANKING_KV ? await readHotCityFromKV(env.RANKING_KV, cityParam) : null;
+          let payload = env.RANKING_KV ? await readHotCityFromKV(env.RANKING_KV, canonicalCity.id) : null;
           if (payload) {
             sourceHeader = 'cloudflare-kv-hot';
           } else {
             const tokens = parseWaqiTokens(env.WAQI_TOKENS);
-            payload = await fetchEdgeCityRealtimePayload(cityParam, tokens, fetch, env);
+            payload = await fetchEdgeCityRealtimePayload(canonicalCity.id, tokens, fetch, env);
           }
 
           if (!payload) {
@@ -189,7 +232,8 @@ export default {
           return {
             cacheable: true,
             response: jsonResponse(payload, 200, {
-              'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+              // Edge 缓存 5 分钟；浏览器 max-age=0 避免在 KV/Edge 之上再叠 15 分钟本地旧缓存
+              'Cache-Control': 'public, max-age=0, s-maxage=300',
               'X-City-Source': sourceHeader,
               'X-Data-Provider':
                 payload.provenance?.providerId || payload.baseRecord?.provenance?.providerId || 'waqi',
@@ -235,9 +279,7 @@ export default {
           return {
             cacheable: result.isReal,
             response: jsonResponse(result, 200, {
-              'Cache-Control': result.isReal
-                ? 'public, max-age=600, stale-while-revalidate=600'
-                : 'public, max-age=60',
+              'Cache-Control': result.isReal ? 'public, max-age=0, s-maxage=600' : 'no-store',
             }),
           };
         } catch (err: any) {
@@ -272,10 +314,12 @@ export default {
             { rawEnv: env, isServer: true },
             city
           );
+          const hasData = result.list.length > 0;
           return {
-            cacheable: result.list.length > 0,
+            cacheable: hasData,
             response: jsonResponse(result, 200, {
-              'Cache-Control': 'public, max-age=1800, stale-while-revalidate=1800',
+              // 空预报严禁缓存，防止浏览器把瞬时失败锁死 30~60 分钟
+              'Cache-Control': hasData ? 'public, max-age=60, s-maxage=1800' : 'no-store',
             }),
           };
         } catch (err: any) {
@@ -297,24 +341,30 @@ export default {
       if (!/^-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(latlng)) {
         return jsonResponse({ status: 'error', data: 'Invalid latlng' }, 400);
       }
+      const normalizedBounds = normalizeOutwardBounds(latlng);
+      if (!normalizedBounds) {
+        return jsonResponse({ status: 'error', data: 'Invalid latlng' }, 400);
+      }
       const tokens = parseWaqiTokens(env.WAQI_TOKENS);
       if (tokens.length === 0) {
         return jsonResponse({ status: 'error', data: 'WAQI_TOKENS not configured' }, 503);
       }
 
-      const cacheUrl = `${url.origin}/api/waqi/bounds?latlng=${encodeURIComponent(latlng)}`;
+      const cacheUrl = `${url.origin}/api/waqi/bounds?latlng=${encodeURIComponent(normalizedBounds)}`;
       return withEdgeCache(cacheUrl, ctx, async () => {
         try {
           const token = pickRandomToken(tokens);
           const upstream = await fetch(
-            `https://api.waqi.info/v2/map/bounds?latlng=${latlng}&token=${encodeURIComponent(token)}`,
+            `https://api.waqi.info/v2/map/bounds?latlng=${normalizedBounds}&token=${encodeURIComponent(token)}`,
             { signal: createTimeoutSignal(8000) }
           );
           const body = await upstream.text();
+          // 必须校验业务 status === 'ok'，防止 WAQI HTTP 200 "Over quota" 毒化边缘缓存
+          const okToCache = upstream.ok && isWaqiOkPayload(body);
           return {
-            cacheable: upstream.ok,
+            cacheable: okToCache,
             response: jsonResponse(body, upstream.status, {
-              'Cache-Control': upstream.ok ? 'public, max-age=60, stale-while-revalidate=120' : 'no-store',
+              'Cache-Control': okToCache ? 'public, max-age=0, s-maxage=60' : 'no-store',
             }),
           };
         } catch (err: any) {
@@ -349,10 +399,11 @@ export default {
             { signal: createTimeoutSignal(8000) }
           );
           const body = await upstream.text();
+          const okToCache = upstream.ok && isWaqiOkPayload(body);
           return {
-            cacheable: upstream.ok,
+            cacheable: okToCache,
             response: jsonResponse(body, upstream.status, {
-              'Cache-Control': upstream.ok ? 'public, max-age=120, stale-while-revalidate=240' : 'no-store',
+              'Cache-Control': okToCache ? 'public, max-age=0, s-maxage=120' : 'no-store',
             }),
           };
         } catch (err: any) {
@@ -461,7 +512,7 @@ export default {
           return {
             cacheable: true,
             response: jsonResponse(raw.text, 200, {
-              'Cache-Control': 'public, max-age=600, stale-while-revalidate=600',
+              'Cache-Control': 'public, max-age=0, s-maxage=600',
             }),
           };
         } catch (err: any) {

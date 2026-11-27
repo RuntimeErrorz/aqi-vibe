@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
   fetchWAQIMapBounds,
   WaqiBoundStation,
@@ -264,11 +265,15 @@ export default function AirMap({
   focusCity,
   onStationCountChange,
 }: AirMapProps) {
-  const { standard, onlyPm25, cityCompositeRecords, reportCityCompositeRecord } = useStandard();
+  const { standard, onlyPm25, cityCompositeRecords, isCityCompositeFresh, reportCityCompositeRecord } = useStandard();
   const standardRef = useRef<StandardType>(standard);
   const onlyPm25Ref = useRef<boolean>(onlyPm25);
   const compositeRecordsRef = useRef<Record<string, AirQualityRecord>>(cityCompositeRecords);
   compositeRecordsRef.current = cityCompositeRecords;
+  const isCityCompositeFreshRef = useRef(isCityCompositeFresh);
+  isCityCompositeFreshRef.current = isCityCompositeFresh;
+  const onStationCountChangeRef = useRef(onStationCountChange);
+  onStationCountChangeRef.current = onStationCountChange;
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const basemapLayerRef = useRef<L.TileLayer | null>(null);
@@ -279,10 +284,55 @@ export default function AirMap({
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const enrichAbortRef = useRef<AbortController | null>(null);
   const stationCacheRef = useRef<Map<number, WaqiBoundStation>>(new Map());
-  const stationDetailRecRef = useRef<Map<number, AirQualityRecord>>(new Map());
+  const stationFetchedAtRef = useRef<Map<number, number>>(new Map());
+  const stationDetailRecRef = useRef<Map<number, { record: AirQualityRecord; fetchedAt: number }>>(new Map());
   const showStationsRef = useRef(showStations);
   const nearestStationRef = useRef<(WaqiBoundStation & { distKm: number }) | null>(null);
-  const focusCityDataMap = useRef<Map<string, AirQualityRecord>>(new Map());
+  const focusCityDataMap = useRef<Map<string, { record: AirQualityRecord; fetchedAt: number }>>(new Map());
+
+  const STATION_CACHE_TTL_MS = 15 * 60 * 1000;
+  const STATION_PM25_REUSE_TTL_MS = 5 * 60 * 1000;
+  const STATION_DETAIL_TTL_MS = 5 * 60 * 1000;
+  const MAX_MAP_STATION_CACHE = 2000;
+
+  // 合并新拉取的视野测站：仅当测站观测时间与 AQI 均未变化且距上次拉取 < 5 分钟时复用旧 PM2.5，防止 PM2.5 永久冻结
+  const mergeFreshStationIntoCache = (st: WaqiBoundStation, nowMs: number) => {
+    const prev = stationCacheRef.current.get(st.uid);
+    const prevAt = stationFetchedAtRef.current.get(st.uid) ?? 0;
+    const canReusePm25 = Boolean(
+      prev &&
+        prev.pm25 !== undefined &&
+        nowMs - prevAt < STATION_PM25_REUSE_TTL_MS &&
+        prev.aqi === st.aqi &&
+        prev.station?.time === st.station?.time
+    );
+    stationCacheRef.current.set(st.uid, {
+      ...st,
+      ...(canReusePm25
+        ? {
+            pm25: prev!.pm25,
+            pm25IaqiUS: prev!.pm25IaqiUS,
+            pm25IaqiCN: prev!.pm25IaqiCN,
+          }
+        : {}),
+    });
+    stationFetchedAtRef.current.set(st.uid, nowMs);
+
+    if (stationCacheRef.current.size > MAX_MAP_STATION_CACHE) {
+      stationFetchedAtRef.current.forEach((ts, uid) => {
+        if (nowMs - ts > STATION_CACHE_TTL_MS) {
+          stationFetchedAtRef.current.delete(uid);
+          stationCacheRef.current.delete(uid);
+        }
+      });
+      while (stationCacheRef.current.size > MAX_MAP_STATION_CACHE) {
+        const oldestUid = stationCacheRef.current.keys().next().value;
+        if (oldestUid === undefined) break;
+        stationCacheRef.current.delete(oldestUid);
+        stationFetchedAtRef.current.delete(oldestUid);
+      }
+    }
+  };
 
   useEffect(() => {
     standardRef.current = standard;
@@ -300,7 +350,7 @@ export default function AirMap({
 
     if (!showStationsRef.current) {
       markersLayer.clearLayers();
-      onStationCountChange?.(0, false);
+      onStationCountChangeRef.current?.(0, false);
       return;
     }
 
@@ -328,7 +378,11 @@ export default function AirMap({
       });
 
       const marker = L.marker([st.lat, st.lon], { icon });
-      const cachedDetail = stationDetailRecRef.current.get(st.uid) || null;
+      const cachedDetailEntry = stationDetailRecRef.current.get(st.uid);
+      const cachedDetail =
+        cachedDetailEntry && Date.now() - cachedDetailEntry.fetchedAt < STATION_DETAIL_TTL_MS
+          ? cachedDetailEntry.record
+          : null;
       const initialPopupHtml = buildStationDetailPopupHtml(
         st,
         cachedDetail,
@@ -340,19 +394,20 @@ export default function AirMap({
 
       marker.bindPopup(initialPopupHtml, { maxWidth: 300, closeButton: false });
 
-      // 点击测站弹窗时按需拉取真实六项分项实测（零伪造，按需请求）
+      // 点击测站弹窗时按需拉取真实六项分项实测（5 分钟保鲜，超期自动重拉）
       marker.on('popupopen', () => {
         const curStyle = getStationPinEvaluation(st, standardRef.current, onlyPm25Ref.current);
-        const existing = stationDetailRecRef.current.get(st.uid);
-        if (existing) {
+        const existingEntry = stationDetailRecRef.current.get(st.uid);
+        if (existingEntry && Date.now() - existingEntry.fetchedAt < STATION_DETAIL_TTL_MS) {
           marker.setPopupContent(
-            buildStationDetailPopupHtml(st, existing, standardRef.current, onlyPm25Ref.current, curStyle, false)
+            buildStationDetailPopupHtml(st, existingEntry.record, standardRef.current, onlyPm25Ref.current, curStyle, false)
           );
           return;
         }
         fetchWAQIStationByUid(st.uid)
           .then((rec) => {
-            stationDetailRecRef.current.set(st.uid, rec);
+            const fetchedAt = Date.now();
+            stationDetailRecRef.current.set(st.uid, { record: rec, fetchedAt });
             if (rec.pollutants.pm25 !== undefined) {
               stationCacheRef.current.set(st.uid, {
                 ...st,
@@ -360,6 +415,7 @@ export default function AirMap({
                 pm25IaqiUS: rec.iaqiUS?.pm25,
                 pm25IaqiCN: rec.iaqiCN?.pm25,
               });
+              stationFetchedAtRef.current.set(st.uid, fetchedAt);
             }
             if (mapInstanceRef.current?.hasLayer(marker)) {
               marker.setPopupContent(
@@ -379,7 +435,7 @@ export default function AirMap({
       markersLayer.addLayer(marker);
     });
 
-    onStationCountChange?.(displayStations.length, false);
+    onStationCountChangeRef.current?.(displayStations.length, false);
   };
 
   // 微观缩放 (zoom >= 9) 且开启「只看 PM2.5」时，受控并发拉取视野内最多 15 个站点的真实 PM2.5
@@ -403,6 +459,7 @@ export default function AirMap({
         enriched.forEach((st) => {
           if (st.pm25 !== undefined) {
             stationCacheRef.current.set(st.uid, st);
+            stationFetchedAtRef.current.set(st.uid, Date.now());
             updated = true;
           }
         });
@@ -431,7 +488,7 @@ export default function AirMap({
     city: CityMeta
   ) => {
     if (!station) {
-      onStationCountChange?.(-1, false, {
+      onStationCountChangeRef.current?.(-1, false, {
         name: city.nameZh,
         aqi: 0,
         level: '暂无测站',
@@ -441,8 +498,14 @@ export default function AirMap({
       return;
     }
 
+    const focusCachedEntry = focusCityDataMap.current.get(city.id);
+    const freshFocusCached =
+      focusCachedEntry && Date.now() - focusCachedEntry.fetchedAt < STATION_DETAIL_TTL_MS
+        ? focusCachedEntry.record
+        : undefined;
     const cityRecord =
-      compositeRecordsRef.current[city.id] || focusCityDataMap.current.get(city.id);
+      (isCityCompositeFreshRef.current(city.id) ? compositeRecordsRef.current[city.id] : undefined) ||
+      freshFocusCached;
 
     const validCityStations = filterStationsForCity(
       Array.from(stationCacheRef.current.values()).filter((s) => {
@@ -477,7 +540,7 @@ export default function AirMap({
 
     const cleanName = extractCleanStationName(station.station?.name || '', city.nameZh);
 
-    onStationCountChange?.(-1, false, {
+    onStationCountChangeRef.current?.(-1, false, {
       name: city.nameZh,
       aqi: aqiNum,
       level: levelText,
@@ -526,7 +589,7 @@ export default function AirMap({
       const syncStationsInViewport = async () => {
         if (!showStationsRef.current) {
           markersLayer.clearLayers();
-          onStationCountChange?.(0, false);
+          onStationCountChangeRef.current?.(0, false);
           return;
         }
 
@@ -546,19 +609,14 @@ export default function AirMap({
         if (cachedStationsInView.length > 0) {
           renderStationsRef.current(cachedStationsInView);
         } else {
-          onStationCountChange?.(0, true);
+          onStationCountChangeRef.current?.(0, true);
         }
 
         try {
           const freshStations = await fetchWAQIMapBounds(minLat, minLng, maxLat, maxLng);
+          const fetchedAt = Date.now();
           freshStations.forEach((st: WaqiBoundStation) => {
-            const prev = stationCacheRef.current.get(st.uid);
-            stationCacheRef.current.set(st.uid, {
-              ...st,
-              pm25: prev?.pm25,
-              pm25IaqiUS: prev?.pm25IaqiUS,
-              pm25IaqiCN: prev?.pm25IaqiCN,
-            });
+            mergeFreshStationIntoCache(st, fetchedAt);
           });
 
           const allInView: WaqiBoundStation[] = [];
@@ -575,7 +633,7 @@ export default function AirMap({
           if (cachedStationsInView.length > 0) {
             renderStationsRef.current(cachedStationsInView);
           } else {
-            onStationCountChange?.(0, false);
+            onStationCountChangeRef.current?.(0, false);
           }
         }
       };
@@ -669,7 +727,7 @@ export default function AirMap({
 
     if (!showStations) {
       markersLayer.clearLayers();
-      onStationCountChange?.(0, false);
+      onStationCountChangeRef.current?.(0, false);
     } else {
       const bounds = map.getBounds();
       const inView: WaqiBoundStation[] = [];
@@ -736,11 +794,15 @@ export default function AirMap({
     }
 
     const focusAbort = new AbortController();
-    if (!compositeRecordsRef.current[focusCity.id] && !focusCityDataMap.current.has(focusCity.id)) {
+    const existingFocusEntry = focusCityDataMap.current.get(focusCity.id);
+    const hasFreshFocus =
+      isCityCompositeFreshRef.current(focusCity.id) ||
+      Boolean(existingFocusEntry && Date.now() - existingFocusEntry.fetchedAt < STATION_DETAIL_TTL_MS);
+    if (!hasFreshFocus) {
       fetchWAQICityCompositeData(focusCity.id, focusAbort.signal)
         .then((rec: AirQualityRecord) => {
           if (isCancelled || !rec) return;
-          focusCityDataMap.current.set(focusCity.id, rec);
+          focusCityDataMap.current.set(focusCity.id, { record: rec, fetchedAt: Date.now() });
           reportCityCompositeRecord(focusCity.id, rec);
           if (nearestStationRef.current) {
             syncFocusCityInfoRef.current(nearestStationRef.current, focusCity);
@@ -757,14 +819,9 @@ export default function AirMap({
     )
       .then((stations) => {
         if (isCancelled || !mapInstanceRef.current) return;
+        const fetchedAt = Date.now();
         stations.forEach((st) => {
-          const prev = stationCacheRef.current.get(st.uid);
-          stationCacheRef.current.set(st.uid, {
-            ...st,
-            pm25: prev?.pm25,
-            pm25IaqiUS: prev?.pm25IaqiUS,
-            pm25IaqiCN: prev?.pm25IaqiCN,
-          });
+          mergeFreshStationIntoCache(st, fetchedAt);
         });
 
         const freshNearest = findNearestStationForCity(

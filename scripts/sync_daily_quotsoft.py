@@ -59,7 +59,7 @@ def calc_iaqi(val, bp_conc, bp_iaqi):
         i_high = bp_iaqi[i + 1]
         if c_low <= val <= c_high:
             iaqi = ((i_high - i_low) / (c_high - c_low)) * (val - c_low) + i_low
-            return int(math.floor(iaqi + 0.5))
+            return max(1, int(math.floor(iaqi + 0.5)))
     return 0
 
 
@@ -119,7 +119,7 @@ def parse_day_csv(csv_text):
                     if v_str:
                         try:
                             val = float(v_str)
-                            if val >= 0:
+                            if val > 0:
                                 city_vals[cname][m_type].append(val)
                         except ValueError:
                             pass

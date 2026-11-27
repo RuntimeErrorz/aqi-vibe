@@ -304,4 +304,34 @@ CREATE INDEX idx_daily_target_date ON aqi_daily_stats(target_id, stat_date DESC)
 * **严禁在客户端浏览器搞 `sessionStorage` / `localStorage` 缓存**：客户端长缓存会导致用户在刷新或切换 Tab 时读到滞后的历史旧值，造成前台实况与排行榜数据严重对不上账。前台直连服务端获取最新状态。
 * **服务端采用 8 分钟 SWR 内存快照与 30 秒物理防抖**：排行榜聚合全网数百个网格切片，服务端内存快照保鲜 8 分钟（过期后先行秒回旧值并在后台静默更新，杜绝前台白屏与击穿上游 Nginx 反代约 10~15 QPS 漏桶瞬时限频）；用户手动刷新支持 30 秒物理防抖穿透。
 
+---
+
+## 10. 工程质量与防退化守则 (Engineering Quality & Harness Rules)
+
+### 10.1 单一事实源与体量控制
+* **禁止重复造轮子**：通用工具统一收敛至 `lib/utils/common.ts`（距离、离群过滤、站名清洗、目标编码、HTML 转义、气象合并），分页统一复用 `PaginationJumper`。新增工具前必须先检索已有实现。
+* **单文件体量红线**：新增或重构模块尽量控制在 **400 行以内**；修改超大文件前先评估是否拆分子组件/子模块，避免长文件导致注意力衰减与局部重复。
+* **依赖禁令**：未经用户明确确认，严禁自行 `npm install` 新包；定期清理未引用依赖与死代码。
+
+### 10.2 全链路缓存与时效闭环
+* **边缘与浏览器拆层**：实时 API 一律使用 `Cache-Control: public, max-age=0, s-maxage=<TTL>`，禁止让浏览器在 KV/Edge 之上叠加长缓存；空结果或上游报错一律返回 `no-store`。
+* **业务状态校验**：代理外部接口（尤其 WAQI HTTP 200 报错）必须校验业务 `status === 'ok'` 才允许写入缓存。
+* **客户端内存缓存必带三件套**：所有前端内存 Map/Context 缓存必须具备 **TTL 过期**、**失败冷却重试** 与 **容量上限清理**；延迟角标与提示必须基于 `observedAtMs` 动态重算，严禁固化写入时的静态分钟数。
+
+### 10.3 上游边界与资源安全
+* **熔断器闭环**：WAQI HTTP 200 限频/鉴权错误及所有上游子请求 `401/403/429` 必须抛带 `status` 的错误，确保 `ProviderCircuitBreaker` 正常跳闸。
+* **参数与并发守卫**：坐标/数值入参统一用 `Number.isFinite` 校验（防空串强转 `0`）；并发预发的辅助请求（如气象补齐）在走备源不再需要时必须显式 `abort()`。
+* **零前端密钥**：线上静态构建严禁注入 `NEXT_PUBLIC_*` 密钥，统一经 Cloudflare Worker 代理读取服务端 Secrets。
+
+### 10.4 前端安全、渲染与数据口径
+* **Hooks 与性能**：严禁在条件 `return` 之后调用 React Hooks；ECharts `option` 与事件对象必须 `useMemo`；非地图页面不得全局引入 Leaflet CSS，CSS `@import` 严禁置于 `@tailwind` 之后。
+* **输出转义**：Leaflet Popup 与 ECharts HTML Tooltip 必须经 `escapeHtml` 转义；CSV 导出必须防范 `= + - @` 公式注入。
+* **缺失值口径**：排行榜排序时缺失值（`null` / `0`）无论正序或逆序一律沉底；聚合均值时分母仅统计有效正值项（`> 0`）。
+
+### 10.5 变更验收与对抗审校门禁
+* **变更必跑轻量门禁**：每次改动完成后必跑 `npx tsc --noEmit` 与 `npx vitest run`（遵循 §8 严禁随意跑 `npm run build`）；Python 脚本改动必跑 `python -m py_compile`。
+* **缺陷固化为回归测试**：每修一类跨层/边界 Bug，必须将回归用例沉淀至 `tests/regression-audit.test.ts`，防止后续退化。
+* **里程碑独立审校**：每完成一个多文件功能里程碑，另开干净上下文做一次跨层审校（重点核查：时间轴/缓存叠加、异常与限频路径、前后端数据口径一致性）。
+
+
 

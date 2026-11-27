@@ -73,7 +73,7 @@ export function build24HourPointsFromWaqiObs(
   standard: StandardType,
   cityUtcOffsetMinutes?: number
 ): HourlyTrendPoint[] {
-  if (!obs || !obs.pm25) return [];
+  if (!obs) return [];
 
   const pm25Series = decodeWaqiObsSeries(obs.pm25);
   const o3Series = decodeWaqiObsSeries(obs.o3);
@@ -82,32 +82,50 @@ export function build24HourPointsFromWaqiObs(
   const so2Series = decodeWaqiObsSeries(obs.so2);
   const coSeries = decodeWaqiObsSeries(obs.co);
 
-  if (pm25Series.length === 0) return [];
+  // 兼容仅发布 PM10 / O3 / NO2 而无 PM2.5 的欧美/日本监测站：以 PM2.5 为主轴，缺失时回落其余有效序列的合并时间轴
+  const allTimestamps =
+    pm25Series.length > 0
+      ? pm25Series.map((s) => s.timestamp)
+      : Array.from(
+          new Set([
+            ...pm10Series.map((s) => s.timestamp),
+            ...o3Series.map((s) => s.timestamp),
+            ...no2Series.map((s) => s.timestamp),
+            ...so2Series.map((s) => s.timestamp),
+            ...coSeries.map((s) => s.timestamp),
+          ])
+        ).sort((a, b) => a - b);
+
+  if (allTimestamps.length === 0) return [];
 
   // 提取过去最多 72 个小时（3天）的实测点位，支持前端 24h / 48h / 72h 灵活回溯
-  const seriesToProcess = pm25Series.slice(-72);
+  const timestampsToProcess = allTimestamps.slice(-72);
 
   // 构建时间戳映射表
+  const pm25Map = new Map(pm25Series.map((s) => [s.timestamp, s.value]));
   const o3Map = new Map(o3Series.map((s) => [s.timestamp, s.value]));
   const pm10Map = new Map(pm10Series.map((s) => [s.timestamp, s.value]));
   const no2Map = new Map(no2Series.map((s) => [s.timestamp, s.value]));
   const so2Map = new Map(so2Series.map((s) => [s.timestamp, s.value]));
   const coMap = new Map(coSeries.map((s) => [s.timestamp, s.value]));
 
-  return seriesToProcess.map((pt) => {
-    const d = new Date(pt.timestamp);
+  const points: HourlyTrendPoint[] = [];
+
+  for (const ts of timestampsToProcess) {
+    const d = new Date(ts);
     const hourLabel = String(d.getUTCHours()).padStart(2, '0') + ':00';
     const dayLabel = `${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
     const fullTimeLabel = `${dayLabel} ${hourLabel}`;
-    
-    // WAQI 解码出来的数值是原生美标 IAQI 分指数
-    const usIaqiPm25 = Math.round(pt.value);
-    const rawO3 = o3Map.get(pt.timestamp);
-    const rawPm10 = pm10Map.get(pt.timestamp);
-    const rawNo2 = no2Map.get(pt.timestamp);
-    const rawSo2 = so2Map.get(pt.timestamp);
-    const rawCo = coMap.get(pt.timestamp);
 
+    // WAQI 解码出来的数值是原生美标 IAQI 分指数，忽略非正异常值
+    const rawPm25 = pm25Map.get(ts);
+    const rawO3 = o3Map.get(ts);
+    const rawPm10 = pm10Map.get(ts);
+    const rawNo2 = no2Map.get(ts);
+    const rawSo2 = so2Map.get(ts);
+    const rawCo = coMap.get(ts);
+
+    const usIaqiPm25 = rawPm25 !== undefined && rawPm25 > 0 ? Math.round(rawPm25) : undefined;
     const usIaqiO3 = rawO3 !== undefined && rawO3 > 0 ? Math.round(rawO3) : undefined;
     const usIaqiPm10 = rawPm10 !== undefined && rawPm10 > 0 ? Math.round(rawPm10) : undefined;
     const usIaqiNo2 = rawNo2 !== undefined && rawNo2 > 0 ? Math.round(rawNo2) : undefined;
@@ -115,7 +133,7 @@ export function build24HourPointsFromWaqiObs(
     const usIaqiCo = rawCo !== undefined && rawCo > 0 ? Math.round(rawCo) : undefined;
 
     // 将美标 IAQI 逆运算还原为客观物理质量浓度 (PM2.5/PM10/O3/NO2/SO2 为 μg/m³，CO 为 mg/m³)
-    const concPm25 = convertIAQIToConcentration('pm25', usIaqiPm25, 'US');
+    const concPm25 = usIaqiPm25 !== undefined ? convertIAQIToConcentration('pm25', usIaqiPm25, 'US') : 0;
     const concO3 = usIaqiO3 !== undefined ? convertIAQIToConcentration('o3', usIaqiO3, 'US') : undefined;
     const concPm10 = usIaqiPm10 !== undefined ? convertIAQIToConcentration('pm10', usIaqiPm10, 'US') : undefined;
     const concNo2 = usIaqiNo2 !== undefined ? convertIAQIToConcentration('no2', usIaqiNo2, 'US') : undefined;
@@ -129,7 +147,7 @@ export function build24HourPointsFromWaqiObs(
       // 1. 美标体系 (WAQI 官方原生):
       // 总 AQI 等于各项美标分指数的最大值：AQI = max(IAQI_pm25, IAQI_o3, ...)
       const iaqiList = [usIaqiPm25, usIaqiO3, usIaqiPm10, usIaqiNo2, usIaqiSo2, usIaqiCo].filter(
-        (v): v is number => typeof v === 'number' && !isNaN(v)
+        (v): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0
       );
       aqiVal = iaqiList.length > 0 ? Math.max(...iaqiList) : 0;
       iaqiResult = {
@@ -152,16 +170,18 @@ export function build24HourPointsFromWaqiObs(
         co: concCo && concCo > 0 ? concCo : undefined,
       });
       const cnVals = Object.values(iaqiResult).filter(
-        (v): v is number => typeof v === 'number' && Number.isFinite(v)
+        (v): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0
       );
       aqiVal = cnVals.length > 0 ? Math.max(...cnVals) : 0;
     }
 
-    return {
+    if (aqiVal <= 0) continue;
+
+    points.push({
       hour: hourLabel,
       fullTime: fullTimeLabel,
       ...(typeof cityUtcOffsetMinutes === 'number' && Number.isFinite(cityUtcOffsetMinutes)
-        ? { timestampMs: pt.timestamp - cityUtcOffsetMinutes * 60_000 }
+        ? { timestampMs: ts - cityUtcOffsetMinutes * 60_000 }
         : {}),
       aqi: aqiVal,
       // 客观物理质量浓度（微克 μg/m³，CO 为 mg/m³）
@@ -173,8 +193,10 @@ export function build24HourPointsFromWaqiObs(
       co: concCo,
       iaqi: iaqiResult,
       isReal: true,
-    };
-  });
+    });
+  }
+
+  return points;
 }
 
 /**
@@ -242,7 +264,7 @@ export async function fetchWaqiHourlyDirect(
     if (!raw.ok) return null;
     const feedJson = JSON.parse(raw.text);
     const obs = feedJson?.rxs?.obs?.[0]?.msg?.obs;
-    if (!obs || !obs.pm25) return null;
+    if (!obs || (!obs.pm25 && !obs.pm10 && !obs.o3 && !obs.no2)) return null;
 
     const points = build24HourPointsFromWaqiObs(obs, standard, cityUtcOffsetMinutes);
     return points.length > 0 ? points : null;

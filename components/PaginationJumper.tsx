@@ -24,16 +24,20 @@ export const PaginationJumper: React.FC<PaginationJumperProps> = ({
     setInputVal(String(currentPage));
   }, [currentPage]);
 
+  const safeTotal = Math.max(1, totalPages);
+
   const handleCommit = () => {
     const val = parseInt(inputVal, 10);
-    if (!isNaN(val) && val >= 1 && val <= totalPages) {
-      onPageChange(val);
+    if (!isNaN(val)) {
+      const clamped = Math.max(1, Math.min(safeTotal, val));
+      setInputVal(String(clamped));
+      if (clamped !== currentPage) {
+        onPageChange(clamped);
+      }
     } else {
       setInputVal(String(currentPage));
     }
   };
-
-  const safeTotal = Math.max(1, totalPages);
 
   return (
     <div

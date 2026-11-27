@@ -116,20 +116,9 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
     setWorstPage(1);
   }, [year, cityName, pageSize]);
 
-  // 当年份、城市、标准切换时，重置上下限为 [0, 300] 并重置 ECharts visualMap
+  // 当年份、城市、标准切换时，重置上下限为 [0, 300]（由 option.visualMap.range 单通道驱动 ECharts，避免双重更新）
   useEffect(() => {
     setFilterRange([0, 300]);
-    const chartInstance = echartsRef.current?.getEchartsInstance();
-    if (chartInstance) {
-      try {
-        chartInstance.dispatchAction({
-          type: 'selectDataRange',
-          selected: [0, 300],
-        });
-      } catch {
-        // ignore
-      }
-    }
   }, [year, cityName, standard]);
 
   // 建立 O(1) 日期索引字典，避免鼠标移动时遍历大数组
@@ -141,15 +130,18 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
     return map;
   }, [data]);
 
-  // 格式化为 ECharts calendar 系列数据: [date, aqi]
-  const seriesData = useMemo(() => {
-    return data.map((d) => [d.date, d.aqi]);
+  // 过滤有效数据（严格 aqi > 0，统一总天数、区间筛选与极值榜统计口径）
+  const validDays = useMemo(() => {
+    return data.filter((d) => d && typeof d.aqi === 'number' && Number.isFinite(d.aqi) && d.aqi > 0);
   }, [data]);
 
-  // 统计在册总天数
-  const totalDays = useMemo(() => {
-    return data.filter((d) => d && typeof d.aqi === 'number' && !isNaN(d.aqi)).length;
-  }, [data]);
+  // 格式化为 ECharts calendar 系列数据: [date, aqi]
+  const seriesData = useMemo(() => {
+    return validDays.map((d) => [d.date, d.aqi]);
+  }, [validDays]);
+
+  // 统计有效在册总天数
+  const totalDays = validDays.length;
 
   // 计算落在当前 visualMap 上下限区间内的天数与占比
   const { matchedDays, isFiltered } = useMemo(() => {
@@ -161,15 +153,14 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
       return { matchedDays: totalDays, isFiltered: false };
     }
 
-    const count = data.filter((d) => {
-      if (d.aqi === undefined || d.aqi === null || isNaN(d.aqi)) return false;
+    const count = validDays.filter((d) => {
       const matchMin = isMinAtEdge ? true : d.aqi >= filterRange[0];
       const matchMax = isMaxAtEdge ? true : d.aqi <= filterRange[1];
       return matchMin && matchMax;
     }).length;
 
     return { matchedDays: count, isFiltered: true };
-  }, [data, filterRange, totalDays]);
+  }, [validDays, filterRange, totalDays]);
 
   const percentage = useMemo(() => {
     if (totalDays === 0) return '0.0';
@@ -188,11 +179,6 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
     }
     return `AQI ${min} ~ ${max}`;
   }, [filterRange]);
-
-  // 过滤有效数据并排序极值天气
-  const validDays = useMemo(() => {
-    return data.filter((d) => d && typeof d.aqi === 'number' && !isNaN(d.aqi) && d.aqi > 0);
-  }, [data]);
 
   // 天气最好 (最清新) 排序：AQI 升序，相同按 PM2.5 升序
   const bestDays = useMemo(() => {
@@ -248,40 +234,44 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
     }
   }, []);
 
-  // 向 ECharts 实例派发范围高亮/过滤动作
-  const dispatchRangeToEcharts = useCallback((range: [number, number]) => {
-    const chartInstance = echartsRef.current?.getEchartsInstance();
-    if (chartInstance) {
-      try {
-        chartInstance.dispatchAction({
-          type: 'selectDataRange',
-          selected: range,
-        });
-      } catch {
-        // ignore
-      }
-    }
-  }, []);
-
   // 重置筛选区间为全量 0 ~ 300
   const handleResetRange = useCallback(() => {
     setFilterRange([0, 300]);
-    dispatchRangeToEcharts([0, 300]);
-  }, [dispatchRangeToEcharts]);
+  }, []);
 
-  // 根据数值更新区间并通知 ECharts
+  // 根据数值更新区间（纯状态更新，零副作用，由 option.visualMap.range 单次同步 ECharts）
   const updateRangeByVal = useCallback((val: number, thumb: 'min' | 'max') => {
+    const clamped = Math.max(0, Math.min(300, Math.round(val)));
     setFilterRange((prev) => {
-      let next: [number, number];
       if (thumb === 'min') {
-        next = [Math.min(val, prev[1]), prev[1]];
-      } else {
-        next = [prev[0], Math.max(val, prev[0])];
+        const nextMin = Math.min(clamped, prev[1]);
+        return nextMin === prev[0] ? prev : [nextMin, prev[1]];
       }
-      dispatchRangeToEcharts(next);
-      return next;
+      const nextMax = Math.max(clamped, prev[0]);
+      return nextMax === prev[1] ? prev : [prev[0], nextMax];
     });
-  }, [dispatchRangeToEcharts]);
+  }, []);
+
+  const handleThumbKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>, thumb: 'min' | 'max') => {
+      const step = e.shiftKey ? 20 : 5;
+      const cur = thumb === 'min' ? filterRange[0] : filterRange[1];
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        updateRangeByVal(cur - step, thumb);
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        updateRangeByVal(cur + step, thumb);
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        updateRangeByVal(0, thumb);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        updateRangeByVal(300, thumb);
+      }
+    },
+    [filterRange, updateRangeByVal]
+  );
 
   // 点击轨道任意位置，智能就近吸附手柄 (告别点不到)
   const handleTrackPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -655,18 +645,22 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
                 style={{ width: `${100 - (filterRange[1] / 300) * 100}%` }}
               />
 
-              {/* 左滑块 (Min Thumb) - 带有 28px 透明外围热区，100% 灵敏 */}
+              {/* 左滑块 (Min Thumb) - 带有 28px 透明外围热区，100% 灵敏，支持方向键无障碍调节 */}
               <div
                 role="slider"
+                aria-label="AQI 筛选下限"
+                aria-valuemin={0}
+                aria-valuemax={300}
                 aria-valuenow={filterRange[0]}
                 tabIndex={0}
-                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 flex items-center justify-center cursor-ew-resize touch-none focus:outline-none"
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 flex items-center justify-center cursor-ew-resize touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 rounded-full"
                 style={{
                   left: `${(filterRange[0] / 300) * 100}%`,
                   zIndex: activeThumb === 'min' ? 30 : 20,
                 }}
                 onPointerDown={(e) => handleThumbPointerDown(e, 'min')}
-                title={`当前下限: AQI ${filterRange[0]} (可左右拖动或点击轨道)`}
+                onKeyDown={(e) => handleThumbKeyDown(e, 'min')}
+                title={`当前下限: AQI ${filterRange[0]} (可左右拖动、方向键微调或点击轨道)`}
               >
                 {activeThumb === 'min' && (
                   <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-slate-900 text-white text-[10px] font-bold rounded shadow pointer-events-none tabular-nums whitespace-nowrap">
@@ -679,18 +673,22 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
                 />
               </div>
 
-              {/* 右滑块 (Max Thumb) - 带有 28px 透明外围热区，100% 灵敏 */}
+              {/* 右滑块 (Max Thumb) - 带有 28px 透明外围热区，100% 灵敏，支持方向键无障碍调节 */}
               <div
                 role="slider"
+                aria-label="AQI 筛选上限"
+                aria-valuemin={0}
+                aria-valuemax={300}
                 aria-valuenow={filterRange[1]}
                 tabIndex={0}
-                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 flex items-center justify-center cursor-ew-resize touch-none focus:outline-none"
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-7 h-7 flex items-center justify-center cursor-ew-resize touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 rounded-full"
                 style={{
                   left: `${(filterRange[1] / 300) * 100}%`,
                   zIndex: activeThumb === 'max' ? 30 : 20,
                 }}
                 onPointerDown={(e) => handleThumbPointerDown(e, 'max')}
-                title={`当前上限: AQI ${filterRange[1]} (可左右拖动或点击轨道)`}
+                onKeyDown={(e) => handleThumbKeyDown(e, 'max')}
+                title={`当前上限: AQI ${filterRange[1]} (可左右拖动、方向键微调或点击轨道)`}
               >
                 {activeThumb === 'max' && (
                   <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-slate-900 text-white text-[10px] font-bold rounded shadow pointer-events-none tabular-nums whitespace-nowrap">

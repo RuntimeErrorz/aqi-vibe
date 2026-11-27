@@ -32,8 +32,39 @@ function pickToken(tokens: string[]): string {
 }
 
 // 24h cache mapping city.id -> WAQI reference station idx so 72h historical trend works seamlessly
-// even when realtime snapshot is served by QWeather / Caiyun / OpenAQ (capability decoupling).
+// even when realtime snapshot is served by QWeather / OpenAQ (capability decoupling).
+const MAX_CITY_WAQI_IDX_CACHE = 500;
 const cityWaqiIdxCache = new Map<string, { idx: number; expiresAtMs: number }>();
+
+function setCityWaqiIdxCache(cityId: string, idx: number, nowMs: number) {
+  if (cityWaqiIdxCache.size >= MAX_CITY_WAQI_IDX_CACHE) {
+    cityWaqiIdxCache.forEach((v, k) => {
+      if (v.expiresAtMs <= nowMs) cityWaqiIdxCache.delete(k);
+    });
+    while (cityWaqiIdxCache.size >= MAX_CITY_WAQI_IDX_CACHE) {
+      const oldest = cityWaqiIdxCache.keys().next().value;
+      if (oldest === undefined) break;
+      cityWaqiIdxCache.delete(oldest);
+    }
+  }
+  cityWaqiIdxCache.delete(cityId);
+  cityWaqiIdxCache.set(cityId, { idx, expiresAtMs: nowMs + 24 * 3600 * 1000 });
+}
+
+/**
+ * WAQI returns HTTP 200 even on quota exhaustion ("Over quota") or bad tokens ("Invalid key").
+ * Detect those business-level errors and throw typed HTTP errors so ProviderCircuitBreaker trips!
+ */
+function assertWaqiNotRateLimitedOrAuthError(json: any, label: string): void {
+  if (!json || json.status !== 'error') return;
+  const msg = String(json.data || '').toLowerCase();
+  if (msg.includes('over quota') || msg.includes('quota') || msg.includes('limit')) {
+    throw createHttpError(429, `${label}: ${json.data}`);
+  }
+  if (msg.includes('invalid key') || msg.includes('invalid token') || msg.includes('unauthorized')) {
+    throw createHttpError(401, `${label}: ${json.data}`);
+  }
+}
 
 async function resolveWaqiStationIdxForCity(
   city: CityMeta,
@@ -57,9 +88,10 @@ async function resolveWaqiStationIdxForCity(
     );
     if (res.ok) {
       const json = (await res.json()) as any;
+      assertWaqiNotRateLimitedOrAuthError(json, 'WAQI slug');
       const idx = json?.data?.idx;
       if (json?.status === 'ok' && typeof idx === 'number' && idx > 0) {
-        cityWaqiIdxCache.set(city.id, { idx, expiresAtMs: ctx.nowMs + 24 * 3600 * 1000 });
+        setCityWaqiIdxCache(city.id, idx, ctx.nowMs);
         return idx;
       }
     }
@@ -88,7 +120,7 @@ async function resolveWaqiStationIdxForCity(
         const ranked = filterAndRankStationsForCity(normalized, city, ctx.nowMs);
         if (ranked[0]?.numericUid > 0) {
           const idx = ranked[0].numericUid;
-          cityWaqiIdxCache.set(city.id, { idx, expiresAtMs: ctx.nowMs + 24 * 3600 * 1000 });
+          setCityWaqiIdxCache(city.id, idx, ctx.nowMs);
           return idx;
         }
       }
@@ -117,7 +149,7 @@ async function fetchWaqiHourlyWithFetch(
       if (!raw.ok) continue;
       const feedJson = JSON.parse(raw.text) as any;
       const obs = feedJson?.rxs?.obs?.[0]?.msg?.obs;
-      if (!obs || !obs.pm25) continue;
+      if (!obs || (!obs.pm25 && !obs.pm10 && !obs.o3 && !obs.no2)) continue;
 
       const pts = build24HourPointsFromWaqiObs(obs, standard, cityUtcOffsetMinutes);
       if (pts.length >= 3) return pts;
@@ -242,6 +274,7 @@ export const waqiProvider: AirQualityProvider = {
         throw createHttpError(res.status, `WAQI bounds HTTP ${res.status}`);
       }
       const json = (await res.json()) as any;
+      assertWaqiNotRateLimitedOrAuthError(json, 'WAQI bounds');
       if (json?.status !== 'ok' || !Array.isArray(json.data)) return [];
 
       const out: NormalizedStationSample[] = [];
@@ -282,6 +315,7 @@ export const waqiProvider: AirQualityProvider = {
         }
         if (res.ok) {
           const json = (await res.json()) as any;
+          assertWaqiNotRateLimitedOrAuthError(json, 'WAQI bounds');
           if (json?.status === 'ok' && Array.isArray(json.data)) {
             rawBoundStations = json.data
               .map((item: any) => boundItemToNormalized(item, ctx.nowMs))
@@ -312,6 +346,7 @@ export const waqiProvider: AirQualityProvider = {
         );
         if (!res.ok) return null;
         const json = (await res.json()) as any;
+        assertWaqiNotRateLimitedOrAuthError(json, 'WAQI slug');
         if (json?.status !== 'ok' || !json.data) return null;
 
         const direct = feedDataToNormalized(
@@ -415,7 +450,9 @@ export const waqiProvider: AirQualityProvider = {
   hourlyTrend: {
     async fetchHourlyTrend(query, ctx) {
       let uid = query.stationRawId ? parseInt(query.stationRawId, 10) : NaN;
+      let usedCachedCityIdx = false;
       if (!Number.isFinite(uid) || uid <= 0) {
+        const hadCached = Boolean(cityWaqiIdxCache.get(query.city.id));
         const resolved = await resolveWaqiStationIdxForCity(
           query.city,
           ctx.env.waqiTokens || [],
@@ -423,6 +460,7 @@ export const waqiProvider: AirQualityProvider = {
         );
         if (!resolved) return null;
         uid = resolved;
+        usedCachedCityIdx = hadCached;
       }
 
       const cityUtcOffsetMinutes = getCityUtcOffsetMinutes(
@@ -438,12 +476,15 @@ export const waqiProvider: AirQualityProvider = {
         racers.push(
           (async () => {
             const res = await ctx.fetchImpl(`${ctx.origin}/api/waqi-hourly?idx=${uid}`, {
+              cache: 'no-store',
               signal: createTimeoutSignal(4500, ctx.signal),
             });
             if (!res.ok) throw new Error(`Edge HTTP ${res.status}`);
             const waqiJson = (await res.json()) as any;
             const obs = waqiJson?.rxs?.obs?.[0]?.msg?.obs;
-            if (!obs || !obs.pm25) throw new Error('Empty edge obs');
+            if (!obs || (!obs.pm25 && !obs.pm10 && !obs.o3 && !obs.no2)) {
+              throw new Error('Empty edge obs');
+            }
             const pts = build24HourPointsFromWaqiObs(obs, query.standard, cityUtcOffsetMinutes);
             if (pts.length < 3) throw new Error('Insufficient edge points');
             return pts;
@@ -479,6 +520,10 @@ export const waqiProvider: AirQualityProvider = {
           source: 'WAQI 官方测站 72h 逐小时实测',
         };
       } catch {
+        // 若缓存的 station idx 已无法拉出小时流，主动失效缓存，下次自动重新探测新鲜活跃站
+        if (usedCachedCityIdx) {
+          cityWaqiIdxCache.delete(query.city.id);
+        }
         return null;
       }
     },
@@ -512,12 +557,10 @@ export const waqiProvider: AirQualityProvider = {
         );
         if (!res.ok) return null;
         const json = (await res.json()) as any;
+        assertWaqiNotRateLimitedOrAuthError(json, 'WAQI slug');
         if (json?.status !== 'ok' || !json.data) return null;
         if (city && typeof json.data.idx === 'number' && json.data.idx > 0) {
-          cityWaqiIdxCache.set(city.id, {
-            idx: json.data.idx,
-            expiresAtMs: ctx.nowMs + 24 * 3600 * 1000,
-          });
+          setCityWaqiIdxCache(city.id, json.data.idx, ctx.nowMs);
         }
         return extractValidForecast(json.data.forecast?.daily);
       };

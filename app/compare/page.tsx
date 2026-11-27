@@ -81,6 +81,13 @@ function ComparePageContent() {
     return list.length > 0 ? list : [2025, 2024, 2023, 2022, 2021, 2020, 2019];
   }, [selectedCityIds, summaryReady]);
 
+  // 切换对比城市组合时若当前 radarYear 不在可用年份内，自动对齐最新可用年份
+  useEffect(() => {
+    if (summaryReady && availableYears.length > 0 && !availableYears.includes(radarYear)) {
+      setRadarYear(availableYears[0]);
+    }
+  }, [summaryReady, availableYears, radarYear]);
+
   useEffect(() => {
     if (!summaryReady) return;
     let cancelled = false;

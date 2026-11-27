@@ -84,7 +84,7 @@ interface RealtimeRankingPanelProps {
 }
 
 export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSelectCity, className }) => {
-  const { standard, onlyPm25, cityCompositeRecords, reportRankingCities } = useStandard();
+  const { standard, onlyPm25, cityCompositeRecords, isCityCompositeFresh, reportRankingCities } = useStandard();
   const [scope, setScope] = useState<'global' | 'domestic'>('global');
   const [data, setData] = useState<RankingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -140,8 +140,8 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
     setError(null);
     lastFetchAtRef.current = Date.now();
     try {
-      // 优先直连同源 Cloudflare Worker 边缘缓存 + KV 快照接口 (0ms 边缘直出，防刷零压力)
-      const apiRes = await fetch('/api/ranking/realtime');
+      // 优先直连同源 Cloudflare Worker 边缘缓存 + KV 快照接口 (0ms 边缘直出，绕开浏览器旧盘缓存)
+      const apiRes = await fetch('/api/ranking/realtime', { cache: 'no-store' });
       if (!apiRes.ok) {
         if (apiRes.status === 503) {
           // Worker KV 首次冷启动尚未完成首轮 Cron：等待 8 秒后静默重试边缘快照，避免前端无 Token 盲打 336 请求
@@ -257,7 +257,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
   // 2. 为当前人口池赋予真实、固定的阶梯排名 (1 .. N)，依据选定标准与测站口径动态排序
   // 当客户端已有该城逐站精测全城均值 (cityCompositeRecords) 时，在「全市均值」模式下自动对齐，确保首页/Header/地图/榜单四处绝对一致
   const getCityCurrentAqi = (c: RankedCityItem) => {
-    if (metricMode === 'avg') {
+    if (metricMode === 'avg' && isCityCompositeFresh(c.id)) {
       const exactComp = cityCompositeRecords[c.id];
       if (exactComp) {
         const ev = onlyPm25
@@ -397,7 +397,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
 
   const renderCityRow = (c: RankedCityWithOrder, isClean: boolean) => {
     const currentAqi = getCityCurrentAqi(c);
-    const exactComp = metricMode === 'avg' ? cityCompositeRecords[c.id] : undefined;
+    const exactComp = metricMode === 'avg' && isCityCompositeFresh(c.id) ? cityCompositeRecords[c.id] : undefined;
     const currentPm25 =
       metricMode === 'rep' ? (c.repPm25 ?? c.pm25) : (exactComp?.pollutants.pm25 ?? c.pm25);
     const evaluation = standard === 'CN' ? getCNEvaluation(currentAqi) : getUSEvaluation(currentAqi);

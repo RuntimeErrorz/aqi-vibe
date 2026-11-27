@@ -27,6 +27,7 @@ function MapPageContent() {
   const cityParam = searchParams.get('city');
   const defaultCity = findCity(activeCityId) || findCity('cn-chengdu') || CITIES_REGISTRY[0];
   const favInitRef = useRef(false);
+  const lastSyncedActiveIdRef = useRef<string | null>(null);
 
   const [showStations, setShowStations] = useState(true);
   const [showHeatmap, setShowHeatmap] = useState(false);
@@ -51,27 +52,37 @@ function MapPageContent() {
     loading: false,
   });
 
-  // 挂载后若 URL 未指定 ?city=，自动飞抵全局 activeCityId / 最爱城市
+  // 挂载后若 URL 未指定 ?city=，自动飞抵全局 activeCityId / 最爱城市（带 lastSyncedActiveIdRef 防首帧双向回弹）
   useEffect(() => {
     if (!mounted || favInitRef.current) return;
     favInitRef.current = true;
     if (cityParam) {
       const found = findCity(cityParam);
-      if (found) setActiveCityId(found.id);
+      if (found) {
+        lastSyncedActiveIdRef.current = found.id;
+        if (found.id !== activeCityId) setActiveCityId(found.id);
+      } else {
+        lastSyncedActiveIdRef.current = focusCity.id;
+      }
     } else {
       const targetCity = findCity(activeCityId) || findCity(favoriteCityId);
       if (targetCity && targetCity.id !== focusCity.id) {
+        lastSyncedActiveIdRef.current = targetCity.id;
         setFocusCity(targetCity);
         setFocusCityInfo(null);
         setMapCenter([targetCity.latitude, targetCity.longitude]);
         setMapZoom(10);
+      } else {
+        lastSyncedActiveIdRef.current = focusCity.id;
       }
     }
   }, [mounted, favoriteCityId, cityParam]);
 
-  // 响应 Header 全局城市切换器（切换城市时地图平滑飞抵）
+  // 响应 Header 全局城市切换器（仅在 activeCityId 真实变为新城市时飞抵，忽略首帧旧值回弹）
   useEffect(() => {
     if (!mounted || !favInitRef.current) return;
+    if (activeCityId === lastSyncedActiveIdRef.current) return;
+    lastSyncedActiveIdRef.current = activeCityId;
     const nextCity = findCity(activeCityId);
     if (nextCity && nextCity.id !== focusCity.id) {
       setFocusCity(nextCity);
@@ -79,7 +90,7 @@ function MapPageContent() {
       setMapCenter([nextCity.latitude, nextCity.longitude]);
       setMapZoom(10);
     }
-  }, [activeCityId, mounted]);
+  }, [activeCityId, mounted, focusCity.id]);
 
   // URL 深度链接同步 (?city=...&z=...)：仅在参数确实变化时调用 replaceState
   useEffect(() => {
@@ -95,6 +106,7 @@ function MapPageContent() {
   }, [focusCity.id, mapZoom, mounted]);
 
   const handleSelectCity = (city: CityMeta) => {
+    lastSyncedActiveIdRef.current = city.id;
     setFocusCity(city);
     setActiveCityId(city.id);
     setFocusCityInfo(null);

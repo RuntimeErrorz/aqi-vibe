@@ -25,11 +25,12 @@ import {
   fetchCityRealtimeMultiSource,
   getRealtimeChainForCountry,
   RawEnvBag,
+  refreshFreshnessMeta,
   resolveProviderSecrets,
 } from '../datasources';
 import {
   QWEATHER_STALL_THRESHOLD_MIN,
-  trackQWeatherContentTag,
+  seedQWeatherContentTag,
 } from '../datasources/providers/qweather.provider';
 
 /**
@@ -150,7 +151,34 @@ export async function readHotCityFromKV(
       return null;
     }
     const cityResult = pack.cities[match.city.id];
-    return cityResult && cityResult.success ? cityResult : null;
+    if (!cityResult || !cityResult.success) return null;
+    // 单城复用快照同样严守 90 分钟时效上限，防止包时间戳刷新掩盖单城实际超期
+    const cityUpdatedMs = cityResult.updatedAt ? Date.parse(cityResult.updatedAt) : NaN;
+    if (Number.isFinite(cityUpdatedMs) && nowMs - cityUpdatedMs > HOT_CACHE_MAX_AGE_MS) {
+      return null;
+    }
+    // 刷新缓存快照中的动态 delayMinutes / isStale，避免复用窗口导致延迟角标冻结
+    const refreshedFreshness = refreshFreshnessMeta(cityResult.freshness, nowMs);
+    return {
+      ...cityResult,
+      ...(refreshedFreshness ? { freshness: refreshedFreshness } : {}),
+      ...(cityResult.baseRecord
+        ? {
+            baseRecord: {
+              ...cityResult.baseRecord,
+              freshness: refreshFreshnessMeta(cityResult.baseRecord.freshness, nowMs),
+            },
+          }
+        : {}),
+      ...(cityResult.compositeRecord
+        ? {
+            compositeRecord: {
+              ...cityResult.compositeRecord,
+              freshness: refreshFreshnessMeta(cityResult.compositeRecord.freshness, nowMs),
+            },
+          }
+        : {}),
+    };
   } catch {
     return null;
   }
@@ -237,9 +265,9 @@ export async function runHotCitiesCronPack(
       continue;
     }
 
-    // 把上一轮 KV 中的和风内容指纹种子注入跟踪器，用于跨 Cron 轮次检测和风是否连续 > 3h 卡死
+    // 把上一轮 KV 中的和风内容指纹安全种入跟踪器（不覆盖同 Isolate 已观测到的新指纹）
     if (prevTag && prevTagFirstSeenMs > 0) {
-      trackQWeatherContentTag(city.id, prevTag, prevTagFirstSeenMs);
+      seedQWeatherContentTag(city.id, prevTag, prevTagFirstSeenMs);
     }
 
     const chain = getRealtimeChainForCountry(city.country);

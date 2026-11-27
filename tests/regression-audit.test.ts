@@ -1,10 +1,23 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import worker from '../worker';
 import { evaluateAQI, calculatePM25AQI } from '@/lib/aqi-calculator';
 import { aggregateCompositeRecord } from '@/lib/services/composite-aggregator';
-import { runRankingCronBatch, KVNamespaceLike } from '@/lib/services/cf-ranking-engine';
-import { qweatherProvider } from '@/lib/datasources/providers/qweather.provider';
+import {
+  buildRankingSnapshotFromDraft,
+  runRankingCronBatch,
+  KVNamespaceLike,
+} from '@/lib/services/cf-ranking-engine';
+import { getHotPackKey, readHotCityFromKV } from '@/lib/services/cf-hot-cities';
+import {
+  clearQWeatherTagTracker,
+  qweatherProvider,
+  seedQWeatherContentTag,
+  trackQWeatherContentTag,
+} from '@/lib/datasources/providers/qweather.provider';
+import { formatDelayBadge } from '@/lib/datasources/freshness';
 import { openaqProvider } from '@/lib/datasources/providers/openaq.provider';
+import { waqiProvider } from '@/lib/datasources/providers/waqi.provider';
+import { build24HourPointsFromWaqiObs } from '@/lib/services/waqi-decoder';
 import { CITIES_REGISTRY, findCity, searchCities } from '@/lib/constants/cities';
 import { encodeWaqiTarget, escapeHtml, mergeWeatherInfo } from '@/lib/utils/common';
 import type { AirQualityRecord } from '@/lib/types';
@@ -257,5 +270,194 @@ describe('Codebase Audit Regression Guards', () => {
     expect(encodeWaqiTarget('@-99')).toBe('@-99');
     expect(encodeWaqiTarget('beijing')).toBe('beijing');
     expect(escapeHtml('<img src=x onerror="alert(1)">')).toBe('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;');
+  });
+
+  it('refuses to cache WAQI HTTP 200 business error payloads and snaps bounds outward', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      if (url.includes('/feed/')) {
+        return new Response(JSON.stringify({ status: 'error', data: 'Over quota' }), { status: 200 });
+      }
+      if (url.includes('/v2/map/bounds')) {
+        expect(url).toContain('latlng=30.10,103.95,31.25,105.15');
+        return new Response(JSON.stringify({ status: 'ok', data: [] }), { status: 200 });
+      }
+      return new Response('Not Found', { status: 404 });
+    });
+
+    try {
+      const errFeed = await worker.fetch(
+        new Request('https://aqi.example.com/api/waqi/feed?target=@1451'),
+        { ASSETS: dummyAssets, WAQI_TOKENS: 'tok1' }
+      );
+      expect(errFeed.status).toBe(200);
+      expect(errFeed.headers.get('Cache-Control')).toBe('no-store');
+
+      const okBounds = await worker.fetch(
+        new Request('https://aqi.example.com/api/waqi/bounds?latlng=30.123456,103.987654,31.234567,105.123456'),
+        { ASSETS: dummyAssets, WAQI_TOKENS: 'tok1' }
+      );
+      expect(okBounds.status).toBe(200);
+      expect(okBounds.headers.get('Cache-Control')).toBe('public, max-age=0, s-maxage=60');
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it('returns Cache-Control: no-store when /api/forecast yields an empty list', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      return new Response(JSON.stringify({}), { status: 500 });
+    });
+    try {
+      const res = await worker.fetch(
+        new Request('https://aqi.example.com/api/forecast?lat=39.9&lon=116.4'),
+        { ASSETS: dummyAssets }
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { list: unknown[] };
+      expect(body.list).toEqual([]);
+      expect(res.headers.get('Cache-Control')).toBe('no-store');
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it('rejects stale reused hot cities in readHotCityFromKV even when pack updatedAtMs is fresh', async () => {
+    const nowMs = Date.parse('2026-11-27T12:00:00Z');
+    const packKey = getHotPackKey(8); // Pack 8 contains cn-beijing
+    const kv: KVNamespaceLike = {
+      async get(key) {
+        if (key !== packKey) return null;
+        return JSON.stringify({
+          packIndex: 8,
+          updatedAt: new Date(nowMs - 5 * 60_000).toISOString(),
+          updatedAtMs: nowMs - 5 * 60_000, // Pack looks fresh (5 min ago)
+          cities: {
+            'cn-beijing': {
+              success: true,
+              cityId: 'cn-beijing',
+              updatedAt: new Date(nowMs - 110 * 60_000).toISOString(), // Individual city is 110 min old (> 90 min limit)
+            },
+          },
+        });
+      },
+      async put() {},
+    };
+
+    const result = await readHotCityFromKV(kv, 'cn-beijing', nowMs);
+    expect(result).toBeNull();
+  });
+
+  it('recomputes live delay dynamically in formatDelayBadge and preserves newer QWeather tag on seed', () => {
+    const obsMs = Date.parse('2026-11-27T08:00:00Z');
+    const nowMs = Date.parse('2026-11-27T10:30:00Z'); // 150 min elapsed
+    const badge = formatDelayBadge(
+      {
+        observedAtMs: obsMs,
+        observedAtIso: new Date(obsMs).toISOString(),
+        delayMinutes: 15, // Frozen at cache creation time
+        isStale: false,
+        fetchedAtMs: obsMs + 15 * 60_000,
+      },
+      nowMs
+    );
+    expect(badge).not.toBeNull();
+    expect(badge!.severity).toBe('severe');
+
+    clearQWeatherTagTracker();
+    trackQWeatherContentTag('cn-beijing', 'tag-new', nowMs);
+    // Old KV seed must NOT overwrite the newer tag already observed in this isolate
+    seedQWeatherContentTag('cn-beijing', 'tag-old', obsMs);
+    const next = trackQWeatherContentTag('cn-beijing', 'tag-new', nowMs + 60_000);
+    expect(next.contentTag).toBe('tag-new');
+    expect(next.unchangedMinutes).toBe(1);
+    clearQWeatherTagTracker();
+  });
+
+  it('drops stations in buildRankingSnapshotFromDraft whose observed time ot exceeds 6 hours', () => {
+    const nowMs = Date.parse('2026-11-27T12:00:00Z');
+    const snapshot = buildRankingSnapshotFromDraft(
+      {
+        updatedAt: nowMs,
+        lastBatch: 7,
+        cities: {
+          'cn-beijing': {
+            '1451': {
+              a: 50,
+              p: 12,
+              d: 2.1,
+              n: '北京旧站',
+              t: nowMs - 30 * 60_000, // Scraped 30m ago (< 2h TTL)
+              ot: nowMs - 7 * 60 * 60_000, // Observed 7h ago (> 6h zombie threshold)
+            },
+          },
+        },
+      },
+      nowMs
+    );
+    expect(snapshot.totalCities).toBe(0);
+  });
+
+  it('throws typed HTTP 429 on WAQI HTTP 200 Over quota and OpenAQ latest 429 so circuit breakers trip', async () => {
+    const beijing = findCity('cn-beijing')!;
+    const waqiCtx: ProviderRuntimeContext = {
+      env: { waqiTokens: ['tok1'] },
+      fetchImpl: async () => new Response(JSON.stringify({ status: 'error', data: 'Over quota' }), { status: 200 }),
+      nowMs: Date.parse('2026-11-27T12:00:00Z'),
+      isServer: true,
+    };
+    await expect(waqiProvider.realtime!.fetchCitySnapshot(beijing, waqiCtx)).rejects.toMatchObject({
+      status: 429,
+    });
+
+    const nyc = findCity('gl-newyork')!;
+    const openaqCtx: ProviderRuntimeContext = {
+      env: { openaqApiKey: 'key1' },
+      fetchImpl: async (input) => {
+        const url = String(input);
+        if (url.includes('/locations?')) {
+          return new Response(
+            JSON.stringify({
+              results: [
+                {
+                  id: 99,
+                  name: 'NYC Station',
+                  isMonitor: true,
+                  coordinates: { latitude: 40.71, longitude: -74.0 },
+                  datetimeLast: { utc: '2026-11-27T11:30:00Z' },
+                  sensors: [{ id: 1, parameter: { name: 'pm25', units: 'µg/m³' } }],
+                },
+              ],
+            }),
+            { status: 200 }
+          );
+        }
+        return new Response('Too Many Requests', { status: 429 });
+      },
+      nowMs: Date.parse('2026-11-27T12:00:00Z'),
+      isServer: true,
+    };
+    await expect(openaqProvider.realtime!.fetchCitySnapshot(nyc, openaqCtx)).rejects.toMatchObject({
+      status: 429,
+    });
+  });
+
+  it('decodes non-PM2.5 WAQI hourly series (PM10/O3-only stations) without dropping the chart', () => {
+    const pts = build24HourPointsFromWaqiObs(
+      {
+        o3: {
+          s: '2026-11-27 12:00:00',
+          d: 3600,
+          m: 1,
+          v: [45, -5, -10],
+        },
+      },
+      'US',
+      480
+    );
+    expect(pts.length).toBe(3);
+    expect(pts[0].aqi).toBeGreaterThan(0);
+    expect(pts[0].o3).toBeGreaterThan(0);
+    expect(pts[0].pm25).toBe(0);
   });
 });

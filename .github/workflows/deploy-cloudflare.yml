@@ -31,10 +31,7 @@ jobs:
           npx tsc --noEmit
           npm test
 
-      - name: 构建静态资源 (Static HTML Export)
-        env:
-          NEXT_PUBLIC_WAQI_TOKEN: ${{ secrets.NEXT_PUBLIC_WAQI_TOKEN }}
-          NEXT_PUBLIC_CARTO_KEY: ${{ secrets.NEXT_PUBLIC_CARTO_KEY }}
+      - name: 构建静态资源 (Static HTML Export，零前端密钥，统一经 Worker 代理)
         run: npm run build
 
       - name: 检查 Cloudflare 部署密钥

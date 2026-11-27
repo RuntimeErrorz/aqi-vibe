@@ -129,7 +129,7 @@ export async function fetchWAQIStationByUid(
 
     // 自动回填单站完整 6 项污染物 + 4 项气象内存快照，避免 enrichStationsWithPM25 重复请求市中心基准站
     const metrics = extractStationMetricsFromIaqi(json.data.iaqi);
-    stationDetailCache.set(uid, {
+    setStationDetailCache(uid, {
       ...metrics,
       timestamp: Date.now(),
     });
@@ -194,11 +194,32 @@ interface StationDetailEntry {
   timestamp: number;
 }
 
-// 测站实测内存快照缓存池 (5分钟保鲜) + 同站/同城并发去重池
+// 测站实测内存快照缓存池 (5分钟保鲜，带容量上限与过期清理防长会话内存增长) + 同站/同城并发去重池
+const STATION_DETAIL_CACHE_TTL_MS = 5 * 60 * 1000;
+const MAX_STATION_DETAIL_CACHE = 500;
 const stationDetailCache = new Map<number, StationDetailEntry>();
 const stationDetailInFlight = new Map<number, Promise<StationDetailEntry | null>>();
 const cityStationsInFlight = new Map<string, Promise<WaqiBoundStation[]>>();
 const edgeCityInFlight = new Map<string, Promise<EdgeCityRealtimePayload | null>>();
+
+function setStationDetailCache(uid: number, entry: StationDetailEntry) {
+  if (stationDetailCache.size >= MAX_STATION_DETAIL_CACHE) {
+    const now = Date.now();
+    stationDetailCache.forEach((v, k) => {
+      if (now - v.timestamp >= STATION_DETAIL_CACHE_TTL_MS) {
+        stationDetailCache.delete(k);
+      }
+    });
+    while (stationDetailCache.size >= MAX_STATION_DETAIL_CACHE) {
+      const oldestKey = stationDetailCache.keys().next().value;
+      if (oldestKey === undefined) break;
+      stationDetailCache.delete(oldestKey);
+    }
+  }
+  // Refresh insertion order for basic LRU behavior
+  stationDetailCache.delete(uid);
+  stationDetailCache.set(uid, entry);
+}
 
 function raceWithSignal<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T | null> {
   if (!signal) return promise;
@@ -235,6 +256,7 @@ export async function fetchEdgeCityRealtime(
     task = (async (): Promise<EdgeCityRealtimePayload | null> => {
       try {
         const res = await fetch(`/api/city-realtime?city=${encodeURIComponent(cityId)}`, {
+          cache: 'no-store',
           signal: createTimeoutSignal(8000),
         });
         if (!res.ok) return null;
@@ -246,7 +268,7 @@ export async function fetchEdgeCityRealtime(
             for (const st of json.stations) {
               const stProv = (st as { providerId?: string }).providerId;
               if (st.pollutants && (!stProv || stProv === 'waqi')) {
-                stationDetailCache.set(st.uid, {
+                setStationDetailCache(st.uid, {
                   pm25: st.pm25,
                   pm25IaqiUS: st.pm25IaqiUS,
                   pm25IaqiCN: st.pm25IaqiCN,
@@ -290,7 +312,7 @@ function fetchSingleStationPm25(uid: number, signal?: AbortSignal): Promise<Stat
               ...metrics,
               timestamp: Date.now(),
             };
-            stationDetailCache.set(uid, entry);
+            setStationDetailCache(uid, entry);
             return entry;
           }
         }

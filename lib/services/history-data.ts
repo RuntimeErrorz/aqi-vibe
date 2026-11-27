@@ -15,8 +15,9 @@ export {
 let summaryCache: Record<string, any[]> | null = null;
 let summaryPromise: Promise<Record<string, any[]>> | null = null;
 
-// 客户端逐日数据内存缓存（按需加载并保持极速响应）
+// 客户端逐日数据内存缓存 + 并发去重池（按需加载并避免同城重复并发拉取）
 const clientDailyCache: Record<string, Record<string, any>> = {};
+const clientDailyInFlight = new Map<string, Promise<Record<string, any>>>();
 
 function getSummarySync(): Record<string, any[]> {
   if (summaryCache) return summaryCache;
@@ -115,7 +116,8 @@ export function getAnnualTrends(cityId: string, standard: StandardType = 'US', o
           : (standard === 'CN' ? t.aqiAvgCN : t.aqiAvgUS),
         daysCount: t.daysCount,
       };
-    });
+    })
+    .sort((a, b) => a.year - b.year);
 }
 
 /**
@@ -146,29 +148,39 @@ export async function fetchCityDailyHistory(cityId: string): Promise<Record<stri
     return clientDailyCache[cityId];
   }
 
-  // 若 summary 尚未加载，先尝试加载；若 summary 加载成功且明确无该城记录才提前返回
-  if (!summaryCache) {
-    await loadHistorySummary();
-  }
+  const inFlight = clientDailyInFlight.get(cityId);
+  if (inFlight) return inFlight;
 
-  if (summaryCache && !hasCityHistory(cityId)) {
-    return {};
-  }
+  const task = (async (): Promise<Record<string, any>> => {
+    // 若 summary 尚未加载，先尝试加载；若 summary 加载成功且明确无该城记录才提前返回
+    if (!summaryCache) {
+      await loadHistorySummary();
+    }
 
-  try {
-    const safeId = cityId.replace(/[^a-zA-Z0-9_\-]/g, '_');
-    const res = await fetch(`/data/history/${safeId}.json`);
-    if (!res.ok) {
+    if (summaryCache && !hasCityHistory(cityId)) {
       return {};
     }
-    const data = await res.json();
-    const daily = data.daily || {};
-    clientDailyCache[cityId] = daily;
-    return daily;
-  } catch (err) {
-    console.warn(`Failed to fetch history for ${cityId}:`, err);
-    return {};
-  }
+
+    try {
+      const safeId = cityId.replace(/[^a-zA-Z0-9_\-]/g, '_');
+      const res = await fetch(`/data/history/${safeId}.json`);
+      if (!res.ok) {
+        return {};
+      }
+      const data = await res.json();
+      const daily = data.daily || {};
+      clientDailyCache[cityId] = daily;
+      return daily;
+    } catch (err) {
+      console.warn(`Failed to fetch history for ${cityId}:`, err);
+      return {};
+    } finally {
+      clientDailyInFlight.delete(cityId);
+    }
+  })();
+
+  clientDailyInFlight.set(cityId, task);
+  return task;
 }
 
 export interface CityYearPollutants {
@@ -481,8 +493,10 @@ export function getAllCountriesRanking(
 
     const aqiSum = cList.reduce((acc, c) => acc + c.aqiAvg, 0);
     if (aqiSum <= 0) return;
-    const pm25Sum = cList.reduce((acc, c) => acc + c.pm25Avg, 0);
-    const pm10Sum = cList.reduce((acc, c) => acc + c.pm10Avg, 0);
+    const pm25Cities = cList.filter((c) => c.pm25Avg > 0);
+    const pm10Cities = cList.filter((c) => c.pm10Avg > 0);
+    const pm25Sum = pm25Cities.reduce((acc, c) => acc + c.pm25Avg, 0);
+    const pm10Sum = pm10Cities.reduce((acc, c) => acc + c.pm10Avg, 0);
     const goodDaysSum = cList.reduce((acc, c) => acc + c.goodDaysRatio, 0);
 
     const sortedByAqi = [...cList].sort((a, b) => a.aqiAvg - b.aqiAvg);
@@ -496,8 +510,8 @@ export function getAllCountriesRanking(
       flag: countryMeta.flag,
       cityCount: cList.length,
       aqiAvg: Math.round(aqiSum / cList.length),
-      pm25Avg: Number((pm25Sum / cList.length).toFixed(1)),
-      pm10Avg: Number((pm10Sum / cList.length).toFixed(1)),
+      pm25Avg: pm25Cities.length > 0 ? Number((pm25Sum / pm25Cities.length).toFixed(1)) : 0,
+      pm10Avg: pm10Cities.length > 0 ? Number((pm10Sum / pm10Cities.length).toFixed(1)) : 0,
       goodDaysRatioAvg: Math.round(goodDaysSum / cList.length),
       cleanestCity: {
         id: cleanest.id,

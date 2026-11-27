@@ -163,7 +163,8 @@ function buildRecordFromSample(
   sample: NormalizedStationSample,
   city: CityMeta,
   provenance: DataProvenance,
-  snapshot: ProviderCitySnapshot
+  snapshot: ProviderCitySnapshot,
+  nowMs = Date.now()
 ): AirQualityRecord {
   const pollutants = sample.pollutants || {};
   const iaqiCN = calculateCNIAQI(pollutants);
@@ -202,7 +203,7 @@ function buildRecordFromSample(
 
   const obsMs = sample.freshness?.observedAtMs;
   const fallbackCityTime = formatLocalTimeForCityWithTz(
-    obsMs || Date.now(),
+    obsMs || nowMs,
     city.country,
     city.longitude,
     city.latitude
@@ -512,9 +513,16 @@ export class DataSourceOrchestrator {
     const primaryCtx: ProviderRuntimeContext =
       candidates.length > 1 ? { ...ctx, hasBackupCandidate: true } : ctx;
     const allowWeatherEnrich = ctx.enrichWeather ?? !ctx.isServer;
+    const weatherAbortController =
+      allowWeatherEnrich && primary.id !== 'waqi' && typeof AbortController !== 'undefined'
+        ? new AbortController()
+        : null;
     const weatherPromise: Promise<WeatherInfo | undefined> | null =
       allowWeatherEnrich && primary.id !== 'waqi'
-        ? fetchOpenMeteoCurrentWeather(city.latitude, city.longitude, ctx)
+        ? fetchOpenMeteoCurrentWeather(city.latitude, city.longitude, {
+            ...ctx,
+            signal: weatherAbortController?.signal ?? ctx.signal,
+          })
         : null;
     const primaryOutcome = await this.querySingleProvider(primary, city, primaryCtx);
 
@@ -573,7 +581,10 @@ export class DataSourceOrchestrator {
       }
     }
 
-    if (!best) return null;
+    if (!best) {
+      weatherAbortController?.abort();
+      return null;
+    }
 
     const provenance: DataProvenance = {
       providerId: best.snapshot.providerId,
@@ -588,7 +599,8 @@ export class DataSourceOrchestrator {
       best.representative,
       city,
       provenance,
-      best.snapshot
+      best.snapshot,
+      ctx.nowMs
     );
     const resolvedFreshness = baseRecord.freshness ?? best.freshness;
 
@@ -660,6 +672,9 @@ export class DataSourceOrchestrator {
           weather: mergeWeatherInfo(liveWeather, compositeRecord.weather),
         };
       }
+    } else if (weatherAbortController) {
+      // 主源回落至自带气象的源（如 WAQI）时及时中止并发预发的 Open-Meteo 气象请求，防止 Workers 悬空子请求
+      weatherAbortController.abort();
     }
 
     return {

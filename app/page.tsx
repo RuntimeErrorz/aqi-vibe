@@ -113,14 +113,20 @@ function DashboardPageContent() {
   const [trendResult, setTrendResult] = useState<HourlyTrendResult | null>(null);
   const [baseTrendResult, setBaseTrendResult] = useState<HourlyTrendResult | null>(null);
 
-  // 竞态防线：单调递增请求版本号 + 当前模式 ref + 微站补齐中止控制器
+  // 竞态防线：单调递增请求版本号 + 当前模式 ref + 微站补齐中止控制器 + 切回标签页自动保鲜时间戳
   const requestIdRef = useRef<number>(0);
   const selectedStationModeRef = useRef<string>(selectedStationMode);
+  const selectedCityRef = useRef<CityMeta>(selectedCity);
+  const lastLoadedAtRef = useRef<number>(0);
   const enrichAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     selectedStationModeRef.current = selectedStationMode;
   }, [selectedStationMode]);
+
+  useEffect(() => {
+    selectedCityRef.current = selectedCity;
+  }, [selectedCity]);
 
   // URL 深度链接同步 (?city=...&station=...)：仅在参数确实变化时调用 replaceState
   useEffect(() => {
@@ -154,14 +160,6 @@ function DashboardPageContent() {
       if (enrichAbortRef.current) enrichAbortRef.current.abort();
     };
   }, []);
-
-  const getTodayDateStr = () => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  };
 
   /**
    * 基于已采样官方测站的全 6 项污染物 + 4 项气象空间均值聚合（与 Worker 边缘接口同源）
@@ -545,6 +543,7 @@ function DashboardPageContent() {
       }
 
       // 主卡片、污染物和预报已就绪，立即结束首屏骨架！
+      lastLoadedAtRef.current = Date.now();
       setLoading(false);
 
       // 挂载已并行起跑的 24 小时逐小时走势结果（通常与主卡片同时到达）
@@ -641,6 +640,22 @@ function DashboardPageContent() {
         : 'composite';
     loadCityData(selectedCity, modeToUse);
   }, [selectedCity, mounted]);
+
+  // 标签页长挂后切回前台时静默刷新当前城市实况（5 分钟节流，clearStale=false 零闪烁）
+  useEffect(() => {
+    if (!mounted) return;
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        lastLoadedAtRef.current > 0 &&
+        Date.now() - lastLoadedAtRef.current >= 5 * 60 * 1000
+      ) {
+        loadCityData(selectedCityRef.current, selectedStationModeRef.current, false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [mounted]);
 
   // 标准或「只看 PM2.5」切换时同步重算当前视图（纯本地计算，零网络开销）
   useEffect(() => {
@@ -1123,21 +1138,27 @@ function DashboardPageContent() {
                             selectedCity.latitude
                           ).timezoneOffset
                         : undefined);
+                    const liveDelayMin = record.freshness
+                      ? Math.max(
+                          record.freshness.delayMinutes,
+                          obsMs ? Math.max(0, Math.round((Date.now() - obsMs) / 60_000)) : 0
+                        )
+                      : null;
                     const timeTooltip = userLocal
                       ? `本地时间：${userLocal.localTime} (${userLocal.timezoneOffset})${
                           cityTzLabel && cityTzLabel !== userLocal.timezoneOffset
                             ? ` ｜ 城市当地时间：${record.updateTime} (${cityTzLabel})`
                             : ''
                         }${
-                          record.freshness
-                            ? ` ｜ 距今约 ${record.freshness.delayMinutes} 分钟`
+                          liveDelayMin !== null
+                            ? ` ｜ 距今约 ${liveDelayMin} 分钟`
                             : ''
                         }`
                       : `更新时间：${displayTime}`;
                     return <span title={timeTooltip}>更新时间: {displayTime}</span>;
                   })()}
                   {(() => {
-                    const delayBadge = formatDelayBadge(record.freshness);
+                    const delayBadge = formatDelayBadge(record.freshness, Date.now());
                     if (!delayBadge || record.isOffline || evaluation.isOffline) return null;
                     return (
                       <span
@@ -1480,16 +1501,18 @@ function DashboardPageContent() {
               </div>
             ))
           ) : forecastData.list.length > 0 ? (
-            forecastData.list.map((f, idx) => {
-              const evalRes = evaluateAQI({ pm25: f.avg }, standard, onlyPm25);
+            forecastData.list.map((f) => {
+              const evalRes = evaluateAQI({ pm25: f.avg }, standard, onlyPm25, 'daily');
               const dateObj = new Date(f.day + 'T00:00:00');
               const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
               const weekName = !isNaN(dateObj.getTime()) ? weekDays[dateObj.getDay()] : '';
-              const cityTodayStr =
-                record?.updateTime && /^\d{4}-\d{2}-\d{2}/.test(record.updateTime)
-                  ? record.updateTime.slice(0, 10)
-                  : getTodayDateStr();
-              const isToday = f.day === cityTodayStr || (idx === 0 && f.day === getTodayDateStr());
+              const cityTodayStr = formatLocalTimeForCityWithTz(
+                Date.now(),
+                selectedCity.country,
+                selectedCity.longitude,
+                selectedCity.latitude
+              ).localTime.slice(0, 10);
+              const isToday = f.day === cityTodayStr;
 
               return (
                 <div

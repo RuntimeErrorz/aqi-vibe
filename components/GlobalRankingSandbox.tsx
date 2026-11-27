@@ -114,10 +114,12 @@ export function GlobalRankingSandbox({
     return getAllCountriesRanking(selectedYear, standard, onlyPm25);
   }, [selectedYear, standard, onlyPm25, summaryReady]);
 
-  // 2. 统计并收集可选国家列表（按纳入城市数量排序）
+  // 2. 统计并收集可选国家列表（随当前地理范围联动，按纳入城市数量排序）
   const countryOptions = useMemo(() => {
     const counts = new Map<string, number>();
     for (const c of rawCities) {
+      if (geoScope === 'domestic' && !c.isDomestic) continue;
+      if (geoScope === 'international' && c.isDomestic) continue;
       counts.set(c.country, (counts.get(c.country) || 0) + 1);
     }
     const arr = Array.from(counts.entries()).map(([code, count]) => {
@@ -135,7 +137,7 @@ export function GlobalRankingSandbox({
       if (b.code === 'CN') return 1;
       return b.count - a.count;
     });
-  }, [rawCities]);
+  }, [rawCities, geoScope]);
 
   // 3. 基础范围过滤与全量客观排序（在关键词搜索前确立真实权威排名）
   const sortedCitiesWithRank = useMemo(() => {
@@ -159,17 +161,28 @@ export function GlobalRankingSandbox({
       list = list.filter((c) => (c.population ?? 0) >= popThreshold);
     }
 
-    // 权威排序逻辑
+    // 权威排序逻辑（缺失值无论正序/逆序一律沉底，绝不冒充极值排第 1）
     list.sort((a, b) => {
-      let diff = 0;
       if (sortMetric === 'improved') {
-        const aImp = a.improvementRate ?? 999;
-        const bImp = b.improvementRate ?? 999;
-        diff = aImp - bImp;
-      } else if (sortMetric === 'pm25') {
+        const aMissing = a.improvementRate === null;
+        const bMissing = b.improvementRate === null;
+        if (aMissing !== bMissing) return aMissing ? 1 : -1;
+        if (aMissing && bMissing) return 0;
+        const diff = (a.improvementRate as number) - (b.improvementRate as number);
+        return sortOrder === 'asc' ? diff : -diff;
+      }
+      if (sortMetric === 'pm10') {
+        const aMissing = !(a.pm10Avg > 0);
+        const bMissing = !(b.pm10Avg > 0);
+        if (aMissing !== bMissing) return aMissing ? 1 : -1;
+        if (aMissing && bMissing) return 0;
+        const diff = a.pm10Avg - b.pm10Avg;
+        return sortOrder === 'asc' ? diff : -diff;
+      }
+
+      let diff = 0;
+      if (sortMetric === 'pm25') {
         diff = a.pm25Avg - b.pm25Avg;
-      } else if (sortMetric === 'pm10') {
-        diff = a.pm10Avg - b.pm10Avg;
       } else if (sortMetric === 'goodRatio') {
         diff = b.goodDaysRatio - a.goodDaysRatio; // 优良率默认高者在前
       } else if (sortMetric === 'heavyDays') {
@@ -211,11 +224,17 @@ export function GlobalRankingSandbox({
     list = list.filter((c) => c.aqiAvg > 0 && (!onlyPm25 || (c.pm25Avg !== undefined && c.pm25Avg > 0)));
 
     list.sort((a, b) => {
+      if (sortMetric === 'pm10') {
+        const aMissing = !(a.pm10Avg > 0);
+        const bMissing = !(b.pm10Avg > 0);
+        if (aMissing !== bMissing) return aMissing ? 1 : -1;
+        if (aMissing && bMissing) return 0;
+        const diff = a.pm10Avg - b.pm10Avg;
+        return sortOrder === 'asc' ? diff : -diff;
+      }
       let diff = 0;
       if (sortMetric === 'pm25') {
         diff = a.pm25Avg - b.pm25Avg;
-      } else if (sortMetric === 'pm10') {
-        diff = a.pm10Avg - b.pm10Avg;
       } else if (sortMetric === 'goodRatio') {
         diff = b.goodDaysRatioAvg - a.goodDaysRatioAvg;
       } else {
@@ -389,6 +408,9 @@ export function GlobalRankingSandbox({
               <button
                 onClick={() => {
                   setGeoScope('domestic');
+                  if (selectedCountry !== 'ALL' && !['CN', 'HK', 'MO', 'TW'].includes(selectedCountry)) {
+                    setSelectedCountry('ALL');
+                  }
                   handleFilterChange();
                 }}
                 className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
@@ -402,6 +424,9 @@ export function GlobalRankingSandbox({
               <button
                 onClick={() => {
                   setGeoScope('international');
+                  if (['CN', 'HK', 'MO', 'TW'].includes(selectedCountry)) {
+                    setSelectedCountry('ALL');
+                  }
                   handleFilterChange();
                 }}
                 className={`px-2.5 py-1 rounded-md font-semibold transition-all ${

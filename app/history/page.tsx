@@ -205,7 +205,7 @@ function HistoryPageContent() {
 
   const avgAQI = onlyPm25
     ? currentYearPM25 > 0
-      ? calculatePM25AQI(currentYearPM25, standard)
+      ? calculatePM25AQI(currentYearPM25, standard, 'daily')
       : dailyAvgAQI
     : dailyAvgAQI;
 
@@ -222,17 +222,22 @@ function HistoryPageContent() {
       ? (((currentYearPM25 - prevYearObj.pm25Avg) / prevYearObj.pm25Avg) * 100).toFixed(1)
       : null;
 
-  // 安全可靠的 Blob CSV 导出（支持大文件与任意特殊字符）
+  // 安全可靠的 Blob CSV 导出（支持大文件、特殊字符与防 Excel 公式注入转义）
   const handleExportCSV = () => {
+    const csvCell = (val: unknown) => {
+      const str = String(val ?? '--');
+      const safe = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
+      return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+    };
     const rows = [
       '日期,AQI,质量等级,首要污染物,PM2.5(ug/m3),PM10(ug/m3),O3(ug/m3),NO2(ug/m3),SO2(ug/m3),CO(mg/m3)',
       ...calendarData.map((row) => {
         const primary = row.aqi <= 50 ? '无' : (row.primaryPollutantName || row.primaryPollutant || 'PM2.5');
         return [
-          row.date,
+          csvCell(row.date),
           row.aqi,
-          row.level,
-          `"${String(primary).replace(/"/g, '""')}"`,
+          csvCell(row.level),
+          csvCell(primary),
           row.pm25 ?? '--',
           row.pm10 ?? '--',
           row.o3 ?? '--',

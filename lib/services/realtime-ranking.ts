@@ -269,7 +269,7 @@ export async function getRealtimeRanking(forceRefresh = false): Promise<RankingA
         // 30 秒内物理防抖，直接秒回现有快照
         return {
           ...memoryRankingCache,
-          isRefreshing: isPhase2Running || Boolean(memoryRankingCache.isRefreshing),
+          isRefreshing: isPhase2Running || Boolean(inFlightFetchPromise),
         };
       }
       // 超过 30 秒：非阻塞触发后台全量异步拉取，绝不阻塞当前客户端响应
@@ -282,10 +282,10 @@ export async function getRealtimeRanking(forceRefresh = false): Promise<RankingA
 
     // 方案 1：页面正常访问与轮询 (forceRefresh === false)
     if (age < FRESH_TTL_MS) {
-      // 8 分钟保鲜期内，直接秒回快照 (0ms，0 请求)；若后台仍有 Phase 2 同步在进行，客观透传 isRefreshing
+      // 8 分钟保鲜期内，直接秒回快照 (0ms，0 请求)；仅当后台确有同步任务在进行时才透传 isRefreshing
       return {
         ...memoryRankingCache,
-        isRefreshing: isPhase2Running || Boolean(memoryRankingCache.isRefreshing),
+        isRefreshing: isPhase2Running || Boolean(inFlightFetchPromise),
       };
     }
 
@@ -606,6 +606,9 @@ async function performFetchAndAggregate(_forceRefresh = false): Promise<RankingA
           console.log(`[RealtimeRanking] All data fully in sync: ${fullResult.totalCities} cities, ${fullResult.totalStations} stations.`);
         } catch (err) {
           console.warn('[RealtimeRanking] Background Phase 2 fetch encountered error:', err);
+          if (memoryRankingCache?.isRefreshing) {
+            memoryRankingCache = { ...memoryRankingCache, isRefreshing: false };
+          }
         } finally {
           isPhase2Running = false;
         }

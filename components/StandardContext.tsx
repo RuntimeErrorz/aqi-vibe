@@ -12,6 +12,8 @@ export interface CachedCityAqiSummary {
 }
 
 export const DEFAULT_FAVORITE_CITY_ID = 'cn-chengdu';
+export const CITY_COMPOSITE_TTL_MS = 10 * 60 * 1000; // 10 分钟客户端内存保鲜上限
+const RANKING_CACHE_TTL_MS = 5 * 60 * 1000; // 5 分钟搜索框排行索引保鲜上限
 const STORAGE_KEY_FAVORITE_CITY = 'aqi_favorite_city_id_v1';
 const STORAGE_KEY_WATCHLIST = 'aqi_watchlist_city_ids_v1';
 const DEFAULT_WATCHLIST = ['cn-chengdu', 'cn-beijing', 'cn-shanghai', 'gl-tokyo', 'gl-london'];
@@ -32,6 +34,8 @@ interface StandardContextProps {
   toggleWatchlistCity: (cityId: string) => void;
   removeWatchlistCity: (cityId: string) => void;
   cityCompositeRecords: Record<string, AirQualityRecord>;
+  cityCompositeTimestamps: Record<string, number>;
+  isCityCompositeFresh: (cityId: string) => boolean;
   reportCityCompositeRecord: (cityId: string, record: AirQualityRecord) => void;
   rankingAqiMap: Record<string, CachedCityAqiSummary>;
   reportRankingCities: (
@@ -64,6 +68,8 @@ const StandardContext = createContext<StandardContextProps>({
   toggleWatchlistCity: () => {},
   removeWatchlistCity: () => {},
   cityCompositeRecords: {},
+  cityCompositeTimestamps: {},
+  isCityCompositeFresh: () => false,
   reportCityCompositeRecord: () => {},
   rankingAqiMap: {},
   reportRankingCities: () => {},
@@ -81,16 +87,27 @@ export const StandardProvider: React.FC<{
   const [favoriteCityId, setFavoriteCityIdState] = useState<string>(DEFAULT_FAVORITE_CITY_ID);
   const [activeCityId, setActiveCityIdState] = useState<string>(DEFAULT_FAVORITE_CITY_ID);
   const [watchlistIds, setWatchlistIdsState] = useState<string[]>(DEFAULT_WATCHLIST);
-  // 纯内存态实时多站均值同步表（严禁写入 localStorage，确保全站 Header 与首页数值 100% 同源）
+  // 纯内存态实时多站均值同步表（严禁写入 localStorage，带 10 分钟 TTL 防止长会话脏数据倒灌）
   const [cityCompositeRecords, setCityCompositeRecords] = useState<Record<string, AirQualityRecord>>({});
-  // 纯内存态实时排行快照索引（来自 Cloudflare /api/ranking/realtime 边缘缓存，用于搜索框即时展示已缓存 AQI）
+  const [cityCompositeTimestamps, setCityCompositeTimestamps] = useState<Record<string, number>>({});
+  const cityCompositeTimestampsRef = useRef<Record<string, number>>({});
+  // 纯内存态实时排行快照索引（来自 Cloudflare /api/ranking/realtime 边缘缓存，5 分钟自动刷新）
   const [rankingAqiMap, setRankingAqiMap] = useState<Record<string, CachedCityAqiSummary>>({});
-  const rankingLoadStartedRef = useRef<boolean>(false);
+  const rankingInFlightRef = useRef<boolean>(false);
+  const rankingLastFetchedAtRef = useRef<number>(0);
   const [mounted, setMounted] = useState<boolean>(false);
+
+  const isCityCompositeFresh = useCallback((cityId: string) => {
+    const ts = cityCompositeTimestampsRef.current[cityId];
+    return typeof ts === 'number' && Date.now() - ts < CITY_COMPOSITE_TTL_MS;
+  }, []);
 
   const reportCityCompositeRecord = useCallback((cityId: string, record: AirQualityRecord) => {
     if (!cityId || !record) return;
+    const now = Date.now();
+    cityCompositeTimestampsRef.current = { ...cityCompositeTimestampsRef.current, [cityId]: now };
     setCityCompositeRecords((prev) => ({ ...prev, [cityId]: record }));
+    setCityCompositeTimestamps((prev) => ({ ...prev, [cityId]: now }));
   }, []);
 
   const reportRankingCities = useCallback(
@@ -122,7 +139,7 @@ export const StandardProvider: React.FC<{
         };
       }
       if (Object.keys(next).length > 0) {
-        rankingLoadStartedRef.current = true;
+        rankingLastFetchedAtRef.current = Date.now();
         setRankingAqiMap(next);
       }
     },
@@ -130,20 +147,25 @@ export const StandardProvider: React.FC<{
   );
 
   const ensureRankingAqiLoaded = useCallback(() => {
-    if (typeof window === 'undefined' || rankingLoadStartedRef.current) return;
-    rankingLoadStartedRef.current = true;
-    fetch('/api/ranking/realtime')
+    if (typeof window === 'undefined' || rankingInFlightRef.current) return;
+    if (
+      rankingLastFetchedAtRef.current > 0 &&
+      Date.now() - rankingLastFetchedAtRef.current < RANKING_CACHE_TTL_MS
+    ) {
+      return;
+    }
+    rankingInFlightRef.current = true;
+    fetch('/api/ranking/realtime', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         const list = json?.global?.cleanest;
         if (Array.isArray(list) && list.length > 0) {
           reportRankingCities(list);
-        } else {
-          rankingLoadStartedRef.current = false;
         }
       })
-      .catch(() => {
-        rankingLoadStartedRef.current = false;
+      .catch(() => {})
+      .finally(() => {
+        rankingInFlightRef.current = false;
       });
   }, [reportRankingCities]);
 
@@ -293,6 +315,8 @@ export const StandardProvider: React.FC<{
       toggleWatchlistCity,
       removeWatchlistCity,
       cityCompositeRecords,
+      cityCompositeTimestamps,
+      isCityCompositeFresh,
       reportCityCompositeRecord,
       rankingAqiMap,
       reportRankingCities,
@@ -314,6 +338,8 @@ export const StandardProvider: React.FC<{
       toggleWatchlistCity,
       removeWatchlistCity,
       cityCompositeRecords,
+      cityCompositeTimestamps,
+      isCityCompositeFresh,
       reportCityCompositeRecord,
       rankingAqiMap,
       reportRankingCities,

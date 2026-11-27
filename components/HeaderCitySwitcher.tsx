@@ -45,6 +45,7 @@ export const HeaderCitySwitcher: React.FC<HeaderCitySwitcherProps> = ({ compact 
     toggleWatchlistCity,
     removeWatchlistCity,
     cityCompositeRecords,
+    isCityCompositeFresh,
     reportCityCompositeRecord,
     rankingAqiMap,
     ensureRankingAqiLoaded,
@@ -54,8 +55,10 @@ export const HeaderCitySwitcher: React.FC<HeaderCitySwitcherProps> = ({ compact 
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
-  const [failedIds, setFailedIds] = useState<Record<string, boolean>>({});
+  // 失败记录带 60s 冷却时间，避免单次网络抖动导致整场会话永久锁死 "--"
+  const [failedAtMap, setFailedAtMap] = useState<Record<string, number>>({});
   const inFlightIdsRef = useRef<Set<string>>(new Set());
+  const FAILED_RETRY_TTL_MS = 60_000;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -94,7 +97,8 @@ export const HeaderCitySwitcher: React.FC<HeaderCitySwitcherProps> = ({ compact 
   useEffect(() => {
     if (isOpen) {
       ensureRankingAqiLoaded();
-      setTimeout(() => inputRef.current?.focus(), 20);
+      const timer = setTimeout(() => inputRef.current?.focus(), 20);
+      return () => clearTimeout(timer);
     } else {
       setQuery('');
     }
@@ -123,9 +127,13 @@ export const HeaderCitySwitcher: React.FC<HeaderCitySwitcherProps> = ({ compact 
       ? [] // 在首页时直接等待首页自身上报的全城均值，避免重复并发拉取
       : [activeCity.id];
 
-    const missing = idsToFetch.filter(
-      (id) => !cityCompositeRecords[id] && !failedIds[id] && !inFlightIdsRef.current.has(id)
-    );
+    const now = Date.now();
+    const missing = idsToFetch.filter((id) => {
+      if (isCityCompositeFresh(id)) return false;
+      const failedAt = failedAtMap[id];
+      if (failedAt && now - failedAt < FAILED_RETRY_TTL_MS) return false;
+      return !inFlightIdsRef.current.has(id);
+    });
     if (missing.length === 0) return;
 
     missing.forEach((id) => inFlightIdsRef.current.add(id));
@@ -142,8 +150,14 @@ export const HeaderCitySwitcher: React.FC<HeaderCitySwitcherProps> = ({ compact 
         inFlightIdsRef.current.delete(cid);
         if (r.status === 'fulfilled') {
           reportCityCompositeRecord(cid, r.value.data);
+          setFailedAtMap((prev) => {
+            if (!(cid in prev)) return prev;
+            const next = { ...prev };
+            delete next[cid];
+            return next;
+          });
         } else {
-          setFailedIds((prev) => ({ ...prev, [cid]: true }));
+          setFailedAtMap((prev) => ({ ...prev, [cid]: Date.now() }));
         }
       });
     });
@@ -152,7 +166,7 @@ export const HeaderCitySwitcher: React.FC<HeaderCitySwitcherProps> = ({ compact 
       controller.abort();
       missing.forEach((id) => inFlightIdsRef.current.delete(id));
     };
-  }, [mounted, activeCity.id, watchlistIds, isOpen, pathname, cityCompositeRecords, failedIds, reportCityCompositeRecord]);
+  }, [mounted, activeCity.id, watchlistIds, isOpen, pathname, isCityCompositeFresh, failedAtMap, reportCityCompositeRecord]);
 
   const getCityEval = (cid: string) => {
     const rec = cityCompositeRecords[cid];
@@ -434,7 +448,7 @@ export const HeaderCitySwitcher: React.FC<HeaderCitySwitcherProps> = ({ compact 
                       if (!city) return null;
                       const ev = getCityEval(cid);
                       const rec = cityCompositeRecords[cid];
-                      const isFailed = Boolean(failedIds[cid]);
+                      const isFailed = Boolean(failedAtMap[cid] && Date.now() - failedAtMap[cid] < FAILED_RETRY_TTL_MS);
                       const isActive = activeCity.id === cid;
                       const isFav = favoriteCityId === cid;
 

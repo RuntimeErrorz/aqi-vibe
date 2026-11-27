@@ -429,16 +429,52 @@ export function formatDisplayTimeFromIso(isoOrLocal: string): string {
 }
 
 /**
+ * Recompute delayMinutes and isStale on a cached FreshnessMeta against `nowMs`,
+ * preserving any stronger upstream stall penalty already recorded in `delayMinutes`.
+ */
+export function refreshFreshnessMeta(
+  freshness?: FreshnessMeta,
+  nowMs = Date.now(),
+  staleThresholdMin = DEFAULT_STALE_THRESHOLD_MIN
+): FreshnessMeta | undefined {
+  if (!freshness) return undefined;
+  let delayMinutes = freshness.delayMinutes;
+  if (typeof freshness.observedAtMs === 'number' && Number.isFinite(freshness.observedAtMs)) {
+    const rawDiffMin = Math.round((nowMs - freshness.observedAtMs) / 60_000);
+    const liveDelayMin = rawDiffMin < 0 && rawDiffMin >= -15 ? 0 : Math.max(0, rawDiffMin);
+    delayMinutes = Math.max(delayMinutes, liveDelayMin);
+  }
+  return {
+    ...freshness,
+    delayMinutes,
+    isStale: freshness.isStale || delayMinutes > staleThresholdMin,
+  };
+}
+
+/**
  * Concise delay badge formatter for UI presentation.
  * Returns null when data is fresh (delay < 90 min).
+ * Pass `nowMs` (e.g. `Date.now()`) in live UI to recompute elapsed delay dynamically on cached records.
  */
 export function formatDelayBadge(
-  freshness?: FreshnessMeta
+  freshness?: FreshnessMeta,
+  nowMs?: number
 ): { label: string; severity: 'mild' | 'severe'; title: string } | null {
-  if (!freshness || freshness.delayMinutes < DEFAULT_STALE_THRESHOLD_MIN) {
+  if (!freshness) return null;
+  let mins = freshness.delayMinutes;
+  if (
+    typeof nowMs === 'number' &&
+    Number.isFinite(nowMs) &&
+    typeof freshness.observedAtMs === 'number' &&
+    Number.isFinite(freshness.observedAtMs)
+  ) {
+    const rawDiffMin = Math.round((nowMs - freshness.observedAtMs) / 60_000);
+    const liveDelayMin = rawDiffMin < 0 && rawDiffMin >= -15 ? 0 : Math.max(0, rawDiffMin);
+    mins = Math.max(mins, liveDelayMin);
+  }
+  if (mins < DEFAULT_STALE_THRESHOLD_MIN) {
     return null;
   }
-  const mins = freshness.delayMinutes;
   let durationText: string;
   if (mins >= 24 * 60) {
     const days = Math.floor(mins / (24 * 60));

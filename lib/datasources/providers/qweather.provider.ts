@@ -145,6 +145,25 @@ export function clearQWeatherTagTracker(): void {
   qweatherTagTracker.clear();
 }
 
+/**
+ * Non-destructive KV seed for per-isolate QWeather content-tag stall tracking:
+ * only initializes when the isolate has no tracker entry yet (or merges an earlier firstSeenMs for the same tag),
+ * never overwriting a newer tag already observed in this isolate.
+ */
+export function seedQWeatherContentTag(
+  cityId: string,
+  tag: string | undefined,
+  firstSeenMs: number
+): void {
+  if (!tag || !Number.isFinite(firstSeenMs) || firstSeenMs <= 0) return;
+  const existing = qweatherTagTracker.get(cityId);
+  if (!existing) {
+    qweatherTagTracker.set(cityId, { tag, firstSeenMs });
+  } else if (existing.tag === tag && firstSeenMs < existing.firstSeenMs) {
+    qweatherTagTracker.set(cityId, { tag, firstSeenMs });
+  }
+}
+
 export function trackQWeatherContentTag(
   cityId: string,
   tag: string | undefined,

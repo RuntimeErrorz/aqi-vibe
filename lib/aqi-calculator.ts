@@ -208,7 +208,7 @@ export function evaluateAQI(
   }
 
   if (maxAQI === 0 && pollutants.pm25) {
-    maxAQI = calculatePM25AQI(pollutants.pm25, standard);
+    maxAQI = calculatePM25AQI(pollutants.pm25, standard, period);
   }
 
   if (standard === 'CN') {

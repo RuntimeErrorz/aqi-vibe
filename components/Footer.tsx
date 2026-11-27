@@ -22,7 +22,7 @@ export const Footer: React.FC = () => {
           <a
             href="https://www.qweather.com/"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
           >
             <span>和风天气</span>
@@ -32,7 +32,7 @@ export const Footer: React.FC = () => {
           <a
             href="https://waqi.info/"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
           >
             <span>WAQI</span>
@@ -42,7 +42,7 @@ export const Footer: React.FC = () => {
           <a
             href="https://openaq.org/"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
           >
             <span>OpenAQ</span>
@@ -52,7 +52,7 @@ export const Footer: React.FC = () => {
           <a
             href="https://open-meteo.com/"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
           >
             <span>Open-Meteo</span>
@@ -62,7 +62,7 @@ export const Footer: React.FC = () => {
           <a
             href="https://quotsoft.net/air/"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
           >
             <span>QuotSoft</span>
@@ -70,9 +70,9 @@ export const Footer: React.FC = () => {
           </a>
           <span className="text-slate-200">/</span>
           <a
-            href="http://www.cnemc.cn/"
+            href="https://www.cnemc.cn/"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="hover:text-sky-600 transition-colors inline-flex items-center gap-0.5"
           >
             <span>CNEMC</span>

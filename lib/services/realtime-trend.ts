@@ -72,6 +72,7 @@ export async function fetch24HourHourlyTrend(
       }
 
       const res = await fetch(`${window.location.origin}/api/hourly-trend?${params.toString()}`, {
+        cache: 'no-store',
         signal: createTimeoutSignal(5000),
       });
       if (res.ok) {
@@ -100,12 +101,13 @@ export async function fetch24HourHourlyTrend(
       racers.push(
         (async () => {
           const edgeRes = await fetch(`${window.location.origin}/api/waqi-hourly?idx=${stationIdx}`, {
+            cache: 'no-store',
             signal: createTimeoutSignal(4500),
           });
           if (!edgeRes.ok) throw new Error(`Edge HTTP ${edgeRes.status}`);
           const waqiJson = await edgeRes.json();
           const obs = waqiJson?.rxs?.obs?.[0]?.msg?.obs;
-          if (!obs || !obs.pm25) throw new Error('Empty edge obs');
+          if (!obs || (!obs.pm25 && !obs.pm10 && !obs.o3 && !obs.no2)) throw new Error('Empty edge obs');
           const edgePoints = build24HourPointsFromWaqiObs(obs, standard, cityOffsetMin);
           if (edgePoints.length < 3) throw new Error('Insufficient edge points');
           return {

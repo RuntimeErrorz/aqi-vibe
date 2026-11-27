@@ -22,6 +22,7 @@ export const TOTAL_BATCHES = 8;
 export const RANKING_DRAFT_KEY = 'ranking:draft';
 export const RANKING_LATEST_KEY = 'ranking:latest';
 export const STATION_TTL_MS = 2 * 60 * 60 * 1000; // 2 小时无上报自动淘汰死站
+export const MAX_STATION_OBS_AGE_MS = 6 * 60 * 60 * 1000; // 观测时间超过 6 小时视为僵尸站
 
 // Cloudflare Workers 免费版单次调用上限 50 subrequests（含 fetch）
 // 336 切片 / 8 批 = 42 切片/批；留 4 次共享重试额度，最坏 46 fetch + 2 KV = 48 < 50
@@ -215,6 +216,7 @@ export function buildRankingSnapshotFromDraft(
     const candidates: StationCandidate[] = [];
     for (const [uidStr, entry] of Object.entries(stationMap)) {
       if (!entry || nowMs - entry.t > STATION_TTL_MS) continue;
+      if (entry.ot && nowMs - entry.ot > MAX_STATION_OBS_AGE_MS) continue;
       if (entry.a <= 0 || entry.a > 500 || entry.p <= 0) continue;
       const uid = Number(uidStr);
       candidates.push({
@@ -475,7 +477,11 @@ export async function runRankingCronBatch(
     const alive: Record<string, DraftStationEntry> = {};
     let count = 0;
     for (const [uidStr, entry] of Object.entries(stationMap)) {
-      if (entry && nowMs - entry.t <= STATION_TTL_MS) {
+      if (
+        entry &&
+        nowMs - entry.t <= STATION_TTL_MS &&
+        (!entry.ot || nowMs - entry.ot <= MAX_STATION_OBS_AGE_MS)
+      ) {
         alive[uidStr] = entry;
         count++;
       }

@@ -132,26 +132,6 @@ export interface CityMeta {
   population?: number;
 }
 
-export interface StationMeta {
-  code: string;
-  name: string;
-  city: string;
-  latitude: number;
-  longitude: number;
-  isCleanStation?: boolean;
-}
-
-export interface DailyStat {
-  date: string; // YYYY-MM-DD
-  aqi: number;
-  pm25: number;
-  pm10: number;
-  o3: number;
-  primaryPollutant: string;
-  level: string;
-  color: string;
-}
-
 export interface AnnualTrend {
   year: number;
   pm25Avg: number;
