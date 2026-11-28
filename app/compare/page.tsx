@@ -215,147 +215,150 @@ function ComparePageContent() {
         />
       </section>
 
-      {/* 2. 多城沙盘横向对比大盘 */}
-      <div className="glass-panel rounded-2xl p-4 sm:p-5 space-y-3">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-          <div className="flex items-center space-x-2">
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center space-x-2">
-              <BarChart3 className="w-5 h-5 text-sky-600" />
-              <span>重点城市空气质量改善横向对比</span>
-            </h2>
-          </div>
+      {/* 2. 多城沙盘横向对比大盘（统一工作台容器：顶部城市控制栏 + 底部双栏图表无缝衔接） */}
+      <section className="glass-panel rounded-2xl">
+        {/* 顶部控制区 */}
+        <div className="p-4 sm:p-5 space-y-3 border-b border-slate-200/70 bg-slate-50/40 rounded-t-2xl">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div className="flex items-center space-x-2">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center space-x-2">
+                <BarChart3 className="w-5 h-5 text-sky-600" />
+                <span>重点城市空气质量改善横向对比</span>
+              </h2>
+            </div>
 
-          <div className="flex items-center space-x-1.5 text-xs">
-            <span className="text-slate-500">对比城市:</span>
-            <span className="font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-100">
-              {selectedCityIds.length} / 5
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {activeCities.map((ac) => (
-            <div
-              key={ac.id}
-              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-sm transition-all"
-              style={{ backgroundColor: ac.color }}
-            >
-              <span>{ac.name}</span>
-              <span className="text-[10px] opacity-85 font-normal">
-                ({getCountryInfo(findCity(ac.id)?.country || '').nameZh})
+            <div className="flex items-center space-x-1.5 text-xs">
+              <span className="text-slate-500">对比城市:</span>
+              <span className="font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-100">
+                {selectedCityIds.length} / 5
               </span>
-              {selectedCityIds.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => handleRemoveCity(ac.id)}
-                  className="ml-0.5 p-0.5 rounded-full hover:bg-black/25 text-white/90 hover:text-white transition-colors cursor-pointer"
-                  title={`移出对比: ${ac.name}`}
-                  aria-label={`移出对比 ${ac.name}`}
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
             </div>
-          ))}
-        </div>
-
-        <div className="pt-2 border-t border-slate-100/80 flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
-          <CitySearchAutocomplete
-            selectedCity={findCity(selectedCityIds[0]) || CITIES_REGISTRY[0]}
-            onSelectCity={handleAddCity}
-            placeholder="搜索任意城市加入对比 (如: 杭州 / 巴黎 / 纽约)..."
-            className="w-full md:w-80 shrink-0 text-xs"
-            filterCity={(c) => !summaryReady || hasCityHistory(c.id)}
-          />
-
-          <div className="flex items-center gap-1.5 overflow-x-auto text-xs py-0.5 flex-1 min-w-0">
-            <span className="text-slate-400 shrink-0 text-[11px]">快捷添加:</span>
-            {[
-              'cn-chengdu',
-              'cn-beijing',
-              'cn-shanghai',
-              'cn-guangzhou',
-              'gl-london',
-              'gl-tokyo',
-              'gl-paris',
-              'gl-delhi',
-              'gl-newyork',
-            ].map((quickId) => {
-              const qc = findCity(quickId);
-              if (!qc) return null;
-              const isSelected = selectedCityIds.includes(quickId);
-              return (
-                <button
-                  key={quickId}
-                  disabled={isSelected}
-                  onClick={() => handleQuickAddCity(quickId)}
-                  className={`flex items-center space-x-1 px-2 py-0.5 rounded-md text-[11px] shrink-0 transition-all ${
-                    isSelected
-                      ? 'bg-slate-100 text-slate-400 cursor-default'
-                      : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 cursor-pointer'
-                  }`}
-                >
-                  <span>{qc.nameZh}</span>
-                  {isSelected ? (
-                    <Check className="w-2.5 h-2.5 text-emerald-500" />
-                  ) : (
-                    <Plus className="w-2.5 h-2.5 text-slate-400" />
-                  )}
-                </button>
-              );
-            })}
           </div>
-        </div>
-      </div>
 
-      {/* 对比图表双栏并排：左侧折线轨迹 (7列) + 右侧六项雷达构成 (5列)，桌面等高并列，移动端自动上下堆叠 */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
-        {/* 对比图表 1: 近 10 年 PM2.5 年均下降曲线对比 */}
-        <section className="lg:col-span-7 glass-panel rounded-2xl p-4 sm:p-5 flex flex-col min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 mb-3">
-            <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center space-x-2">
-              <BarChart3 className="w-4 h-4 text-sky-600 shrink-0" />
-              <span>年际 PM2.5 浓度改善轨迹对比</span>
-            </h3>
-            <span className="text-[11px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
-              单位: μg/m³ (年均综合实测)
-            </span>
-          </div>
-          <div className="flex-1 flex flex-col justify-center">
-            <CompareLineChart cities={activeCities} />
-          </div>
-        </section>
-
-        {/* 对比图表 2: 六大污染物雷达构成分析 */}
-        <section className="lg:col-span-5 glass-panel rounded-2xl p-4 sm:p-5 flex flex-col min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center space-x-2">
-              <BarChart3 className="w-4 h-4 text-purple-600 shrink-0" />
-              <span>污染物实测构成雷达</span>
-            </h3>
-
-            <div className="flex items-center space-x-1.5">
-              <Calendar className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-              <select
-                value={radarYear}
-                onChange={(e) => setRadarYear(Number(e.target.value))}
-                aria-label="选择雷达图统计年份"
-                className="text-xs font-bold text-purple-900 bg-purple-50 hover:bg-purple-100/80 border border-purple-200 rounded-lg px-2.5 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-400 transition-colors shadow-sm"
+          <div className="flex flex-wrap items-center gap-2">
+            {activeCities.map((ac) => (
+              <div
+                key={ac.id}
+                className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-sm transition-all"
+                style={{ backgroundColor: ac.color }}
               >
-                {availableYears.map((y) => (
-                  <option key={y} value={y} className="text-slate-800 bg-white">
-                    {y} 年度
-                  </option>
-                ))}
-              </select>
-              {loadingDaily && <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600 shrink-0" />}
+                <span>{ac.name}</span>
+                <span className="text-[10px] opacity-85 font-normal">
+                  ({getCountryInfo(findCity(ac.id)?.country || '').nameZh})
+                </span>
+                {selectedCityIds.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCity(ac.id)}
+                    className="ml-0.5 p-0.5 rounded-full hover:bg-black/25 text-white/90 hover:text-white transition-colors cursor-pointer"
+                    title={`移出对比: ${ac.name}`}
+                    aria-label={`移出对比 ${ac.name}`}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="pt-2 border-t border-slate-200/60 flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
+            <CitySearchAutocomplete
+              selectedCity={findCity(selectedCityIds[0]) || CITIES_REGISTRY[0]}
+              onSelectCity={handleAddCity}
+              placeholder="搜索任意城市加入对比 (如: 杭州 / 巴黎 / 纽约)..."
+              className="w-full md:w-80 shrink-0 text-xs"
+              filterCity={(c) => !summaryReady || hasCityHistory(c.id)}
+            />
+
+            <div className="flex items-center gap-1.5 overflow-x-auto text-xs py-0.5 flex-1 min-w-0">
+              <span className="text-slate-400 shrink-0 text-[11px]">快捷添加:</span>
+              {[
+                'cn-chengdu',
+                'cn-beijing',
+                'cn-shanghai',
+                'cn-guangzhou',
+                'gl-london',
+                'gl-tokyo',
+                'gl-paris',
+                'gl-delhi',
+                'gl-newyork',
+              ].map((quickId) => {
+                const qc = findCity(quickId);
+                if (!qc) return null;
+                const isSelected = selectedCityIds.includes(quickId);
+                return (
+                  <button
+                    key={quickId}
+                    disabled={isSelected}
+                    onClick={() => handleQuickAddCity(quickId)}
+                    className={`flex items-center space-x-1 px-2 py-0.5 rounded-md text-[11px] shrink-0 transition-all ${
+                      isSelected
+                        ? 'bg-slate-100 text-slate-400 cursor-default'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200 cursor-pointer'
+                    }`}
+                  >
+                    <span>{qc.nameZh}</span>
+                    {isSelected ? (
+                      <Check className="w-2.5 h-2.5 text-emerald-500" />
+                    ) : (
+                      <Plus className="w-2.5 h-2.5 text-slate-400" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <div className="flex-1 flex flex-col justify-center">
-            <CompareRadarChart cities={radarCities} loading={loadingDaily || !summaryReady} />
+        </div>
+
+        {/* 底部双栏图表区：左侧折线轨迹 (7列) + 右侧六项雷达构成 (5列)，内部分割线自然衔接 */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-200/70 items-stretch">
+          {/* 对比图表 1: 近 10 年 PM2.5 年均下降曲线对比 */}
+          <div className="lg:col-span-7 p-4 sm:p-5 flex flex-col min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 mb-3">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center space-x-2">
+                <BarChart3 className="w-4 h-4 text-sky-600 shrink-0" />
+                <span>年际 PM2.5 浓度改善轨迹对比</span>
+              </h3>
+              <span className="text-[11px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
+                单位: μg/m³ (年均综合实测)
+              </span>
+            </div>
+            <div className="flex-1 flex flex-col justify-center">
+              <CompareLineChart cities={activeCities} />
+            </div>
           </div>
-        </section>
-      </div>
+
+          {/* 对比图表 2: 六大污染物雷达构成分析 */}
+          <div className="lg:col-span-5 p-4 sm:p-5 flex flex-col min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center space-x-2">
+                <BarChart3 className="w-4 h-4 text-purple-600 shrink-0" />
+                <span>污染物实测构成雷达</span>
+              </h3>
+
+              <div className="flex items-center space-x-1.5">
+                <Calendar className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                <select
+                  value={radarYear}
+                  onChange={(e) => setRadarYear(Number(e.target.value))}
+                  aria-label="选择雷达图统计年份"
+                  className="text-xs font-bold text-purple-900 bg-purple-50 hover:bg-purple-100/80 border border-purple-200 rounded-lg px-2.5 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-400 transition-colors shadow-sm"
+                >
+                  {availableYears.map((y) => (
+                    <option key={y} value={y} className="text-slate-800 bg-white">
+                      {y} 年度
+                    </option>
+                  ))}
+                </select>
+                {loadingDaily && <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600 shrink-0" />}
+              </div>
+            </div>
+            <div className="flex-1 flex flex-col justify-center">
+              <CompareRadarChart cities={radarCities} loading={loadingDaily || !summaryReady} />
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

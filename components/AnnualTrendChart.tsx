@@ -126,7 +126,7 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
           smooth: true,
           data: pm25s,
           itemStyle: { color: '#0284c7' },
-          lineStyle: { width: 3 },
+          lineStyle: { width: 2.5 },
         },
         {
           name: aqiLabel,
@@ -134,7 +134,7 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
           smooth: true,
           data: aqiAvgs,
           itemStyle: { color: '#f59e0b' },
-          lineStyle: { width: 2.5, type: 'dotted' },
+          lineStyle: { width: 2.5 },
         },
         {
           name: pollutedLabel,
@@ -142,7 +142,7 @@ export const AnnualTrendChart: React.FC<AnnualTrendChartProps> = ({ data, cityNa
           smooth: true,
           data: pollutedDays,
           itemStyle: { color: '#ef4444' },
-          lineStyle: { type: 'dashed', width: 2 },
+          lineStyle: { width: 2.5 },
         },
       ],
     };

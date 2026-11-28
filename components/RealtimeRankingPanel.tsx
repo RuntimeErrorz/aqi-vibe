@@ -485,8 +485,8 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
       <div className="space-y-3 pb-3 border-b border-slate-100 shrink-0">
         {/* 第一行：标题与更新时间 */}
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-2xs shrink-0">
+          <div className="flex items-start space-x-2.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center shrink-0">
               <Trophy className="w-4 h-4" />
             </div>
             <div>
@@ -494,8 +494,14 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight whitespace-nowrap">
                   实时排行
                 </h2>
+                <span
+                  className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200/80 text-[11px] font-medium leading-tight whitespace-nowrap"
+                  title="全球排行榜实时观测来源：WAQI"
+                >
+                  WAQI
+                </span>
                 {data && (
-                  <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80 hidden xs:inline-block">
+                  <span className="hidden xs:inline-flex items-center px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200/80 text-[11px] font-medium leading-tight whitespace-nowrap">
                     {metricMode === 'rep'
                       ? (populationTier !== 'all' || searchQuery.trim()
                           ? `筛选 ${filteredCleanest.length} 官方代表站`
@@ -508,7 +514,7 @@ export const RealtimeRankingPanel: React.FC<RealtimeRankingPanelProps> = ({ onSe
               </div>
               {data?.updatedAt && (
                 <p className="text-[11px] text-slate-400 font-normal">
-                  更新于 {new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · 每30分钟同步 · 来源: WAQI
+                  更新于 {new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · 每30分钟同步
                 </p>
               )}
             </div>

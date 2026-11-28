@@ -149,13 +149,6 @@ export async function fetchWAQIStationByUid(
   }
 }
 
-export function getWAQIMapTileUrl(): string {
-  if (WAQI_TOKEN) {
-    return `https://tiles.aqicn.org/tiles/usepa-aqi/{z}/{x}/{y}.png?token=${WAQI_TOKEN}`;
-  }
-  return '/api/waqi/tile/{z}/{x}/{y}.png';
-}
-
 export interface WaqiBoundStation {
   lat: number;
   lon: number;

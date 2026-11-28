@@ -10,7 +10,6 @@ import {
   fetchWAQICityCompositeData,
   fetchWAQIStationByUid,
   enrichStationsWithPM25,
-  getWAQIMapTileUrl,
 } from '@/lib/services/waqi';
 import { filterStationsForCity, getDistanceKm } from '@/lib/services/geo-filter';
 import {
@@ -23,14 +22,12 @@ import { convertIAQIToConcentration, evaluateAQI, getUSEvaluation } from '@/lib/
 import { escapeHtml } from '@/lib/utils/common';
 
 const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_KEY || '';
-function getCartoTileUrl(theme: 'light' | 'dark'): string {
-  const style = theme === 'dark' ? 'dark_all' : 'voyager';
+function getCartoTileUrl(): string {
   if (CARTO_KEY) {
-    const prefix = theme === 'dark' ? 'dark_all' : 'rastertiles/voyager';
-    return `https://basemaps.cartocdn.com/${prefix}/{z}/{x}/{y}@2x.png?key=${CARTO_KEY}`;
+    return `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png?key=${CARTO_KEY}`;
   }
   // 线上零前端 Key 时自动走 Cloudflare Worker 边缘代理（30 天强缓存，读取服务端 CARTO_API_KEY Secret，无水印）
-  return `/api/carto/${style}/{z}/{x}/{y}.png`;
+  return `/api/carto/voyager/{z}/{x}/{y}.png`;
 }
 
 export interface FocusCityInfo {
@@ -44,10 +41,6 @@ export interface FocusCityInfo {
 }
 
 interface AirMapProps {
-  showStations?: boolean;
-  showHeatmap?: boolean;
-  heatmapOpacity?: number;
-  basemapTheme?: 'light' | 'dark';
   center?: [number, number];
   zoom?: number;
   focusCity?: CityMeta;
@@ -249,17 +242,13 @@ function buildStationDetailPopupHtml(
       </div>
       <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
         <span>更新: ${escapeHtml(formattedTime)}</span>
-        <span class="font-medium text-sky-600">WAQI 官方实测</span>
+        <span class="font-medium text-sky-600">WAQI</span>
       </div>
     </div>
   `;
 }
 
 export default function AirMap({
-  showStations = true,
-  showHeatmap = false,
-  heatmapOpacity = 0.55,
-  basemapTheme = 'light',
   center = [35.0, 105.0],
   zoom = 4,
   focusCity,
@@ -277,16 +266,13 @@ export default function AirMap({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const basemapLayerRef = useRef<L.TileLayer | null>(null);
-  const appliedBasemapThemeRef = useRef<'light' | 'dark'>(basemapTheme);
   const initialViewAppliedRef = useRef(false);
-  const heatmapLayerRef = useRef<L.TileLayer | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const enrichAbortRef = useRef<AbortController | null>(null);
   const stationCacheRef = useRef<Map<number, WaqiBoundStation>>(new Map());
   const stationFetchedAtRef = useRef<Map<number, number>>(new Map());
   const stationDetailRecRef = useRef<Map<number, { record: AirQualityRecord; fetchedAt: number }>>(new Map());
-  const showStationsRef = useRef(showStations);
   const nearestStationRef = useRef<(WaqiBoundStation & { distKm: number }) | null>(null);
   const focusCityDataMap = useRef<Map<string, { record: AirQualityRecord; fetchedAt: number }>>(new Map());
 
@@ -339,20 +325,10 @@ export default function AirMap({
     onlyPm25Ref.current = onlyPm25;
   }, [standard, onlyPm25]);
 
-  useEffect(() => {
-    showStationsRef.current = showStations;
-  }, [showStations]);
-
   const renderStations = (stationsToRender: WaqiBoundStation[]) => {
     const map = mapInstanceRef.current;
     const markersLayer = markersLayerRef.current;
     if (!map || !markersLayer) return;
-
-    if (!showStationsRef.current) {
-      markersLayer.clearLayers();
-      onStationCountChangeRef.current?.(0, false);
-      return;
-    }
 
     const curZoom = map.getZoom();
     const displayStations = filterVisibleStationsByGrid(stationsToRender, map, curZoom);
@@ -463,7 +439,7 @@ export default function AirMap({
             updated = true;
           }
         });
-        if (updated && showStationsRef.current) {
+        if (updated) {
           const bounds = mapInstanceRef.current.getBounds();
           const allInView: WaqiBoundStation[] = [];
           stationCacheRef.current.forEach((st) => {
@@ -574,7 +550,7 @@ export default function AirMap({
         zoomDelta: 1,
       });
 
-      const baseUrl = getCartoTileUrl(basemapTheme);
+      const baseUrl = getCartoTileUrl();
 
       basemapLayerRef.current = L.tileLayer(baseUrl, {
         attribution: '&copy; OpenStreetMap &copy; CARTO',
@@ -587,12 +563,6 @@ export default function AirMap({
       markersLayerRef.current = markersLayer;
 
       const syncStationsInViewport = async () => {
-        if (!showStationsRef.current) {
-          markersLayer.clearLayers();
-          onStationCountChangeRef.current?.(0, false);
-          return;
-        }
-
         const bounds = map.getBounds();
         const minLat = bounds.getSouth();
         const minLng = bounds.getWest();
@@ -669,45 +639,6 @@ export default function AirMap({
     };
   }, []);
 
-  // 响应浅色 / 深色底图切换（跳过首帧重复挂载）
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map || appliedBasemapThemeRef.current === basemapTheme) return;
-    appliedBasemapThemeRef.current = basemapTheme;
-    if (basemapLayerRef.current) {
-      map.removeLayer(basemapLayerRef.current);
-    }
-    const baseUrl = getCartoTileUrl(basemapTheme);
-    basemapLayerRef.current = L.tileLayer(baseUrl, {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      maxZoom: 19,
-      tileSize: 512,
-      zoomOffset: -1,
-    }).addTo(map);
-    basemapLayerRef.current.bringToBack();
-  }, [basemapTheme]);
-
-  // 响应 WAQI 全球污染热力瓦片层开关与透明度
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    if (showHeatmap) {
-      if (!heatmapLayerRef.current) {
-        heatmapLayerRef.current = L.tileLayer(getWAQIMapTileUrl(), {
-          opacity: heatmapOpacity,
-          maxZoom: 16,
-          zIndex: 400,
-        }).addTo(map);
-      } else {
-        heatmapLayerRef.current.setOpacity(heatmapOpacity);
-      }
-    } else if (heatmapLayerRef.current) {
-      map.removeLayer(heatmapLayerRef.current);
-      heatmapLayerRef.current = null;
-    }
-  }, [showHeatmap, heatmapOpacity]);
-
   useEffect(() => {
     if (!mapInstanceRef.current || !center) return;
     if (!initialViewAppliedRef.current) {
@@ -719,33 +650,6 @@ export default function AirMap({
       easeLinearity: 0.25,
     });
   }, [center, zoom]);
-
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    const markersLayer = markersLayerRef.current;
-    if (!map || !markersLayer) return;
-
-    if (!showStations) {
-      markersLayer.clearLayers();
-      onStationCountChangeRef.current?.(0, false);
-    } else {
-      const bounds = map.getBounds();
-      const inView: WaqiBoundStation[] = [];
-      stationCacheRef.current.forEach((st) => {
-        if (
-          st.lat >= bounds.getSouth() &&
-          st.lat <= bounds.getNorth() &&
-          st.lon >= bounds.getWest() &&
-          st.lon <= bounds.getEast()
-        ) {
-          inView.push(st);
-        }
-      });
-      if (inView.length > 0) {
-        renderStationsRef.current(inView);
-      }
-    }
-  }, [showStations]);
 
   useEffect(() => {
     standardRef.current = standard;
@@ -766,7 +670,7 @@ export default function AirMap({
       }
     });
 
-    if (inView.length > 0 && showStationsRef.current) {
+    if (inView.length > 0) {
       renderStationsRef.current(inView);
       enrichViewportRef.current(inView);
     }
@@ -845,7 +749,7 @@ export default function AirMap({
     <div className="relative w-full h-full">
       <div
         ref={mapContainerRef}
-        className="w-full h-full rounded-2xl overflow-hidden shadow-inner bg-slate-100"
+        className="w-full h-full rounded-b-2xl overflow-hidden bg-slate-100"
         style={{ minHeight: '100%' }}
       />
     </div>

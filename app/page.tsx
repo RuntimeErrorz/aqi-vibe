@@ -788,7 +788,7 @@ function DashboardPageContent() {
     return [
       {
         key: 'pm25',
-        name: 'PM2.5 细颗粒',
+        name: 'PM2.5 细颗粒物',
         val: record.pollutants.pm25,
         max: 150,
         color: '#f59e0b',
@@ -799,7 +799,7 @@ function DashboardPageContent() {
       },
       {
         key: 'pm10',
-        name: 'PM10 粗颗粒',
+        name: 'PM10 可吸入颗粒物',
         val: record.pollutants.pm10,
         max: 250,
         color: '#0284c7',
@@ -1177,7 +1177,7 @@ function DashboardPageContent() {
                     <>
                       <span>·</span>
                       <span
-                        className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-slate-100/90 border border-slate-200/80 text-slate-600 font-medium text-[11px]"
+                        className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200/80 text-[11px] font-medium leading-tight whitespace-nowrap"
                         title={
                           record.provenance.fallbackFrom
                             ? `当前自动路由至 ${record.provenance.providerName}（原 ${PROVIDER_SHORT_LABELS[record.provenance.fallbackFrom.providerId] || record.provenance.fallbackFrom.providerId} ${
@@ -1188,7 +1188,7 @@ function DashboardPageContent() {
                             : `实时观测数据源：${record.provenance.providerName}`
                         }
                       >
-                        来源: {PROVIDER_SHORT_LABELS[record.provenance.providerId] || record.provenance.providerName}
+                        {PROVIDER_SHORT_LABELS[record.provenance.providerId] || record.provenance.providerName}
                       </span>
                     </>
                   )}
@@ -1432,19 +1432,24 @@ function DashboardPageContent() {
             <h3 className="text-sm sm:text-base font-bold text-slate-900">逐小时空气质量变化轨迹</h3>
             {trendResult && trendResult.source && (
               <span
-                className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md font-semibold border inline-flex items-center space-x-1 ${
+                className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200/80 text-[11px] font-medium leading-tight whitespace-nowrap"
+                title={
                   trendResult.isReal
-                    ? 'bg-sky-50 text-sky-700 border-sky-200/80'
-                    : 'bg-slate-100 text-slate-500 border-slate-200'
-                }`}
-                title="时间轴已统一换算为当前浏览器本地时区"
+                    ? `${trendResult.source} · 时间轴已统一换算为当前浏览器本地时区`
+                    : '时间轴已统一换算为当前浏览器本地时区'
+                }
               >
-                {trendResult.isReal && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block shrink-0" />
-                )}
-                <span>
-                  {trendResult.isReal ? `来源: ${trendResult.source}` : trendResult.source}
-                </span>
+                {trendResult.isReal
+                  ? (trendResult.providerId && PROVIDER_SHORT_LABELS[trendResult.providerId]) ||
+                    trendResult.providerName ||
+                    (trendResult.source.includes('WAQI')
+                      ? 'WAQI'
+                      : trendResult.source.includes('OpenAQ')
+                      ? 'OpenAQ'
+                      : trendResult.source.includes('和风')
+                      ? '和风天气'
+                      : trendResult.source)
+                  : trendResult.source}
               </span>
             )}
           </div>
@@ -1465,9 +1470,17 @@ function DashboardPageContent() {
             <Calendar className="w-5 h-5 text-indigo-600" />
             <h3 className="text-base sm:text-lg font-bold text-slate-900">未来 5 天空气质量预测走势</h3>
             {forecastData.source && (
-              <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200 shadow-sm flex items-center space-x-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse inline-block mr-1"></span>
-                <span>{forecastData.source}</span>
+              <span
+                className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200/80 text-[11px] font-medium leading-tight whitespace-nowrap"
+                title={forecastData.source}
+              >
+                {forecastData.source.includes('WAQI')
+                  ? 'WAQI'
+                  : forecastData.source.includes('和风')
+                  ? '和风天气'
+                  : forecastData.source.includes('CAMS') || forecastData.source.includes('ECMWF')
+                  ? 'ECMWF CAMS'
+                  : forecastData.source}
               </span>
             )}
           </div>

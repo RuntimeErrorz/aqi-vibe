@@ -39,23 +39,12 @@ export const SeasonalChart: React.FC<SeasonalChartProps> = ({
     const series: any[] = [
       {
         name: '月均 PM2.5 (μg/m³)',
-        type: 'bar',
+        type: 'line',
+        smooth: true,
         data: pm25s,
-        barMaxWidth: 28,
-        itemStyle: {
-          borderRadius: [4, 4, 0, 0],
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(2, 132, 199, 0.85)' },
-              { offset: 1, color: 'rgba(2, 132, 199, 0.28)' },
-            ],
-          },
-        },
+        itemStyle: { color: '#0284c7' },
+        lineStyle: { width: 2.5 },
+        symbolSize: 6,
       },
     ];
 
@@ -104,7 +93,7 @@ export const SeasonalChart: React.FC<SeasonalChartProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center space-x-2">
           <CalendarRange className="w-4 h-4 text-purple-600" />
-          <span>{cityName} · 12 个月季节污染律动（秋冬季颗粒物 vs 夏季臭氧）</span>
+          <span>{cityName}年中污染变化</span>
         </h3>
 
         <div className="inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 text-xs self-start sm:self-auto">

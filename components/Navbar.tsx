@@ -61,16 +61,16 @@ export const Navbar: React.FC = () => {
   return (
     <header className="sticky top-0 z-[9999] w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
       {/* 主导航条 */}
-      <div className="max-w-[1380px] mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+      <div className="max-w-[1380px] mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between lg:grid lg:grid-cols-[1fr_auto_1fr] gap-2">
         {/* 左侧：Logo + 全局城市检索与关注胶囊 */}
-        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 lg:justify-self-start">
           <Link
             href="/"
             onClick={() => setIsMobileMenuOpen(false)}
             className="flex items-center space-x-2 sm:space-x-2.5 group shrink-0"
           >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-600 flex items-center justify-center shadow-md shadow-sky-600/20 group-hover:scale-105 transition-transform shrink-0">
-              <Wind className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[2.5]" />
+            <div className="w-7 h-7 sm:w-[30px] sm:h-[30px] rounded-lg bg-sky-600 flex items-center justify-center shadow-sm shadow-sky-600/20 group-hover:scale-105 transition-transform shrink-0">
+              <Wind className="w-4 h-4 text-white stroke-[2.5]" />
             </div>
             <div className="hidden sm:block">
               <span className="font-bold text-base sm:text-lg tracking-tight text-slate-900 group-hover:text-sky-600 transition-colors whitespace-nowrap">
@@ -82,8 +82,8 @@ export const Navbar: React.FC = () => {
           <HeaderCitySwitcher />
         </div>
 
-        {/* 桌面端菜单项 (lg 及以上展示，避免 768px 平板竖屏挤压折行) */}
-        <nav className="hidden lg:flex items-center space-x-0.5 xl:space-x-1.5">
+        {/* 桌面端菜单项 (lg 及以上展示，三栏等分网格锁定屏幕绝对居中) */}
+        <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 lg:justify-self-center">
           {navLinks.map((link, idx) => {
             const Icon = link.icon;
             const isActive = pathname === link.href;
@@ -91,16 +91,16 @@ export const Navbar: React.FC = () => {
               <React.Fragment key={link.href}>
                 {idx === 2 && (
                   <div
-                    className="h-4 w-px bg-slate-200 mx-1 self-center"
+                    className="h-4 w-px bg-slate-200 mx-0.5 self-center shrink-0"
                     aria-hidden="true"
                   />
                 )}
                 <Link
                   href={link.href}
-                  className={`flex items-center space-x-1.5 px-2 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium whitespace-nowrap shrink-0 transition-all ${
+                  className={`flex items-center space-x-1.5 px-2 xl:px-3 py-1 rounded-lg border text-xs xl:text-sm font-medium whitespace-nowrap shrink-0 transition-all ${
                     isActive
-                      ? 'bg-sky-50 text-sky-600 border border-sky-200 shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      ? 'bg-sky-50 text-sky-600 border-sky-200 shadow-sm'
+                      : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
@@ -112,7 +112,7 @@ export const Navbar: React.FC = () => {
         </nav>
 
         {/* 桌面端控制组：只看 PM2.5 开关 + 标准切换开关 (仅 lg 及以上展示) */}
-        <div className="hidden lg:flex items-center space-x-1.5 xl:space-x-2.5 shrink-0">
+        <div className="hidden lg:flex items-center space-x-1.5 xl:space-x-2.5 shrink-0 lg:justify-self-end">
           {/* 美标左侧：只看 PM2.5 纯净模式开关 */}
           <div className="relative group/pm25">
             <button
@@ -158,18 +158,18 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* 右侧：标准切换开关与独立悬停 Tip */}
-          <div className="flex w-auto xl:w-[186px] shrink-0 items-center justify-between rounded-xl border border-slate-200 bg-white shadow-sm hover:border-slate-300 transition-colors">
+          <div className="flex w-auto shrink-0 items-center rounded-xl border border-slate-200 bg-white shadow-sm hover:border-slate-300 transition-colors">
             {/* 左侧主体：点击切换标准 */}
             <button
               onClick={toggleStandard}
-              className="flex-1 flex items-center space-x-1.5 px-2.5 xl:px-3 py-1.5 text-xs transition-colors hover:bg-slate-50 rounded-l-xl cursor-pointer select-none whitespace-nowrap"
+              className="flex items-center space-x-1.5 px-2.5 py-1.5 text-xs transition-colors hover:bg-slate-50 rounded-l-xl cursor-pointer select-none whitespace-nowrap"
               title="点击切换 AQI 计算标准 (美国 EPA / 中国国标)"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
               <span className="hidden xl:inline text-slate-500 shrink-0">标准:</span>
-              <span className="xl:w-20 inline-flex items-center text-left shrink-0">
+              <span className="inline-flex items-center text-left shrink-0">
                 {!mounted ? (
-                  <span className="h-3.5 w-14 xl:w-16 bg-slate-200/90 rounded-md animate-pulse inline-block" />
+                  <span className="h-3.5 w-14 bg-slate-200/90 rounded-md animate-pulse inline-block" />
                 ) : (
                   <span className="font-bold text-slate-900 whitespace-nowrap">
                     {standard === 'US' ? '美标 (EPA)' : '国标 (HJ633)'}
